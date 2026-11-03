@@ -1,13 +1,75 @@
-// Flip ledger. Blob JSON under ledger/ when a token is set, otherwise web/.data/ledger.json.
-// @vercel/blob 0.27.3 only allows access: 'public' (see PutCommandOptions). There is no
-// private blob mode in this version, so the API key is what keeps the ledger closed.
+// Flip ledger. The existing Blob store is public, and private blobs need a separate
+// private store (access cannot be changed after the store is created). The ledger is
+// therefore AES-256-GCM ciphertext. The pathname is an HMAC of a fixed label, it is
+// never listed, and its URL is never returned.
 import fs from 'fs';
 import path from 'path';
-import { newId, saveVersioned, readLatest } from './store.js';
+import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from 'node:crypto';
+import { del, put } from '@vercel/blob';
+import { newId } from './store.js';
+
+export const LEDGER_HKDF_INFO = 'garagesale-ledger-v1';
+const LEDGER_HKDF_SALT = 'garagesale-ledger-hkdf';
+const LEDGER_PATH_LABEL = 'garagesale-ledger-path';
+const blobOn = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+function localFile() { return path.join(process.cwd(), '.data', 'ledger.json'); }
+
+function decryptError() {
+  const err = new Error('ledger decrypt failed');
+  err.status = 500;
+  return err;
+}
+
+function activeKey(explicit) {
+  const key = explicit == null || explicit === '' ? process.env.GS_LEDGER_KEY : explicit;
+  if (!key) {
+    const err = new Error('ledger key not configured');
+    err.status = 503;
+    return err;
+  }
+  return key;
+}
+function keyOrThrow(explicit) {
+  const key = activeKey(explicit);
+  if (key instanceof Error) throw key;
+  return key;
+}
+
+// HKDF-SHA256, fixed salt and info, so the same GS_LEDGER_KEY always yields the same AES key.
+export function ledgerKeyBytes(secret) {
+  return Buffer.from(hkdfSync('sha256', Buffer.from(String(secret), 'utf8'), Buffer.from(LEDGER_HKDF_SALT), Buffer.from(LEDGER_HKDF_INFO), 32));
+}
+
+export function ledgerPathname(secret) {
+  const mac = createHmac('sha256', String(secret)).update(LEDGER_PATH_LABEL).digest('hex');
+  return `ledger/${mac}.json`;
+}
+
+export function sealLedger(doc, secret) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', ledgerKeyBytes(secret), iv);
+  const ct = Buffer.concat([cipher.update(JSON.stringify(doc), 'utf8'), cipher.final()]);
+  return { v: 1, iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), ct: ct.toString('base64') };
+}
+
+export function openLedger(envelope, secret) {
+  try {
+    if (!envelope || envelope.v !== 1 || typeof envelope.iv !== 'string' || typeof envelope.tag !== 'string' || typeof envelope.ct !== 'string') throw decryptError();
+    const iv = Buffer.from(envelope.iv, 'base64');
+    const tag = Buffer.from(envelope.tag, 'base64');
+    const ct = Buffer.from(envelope.ct, 'base64');
+    if (iv.length !== 12 || tag.length !== 16 || !ct.length) throw decryptError();
+    const decipher = createDecipheriv('aes-256-gcm', ledgerKeyBytes(secret), iv);
+    decipher.setAuthTag(tag);
+    const pt = Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
+    return JSON.parse(pt);
+  } catch (e) {
+    if (e && e.message === 'ledger decrypt failed') throw e;
+    throw decryptError();
+  }
+}
 
 export const STATUSES = ['on_hand', 'listed', 'sold'];
-const FILE = path.join(process.cwd(), '.data', 'ledger.json');
-const blobOn = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export function moneyField(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -161,19 +223,84 @@ export function authFromRequest(req) {
   return ledgerAuth(req.headers.get('x-ledger-key'));
 }
 
-export async function readLedger() {
-  if (blobOn()) return normalize(await readLatest('ledger/').catch(() => null));
-  try { return normalize(JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { return emptyLedger(); }
+function readLocal() {
+  try { return JSON.parse(fs.readFileSync(localFile(), 'utf8')); }
+  catch (e) {
+    if (e && e.code === 'ENOENT') return null;
+    throw decryptError();
+  }
 }
 
-export async function writeLedger(doc) {
+// The public URL is derived from the token's store id. It is only used to read or
+// replace this one object. Callers never receive it, and nothing lists the prefix.
+function publicBlobUrl(pathname) {
+  const storeId = String(process.env.BLOB_READ_WRITE_TOKEN || '').split('_')[3];
+  if (!storeId) {
+    const err = new Error('ledger read failed');
+    err.status = 502;
+    throw err;
+  }
+  return `https://${storeId}.public.blob.vercel-storage.com/${pathname}`;
+}
+
+async function fetchEnvelope(pathname) {
+  const r = await fetch(publicBlobUrl(pathname), { cache: 'no-store' });
+  if (r.status === 404) return null;
+  if (!r.ok) {
+    const err = new Error('ledger read failed');
+    err.status = 502;
+    throw err;
+  }
+  try { return await r.json(); } catch (e) { throw decryptError(); }
+}
+
+async function putEnvelope(pathname, text) {
+  const opts = { access: 'public', addRandomSuffix: false, contentType: 'application/json', cacheControlMaxAge: 60 };
+  try {
+    await put(pathname, text, opts);
+  } catch (e) {
+    try { await del(publicBlobUrl(pathname)); } catch (err) {}
+    await put(pathname, text, opts);
+  }
+}
+
+async function removeBlob(pathname) {
+  try { await del(publicBlobUrl(pathname)); } catch (e) {}
+}
+
+export async function readLedger(secret) {
+  const key = keyOrThrow(secret);
+  const envelope = blobOn() ? await fetchEnvelope(ledgerPathname(key)) : readLocal();
+  if (envelope == null) return emptyLedger();
+  return normalize(openLedger(envelope, key));
+}
+
+export async function writeLedger(doc, secret) {
+  const key = keyOrThrow(secret);
   const out = normalize(doc);
-  if (blobOn()) await saveVersioned('ledger/', out);
+  const text = JSON.stringify(sealLedger(out, key));
+  if (blobOn()) await putEnvelope(ledgerPathname(key), text);
   else {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(out, null, 1));
+    const file = localFile();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.tmp`;
+    fs.writeFileSync(tmp, text);
+    fs.renameSync(tmp, file);
   }
   return out;
+}
+
+// Decrypt with the old key, then write under the new key. A decrypt failure throws
+// before any write. Blob pathnames differ per key, so the old object is removed after.
+export async function rekeyLedger(oldKey, newKey) {
+  if (!oldKey || !newKey) throw new Error('OLD_KEY and NEW_KEY are required');
+  const doc = await readLedger(oldKey);
+  await writeLedger(doc, newKey);
+  if (blobOn()) {
+    const previous = ledgerPathname(oldKey);
+    if (previous !== ledgerPathname(newKey)) await removeBlob(previous);
+  }
+  return doc.items.length;
 }
 
 export function addItem(doc, input) {
