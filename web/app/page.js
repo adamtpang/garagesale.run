@@ -22,7 +22,7 @@ const FEED = ['Scanning new Austin listings', 'Comparing with eBay sold', 'Check
 const EXAMPLES = TILES.map(([ic, nm, ask, mkt]) => ({ photo: `/items/${ic}.jpg`, name: nm, ask, mkt }));
 const r0 = (v) => (v === undefined || v === null || isNaN(Number(v)) ? undefined : Math.round(Number(v)));
 function toTile(d, href) {
-  return { href, photo: d.photo_url || d.image_url || d.image || null, name: d.title || 'Deal', ask: r0(d.ask_price ?? d.buy_price ?? d.price), mkt: r0(d.resale_price ?? d.resell_price ?? d.est_market_price), link: d.fb_url || d.source_url || d.link || d.url || null };
+  return { href, photo: d.photo_url || d.image_url || d.image || null, name: d.title || d.area || 'Deal', ask: r0(d.ask ?? d.ask_price ?? d.buy_price ?? d.price), mkt: r0(d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price), link: d.fb_url || d.source_url || d.link || d.url || null };
 }
 function useRealTiles() {
   const [tiles, setTiles] = useState(null);

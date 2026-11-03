@@ -7,16 +7,16 @@ import { saveVersioned, readLatest } from './store.js';
 
 export const STATUSES = ['saved', 'messaged', 'bought', 'resold'];
 const FILE = path.join(process.cwd(), '.data', 'saved-deals.json');
-const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+const blobOn = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function readSaved() {
-  if (useBlob()) return ((await readLatest('saved-deals/').catch(() => null)) || { deals: [] }).deals || [];
+  if (blobOn()) return ((await readLatest('saved-deals/').catch(() => null)) || { deals: [] }).deals || [];
   try { return JSON.parse(fs.readFileSync(FILE, 'utf8')).deals || []; } catch (e) { return []; }
 }
 
 async function write(deals) {
   const doc = { updated_at: new Date().toISOString(), deals };
-  if (useBlob()) return saveVersioned('saved-deals/', doc);
+  if (blobOn()) return saveVersioned('saved-deals/', doc);
   fs.mkdirSync(path.dirname(FILE), { recursive: true });
   fs.writeFileSync(FILE, JSON.stringify(doc, null, 1));
 }

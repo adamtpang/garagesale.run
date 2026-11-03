@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Photo from '../../components/Photo';
 import SavedDeals from '../../components/SavedDeals';
+import ScoutFreshness from '../../components/ScoutFreshness';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,9 +34,9 @@ const num = (x) => (x === null || x === undefined || x === '' || isNaN(Number(x)
 function srcName(x) { const s = String(x || '').toLowerCase(); if (s.includes('ebay')) return 'eBay'; if (s.includes('amazon')) return 'Amazon'; if (s.includes('facebook') || s.includes('marketplace')) return 'FB'; return x ? String(x).split(/[ (,]/)[0] : 'Resale'; }
 function dealNums(d) {
   const comps = Array.isArray(d.comps) ? d.comps : [];
-  const ask = num(d.ask_price ?? d.buy_price ?? d.price);
-  const resell = num(d.resale_price ?? d.resell_price ?? d.est_market_price);
-  const profit = num(d.est_profit) ?? (ask !== null && resell !== null ? Math.round((resell - ask) * 100) / 100 : null);
+  const ask = num(d.ask ?? d.ask_price ?? d.buy_price ?? d.price);
+  const resell = num(d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price);
+  const profit = num(d.profit ?? d.est_profit) ?? (ask !== null && resell !== null ? Math.round((resell - ask) * 100) / 100 : null);
   let disc = num(d.discount_pct); if (disc !== null && disc > 0 && disc <= 1) disc *= 100;
   if (disc === null && ask !== null && resell) disc = (1 - ask / resell) * 100;
   const buyUrl = d.fb_url || d.source_url || d.link || d.url || null;
@@ -98,12 +99,13 @@ export default function Dashboard() {
             <span className="flex shrink-0 flex-col items-end gap-1"><span className="font-semibold tabular-nums">{$(j.price)}</span><Badge variant={tone[cls]} className="font-normal">{a}</Badge></span></a>; })}
         </Card>
       </section>
-      <section className="min-w-0"><div className="mb-5 flex items-center justify-between"><h2 className="!text-3xl !font-semibold !tracking-tight">Buy</h2><Button asChild variant="secondary" size="sm"><a href="/buy">Find deals</a></Button></div>
+      <section className="min-w-0"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><h2 className="!text-3xl !font-semibold !tracking-tight">Buy</h2><span className="flex flex-wrap gap-2"><Button asChild variant="secondary" size="sm"><a href="/deals">Deals</a></Button><Button asChild variant="secondary" size="sm"><a href="/ledger">Ledger</a></Button><Button asChild variant="secondary" size="sm"><a href="/buy">Find deals</a></Button></span></div>
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">Saved deals</h3>
         <SavedDeals />
-        <h3 className="mb-3 mt-10 text-sm font-medium text-muted-foreground">Scout feed{feed && feed.updated_at ? `, last run ${new Date(feed.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}. Older listings may be gone.` : ''}</h3>
+        <h3 className="mb-3 mt-10 text-sm font-medium text-muted-foreground">Scout feed</h3>
+        {feed && <ScoutFreshness updatedAt={feed.updated_at} filtersSet={feed.filters_set} />}
         {feed === null && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">Loading...</Card>}
-        {feed !== null && deals.length === 0 && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">No scout deals.</Card>}
+        {feed !== null && deals.length === 0 && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">{(feed.deals || []).length ? 'Nothing ranked in this scout.' : 'No scout deals.'} <a href="/deals" className="text-foreground underline underline-offset-4">Open deals</a>.</Card>}
         <div className="grid gap-3">{deals.slice(0, 30).map((d, k) => { const n = d._n; const photo = d.photo_url || d.image_url || d.image; return <Card key={k} className="flex gap-4 overflow-hidden border-border/60 p-3">
           <a className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>.phx]:h-full [&>.phx]:w-full" href={d._href}><Photo src={photo} title={d.title} fb={(d.fb_url || d.source_url || d.link || d.url)} /></a>
           <div className="flex min-w-0 flex-1 flex-col justify-between py-1 pr-1">
@@ -113,7 +115,7 @@ export default function Dashboard() {
             <div className="mt-2 flex items-center gap-2 text-xs">
               <a className="rounded-lg bg-secondary px-2.5 py-1.5 hover:bg-accent" href={n.buyUrl || undefined} target="_blank" rel="noopener"><span className="text-muted-foreground">Buy </span><b className="font-medium">FB {$(n.ask)}</b></a>
               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-              <a className="truncate rounded-lg bg-secondary px-2.5 py-1.5 hover:bg-accent" href={n.sellUrl || undefined} target="_blank" rel="noopener"><span className="text-muted-foreground">Sell </span><b className="font-medium">{n.resell !== null ? `${n.sellSrc} ${$(n.resell)}` : 'Check comps'}</b></a>
+              <a className="truncate rounded-lg bg-secondary px-2.5 py-1.5 hover:bg-accent" href={n.sellUrl || undefined} target="_blank" rel="noopener"><span className="text-muted-foreground">Sell </span><b className="font-medium">{n.resell !== null ? `${n.sellSrc} ${$(n.resell)}` : 'unknown'}</b></a>
               <span className="ml-auto shrink-0">{n.profit !== null ? <Badge variant={n.profit < 0 ? 'destructive' : 'success'} className="text-sm">{n.profit >= 0 ? '+' : ''}{$(n.profit)}{n.ask ? <span className="ml-1 text-xs opacity-70">{Math.round((n.profit / n.ask) * 100)}%</span> : null}</Badge> : <Badge variant="secondary">?</Badge>}</span>
             </div></div></Card>; })}</div>
       </section>

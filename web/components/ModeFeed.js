@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Photo from './Photo';
+import ScoutFreshness from './ScoutFreshness';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 const $ = (v) => '$' + Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -9,6 +10,7 @@ const getJson = (url) => fetch(url, { cache: 'no-store', signal: AbortSignal.tim
 export default function ModeFeed({ mode }) {
   const [items, setItems] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [feed, setFeed] = useState(null);
   useEffect(() => {
     const load = async () => {
       try {
@@ -16,8 +18,9 @@ export default function ModeFeed({ mode }) {
           const r = await getJson('/api/jobs?recent=1');
           setItems((r.jobs || []).filter((j) => j.kind === 'sell' && !j.test && j.stage === 'live').slice(0, 8).map((j) => ({ key: j.id, href: `/job/${j.id}`, photo: j.image_url, title: j.title, top: $(j.price), sub: 'Live' })));
         } else {
+          const [r, f] = await Promise.all([getJson('/api/saved'), getJson('/api/deals').catch(() => null)]);
+          setFeed(f);
           // Top flips are the deals you saved, best discount first.
-          const r = await getJson('/api/saved');
           const ds = (r.deals || []).filter((d) => d.status === 'saved' || d.status === 'messaged').sort((a, b) => (b.discount ?? -999) - (a.discount ?? -999)).slice(0, 8);
           setItems(ds.map((d) => ({ key: d.id, href: d.fb_url, ext: true, photo: d.photo_url, title: d.title, top: $(d.ask), sub: d.value ? `${d.discount >= 0 ? `${d.discount}% under` : `${-d.discount}% over`} · target ${$(d.target)}` : `Not enough comps · target ${$(d.target)}` })));
         }
@@ -30,7 +33,8 @@ export default function ModeFeed({ mode }) {
   }, [mode]);
   const empty = failed ? (mode === 'sell' ? 'Could not load listings right now.' : 'Could not load saved deals right now.') : mode === 'sell' ? 'No live listings yet.' : 'No saved deals yet. Search above and save the ones worth chasing.';
   return <section className="pb-8 pt-8"><div className="wrap">
-    <div className="mb-6 flex items-center justify-between"><h2 className="!text-3xl !font-semibold !tracking-tight">{mode === 'sell' ? 'Live now' : 'Top flips'}</h2><Button asChild variant="secondary" size="sm"><a href="/dashboard">Dashboard</a></Button></div>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h2 className="!text-3xl !font-semibold !tracking-tight">{mode === 'sell' ? 'Live now' : 'Top flips'}</h2><span className="flex flex-wrap gap-2"><Button asChild variant="secondary" size="sm"><a href="/deals">Deals</a></Button><Button asChild variant="secondary" size="sm"><a href="/dashboard">Dashboard</a></Button></span></div>
+    {mode === 'buy' && <ScoutFreshness updatedAt={feed && feed.updated_at} filtersSet={feed && feed.filters_set} />}
     {items === null ? <p className="text-muted-foreground">Loading...</p> : items.length === 0 ? <p className="text-muted-foreground">{empty}</p> :
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{items.map((x) => <a key={x.key} href={x.href} target={x.ext ? '_blank' : undefined} rel="noopener" className="group">
         <Card className="overflow-hidden border-border/60 transition-colors group-hover:border-muted-foreground/40">

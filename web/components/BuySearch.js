@@ -158,7 +158,7 @@ export default function BuySearch() {
         <div><Button size="sm" variant="secondary" onClick={queueWorker}>Send it to the Grok Bot worker instead</Button></div></div>}</Card>}
 
     {res && !busy && <section className="grid gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 className="!text-2xl !font-semibold !tracking-tight">{good.length} match{good.length === 1 ? '' : 'es'} for "{res.core}"{res.max ? ` under ${$(res.max)}` : ''}</h2>
+      <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 className="!text-2xl !font-semibold !tracking-tight">{good.length} match{good.length === 1 ? '' : 'es'} for &quot;{res.core}&quot;{res.max ? ` under ${$(res.max)}` : ''}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{res.area || res.city}. Priced against {res.sold_seen} eBay sold listings. Checked age and condition on the top {res.details_checked}{res.gone_removed ? `, dropped ${res.gone_removed} already sold` : ''}. Searched {new Date(res.searched_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{res.cached ? ' (cached)' : ''}.</p></div>
         <div className="flex gap-3 text-xs"><a className="text-muted-foreground underline-offset-4 hover:underline" href={res.fb_search_url} target="_blank" rel="noopener">Marketplace search</a><a className="text-muted-foreground underline-offset-4 hover:underline" href={res.ebay_search_url} target="_blank" rel="noopener">eBay sold search</a></div></div>
       {good.length === 0 && <Card className="border-border/60 p-8 text-center text-muted-foreground">No listings matched. Try a wider radius or a simpler search.</Card>}

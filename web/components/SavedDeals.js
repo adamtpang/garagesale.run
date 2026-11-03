@@ -37,6 +37,7 @@ export default function SavedDeals() {
           <span className="rounded-lg bg-secondary px-2.5 py-1"><span className="text-muted-foreground">Ask </span><b className="font-medium tabular-nums">{$(d.ask)}</b></span>
           <label className="flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-0.5"><span className="text-muted-foreground">Target $</span><Input className="h-7 w-20 border-0 bg-transparent px-1" inputMode="decimal" defaultValue={d.target ?? ''} onBlur={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); if (v !== String(d.target ?? '')) update(d.id, { target: v }); }} aria-label={`Target price for ${d.title}`} /></label>
           <select className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground [color-scheme:dark]" value={d.status} onChange={(e) => update(d.id, { status: e.target.value })} aria-label={`Status for ${d.title}`}>{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+          {d.status === 'bought' && <a className="text-xs underline underline-offset-4" href={`/ledger?${new URLSearchParams({ saved_deal_id: d.id, item: d.title || '', buy_price: d.ask == null ? '' : String(d.ask), source_link: d.fb_url || '' })}`}>Add this buy to the ledger</a>}
           <Button size="sm" variant="ghost" className={cn('ml-auto h-8 px-2 text-xs text-muted-foreground')} onClick={() => remove(d.id)}>Remove</Button>
         </div>
         {d.opener && <p className="mt-2 truncate text-xs text-muted-foreground">Draft: {d.opener}</p>}
