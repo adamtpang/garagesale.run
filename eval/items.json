@@ -1,0 +1,123 @@
+[
+  {
+    "id": "gs-001",
+    "category": "electronics",
+    "title": "Apple AirPods Pro 2nd Gen USB-C MagSafe Charging Case A2968 (case only)",
+    "condition": "Used",
+    "actual_sold_price": 32.5,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/327163717805",
+    "actual_sold_date": "2026-08-05"
+  },
+  {
+    "id": "gs-002",
+    "category": "electronics",
+    "title": "JBL Tune Buds True Wireless Noise-cancelling Earbuds, Lilac Purple",
+    "condition": "Used",
+    "actual_sold_price": 48.99,
+    "currency": "USD",
+    "shipping": "US $6.99 USPS Ground Advantage",
+    "actual_sold_url": "https://www.ebay.com/itm/257624983123",
+    "actual_sold_date": "2026-08-28"
+  },
+  {
+    "id": "gs-003",
+    "category": "game_consoles",
+    "title": "Microsoft Xbox Series X 1TB Digital Edition, White",
+    "condition": "Used",
+    "actual_sold_price": 330.0,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/336015710113",
+    "actual_sold_date": "2026-08-28"
+  },
+  {
+    "id": "gs-004",
+    "category": "game_consoles",
+    "title": "Microsoft Xbox Series S",
+    "condition": "Used",
+    "actual_sold_price": 240.0,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/167243109111",
+    "actual_sold_date": "2026-08-27"
+  },
+  {
+    "id": "gs-005",
+    "category": "game_consoles",
+    "title": "Sony DualSense PS5 Controller, Icon Blue Special Edition",
+    "condition": "Used",
+    "actual_sold_price": 120.0,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/227097406607",
+    "actual_sold_date": "2026-08-29"
+  },
+  {
+    "id": "gs-006",
+    "category": "game_consoles",
+    "title": "Nintendo Switch Diablo III bundle + 5 games + 128GB SD",
+    "condition": "Used",
+    "actual_sold_price": 250.0,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/127230825114",
+    "actual_sold_date": "2026-09-04"
+  },
+  {
+    "id": "gs-007",
+    "category": "game_consoles",
+    "title": "Nintendo Switch OLED 64GB White, with original box",
+    "condition": "Open box",
+    "actual_sold_price": 246.99,
+    "currency": "USD",
+    "shipping": "US $61.68 eBay International Shipping (viewer-dependent)",
+    "actual_sold_url": "https://www.ebay.com/itm/168456373087",
+    "actual_sold_date": "2026-09-15"
+  },
+  {
+    "id": "gs-008",
+    "category": "tools",
+    "title": "DeWalt D25602 1-3/4in SDS Max Combination Hammer",
+    "condition": "Used",
+    "actual_sold_price": 280.25,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/227127854239",
+    "actual_sold_date": "2026-08-11"
+  },
+  {
+    "id": "gs-009",
+    "category": "tools",
+    "title": "Milwaukee 2645-20 M18 Cordless Jig Saw (tool only)",
+    "condition": "Used",
+    "actual_sold_price": 90.0,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/227101562506",
+    "actual_sold_date": "2026-08-14"
+  },
+  {
+    "id": "gs-010",
+    "category": "tools",
+    "title": "Snap-on CT4410A 3/8in 14.4V Cordless Impact Wrench w/ 2 batteries + charger",
+    "condition": "Used",
+    "actual_sold_price": 199.95,
+    "currency": "USD",
+    "shipping": "Not stated",
+    "actual_sold_url": "https://www.ebay.com/itm/298498739131",
+    "actual_sold_date": "2026-09-13"
+  },
+  {
+    "id": "gs-011",
+    "category": "tools",
+    "title": "DeWalt DC618 18V Cordless 16ga Angled Finish Nailer (bare)",
+    "condition": "Used",
+    "actual_sold_price": 90.0,
+    "currency": "USD",
+    "shipping": "US $13.15 USPS Ground Advantage",
+    "actual_sold_url": "https://www.ebay.com/itm/237071734377",
+    "actual_sold_date": "2026-09-18"
+  }
+]
