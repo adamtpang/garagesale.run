@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Photo from '../../components/Photo';
+import SavedDeals from '../../components/SavedDeals';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -98,8 +99,11 @@ export default function Dashboard() {
         </Card>
       </section>
       <section className="min-w-0"><div className="mb-5 flex items-center justify-between"><h2 className="!text-3xl !font-semibold !tracking-tight">Buy</h2><Button asChild variant="secondary" size="sm"><a href="/buy">Find deals</a></Button></div>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Saved deals</h3>
+        <SavedDeals />
+        <h3 className="mb-3 mt-10 text-sm font-medium text-muted-foreground">Scout feed{feed && feed.updated_at ? `, last run ${new Date(feed.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}. Older listings may be gone.` : ''}</h3>
         {feed === null && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">Loading...</Card>}
-        {feed !== null && deals.length === 0 && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">No deals yet.</Card>}
+        {feed !== null && deals.length === 0 && <Card className="border-border/60 p-8 text-center text-sm text-muted-foreground">No scout deals.</Card>}
         <div className="grid gap-3">{deals.slice(0, 30).map((d, k) => { const n = d._n; const photo = d.photo_url || d.image_url || d.image; return <Card key={k} className="flex gap-4 overflow-hidden border-border/60 p-3">
           <a className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>.phx]:h-full [&>.phx]:w-full" href={d._href}><Photo src={photo} title={d.title} fb={(d.fb_url || d.source_url || d.link || d.url)} /></a>
           <div className="flex min-w-0 flex-1 flex-col justify-between py-1 pr-1">

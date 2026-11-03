@@ -1,7 +1,7 @@
 import { saveVersioned, readLatest, workerOk, now, json } from '../../../lib/store';
 export const dynamic = 'force-dynamic';
 export async function GET() {
-  const feed = await readLatest('deals/');
+  const feed = await readLatest('deals/').catch(() => null);
   return json(feed || { updated_at: null, deals: [] });
 }
 export async function POST(req) {

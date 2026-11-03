@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import GarageScene from '../components/GarageScene';
 import Photo, { prox } from '../components/Photo';
 import ModeFeed from '../components/ModeFeed';
+import { PRESETS } from '../components/BuySearch';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -130,17 +131,12 @@ export default function Home({ mode: initMode }) {
       location.href = `/batch/${b.id || batchId}`;
     } catch (e) { setErr(String(e.message || e) + (ids.length ? ` (${ids.length} uploaded)` : '')); setBusy(''); setProg(''); }
   }
-  async function buy(e) {
-    e.preventDefault();
-    if (!q.trim()) { setErr('Tell us what you are looking for.'); return; }
-    setErr(''); setBusy('buy');
-    try {
-      const body = { kind: 'buy', query: q.trim() }; if (max) body.max_price = Number(max); if (new URLSearchParams(location.search).get('test') === '1') body.test = 1;
-      const r = await fetch('/api/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-      const j = await r.json();
-      if (!r.ok || !j.id) throw new Error(j.error || 'Request failed');
-      location.href = `/job/${j.id}`;
-    } catch (e2) { setErr(String(e2.message || e2)); setBusy(''); }
+  // The live search, pricing and ranking run on /buy.
+  function buy(e, query = q) {
+    if (e) e.preventDefault();
+    if (!String(query).trim()) { setErr('Tell us what you are looking for.'); return; }
+    setBusy('buy');
+    location.href = `/buy?q=${encodeURIComponent(String(query).trim())}${max ? `&max=${max}` : ''}`;
   }
   const pick = (e) => { const f = e.target.files; sell(f); e.target.value = ''; };
 
@@ -179,9 +175,9 @@ export default function Home({ mode: initMode }) {
                 <Input className="h-14 rounded-2xl px-5 text-lg" placeholder="What do you want? e.g. Herman Miller chair" value={q} onChange={(e) => setQ(e.target.value)} aria-label="What are you looking for?" />
                 <div className="flex gap-3">
                   <Input className="h-12 w-32 shrink-0" placeholder="Max $" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Max price" />
-                  <Button size="lg" variant="brand" className="flex-1" disabled={!!busy}>{busy === 'buy' ? 'Starting...' : 'Find deals'}</Button>
+                  <Button size="lg" variant="brand" className="flex-1" disabled={!!busy}>{busy === 'buy' ? 'Opening...' : 'Find deals'}</Button>
                 </div>
-                <div className="flex flex-wrap gap-2">{['Used Mac with Apple silicon under $500', 'Herman Miller chair to flip', 'Nintendo Switch under $200', 'Road bike under $300'].map((t) => <Button type="button" key={t} variant="outline" size="sm" className="h-8 border-border/70 px-3 text-xs font-normal text-muted-foreground" onClick={() => setQ(t)}>{t}</Button>)}</div>
+                <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" className="h-8 border-border/70 px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); buy(null, t); }}>{t}</Button>)}</div>
               </form>}
             </Card>
             {err && <p className="text-sm text-red-400">{err}</p>}
