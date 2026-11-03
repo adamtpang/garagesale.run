@@ -10,7 +10,7 @@ export default function About() {
     <section className="mx-auto mt-20 max-w-xl text-center">
       <p className="text-muted-foreground">Built in 2.5 hours with Grok Bot at the <a className="text-foreground underline-offset-4 hover:underline" href="https://luma.com/x0qss5av?tk=Mdaf1N" target="_blank" rel="noreferrer">Grok Bot Hackathon</a>.</p>
       <div className="mt-6 flex items-center justify-center gap-4 text-sm"><a className="underline-offset-4 hover:underline" href="https://adampang.com" target="_blank" rel="noreferrer">Adam Pang</a><Separator orientation="vertical" className="h-4" /><span>Pranav</span><Separator orientation="vertical" className="h-4" /><span>Isaac</span></div>
-      <Button asChild size="lg" className="mt-10"><a href="https://github.com/adamtpang/grokbothackathon" target="_blank" rel="noreferrer">View on GitHub</a></Button>
+      <Button asChild size="lg" className="mt-10"><a href="https://github.com/adamtpang/garagesale.run" target="_blank" rel="noreferrer">View on GitHub</a></Button>
     </section>
   </main>;
 }

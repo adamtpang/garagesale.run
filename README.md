@@ -1,183 +1,82 @@
-# Pokédex for people
+# Garage Sale
 
-A real-life dex for a room. You scan someone's LinkedIn, X, or Luma QR (there are no paper badges tonight), Grok Bot researches them, and a human approves the follow-up. Seen means scanned. Caught means the follow-up was approved.
+AI agents that find Marketplace deals, price them, and draft listings. The app is Next.js 14 in [`web/`](web/). It stores jobs, photos, the scout feed, and the ledger in Vercel Blob.
 
-The hub is one FastAPI app: the dex UI, the phone `/scan` page, the REST API, and an MCP server. It runs locally with `--mock` and deploys to Vercel as-is. A Raspberry Pi is a thin client (`HUB_URL`) that drives a Game Boy link cable and, if a camera exists, takes the photo.
+Live site: [https://grokbothackathon.vercel.app](https://grokbothackathon.vercel.app)
 
-We only scan people who agree. The photo is dithered into a 160×144 four-green sprite. Nothing in this repo does face recognition.
+Repo: [https://github.com/adamtpang/garagesale.run](https://github.com/adamtpang/garagesale.run)
 
-## 60-second quickstart
+Built at the Grok Bot Hackathon, Austin, October 2026.
+
+A photo or a buy query becomes a job. The Grok Bot worker identifies the item, writes the listing, and posts only after a person approves it. This repo stores the job and shows the log. It does not message sellers or take payment.
+
+## Deal scout
+
+The scheduled scout is a Grok Bot routine. It is not code in this repo. Garage Sale stores what the routine posts. The routine reads listings and sold comps. It does not contact sellers, make offers, or post anything.
+
+The contract is [docs/SCOUT.md](docs/SCOUT.md).
+
+`GET /api/scout/config` is public. `PUT /api/scout/config` replaces the config and requires the `x-worker-key` header (`GST_WORKER_KEY`). With no `BLOB_READ_WRITE_TOKEN`, the config file is `web/.data/scout-config.json`. Every field defaults to null until that PUT. The seed file is `web/config/scout-config.seed.json`.
 
 ```bash
-pip install -r requirements.txt
-python3 -m pi_server --mock
+GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node scripts/seed-scout-config.mjs
 ```
 
-Open [http://127.0.0.1:8741](http://127.0.0.1:8741). The dex already has three people. Arrow keys move, **Z** opens an entry, **Z** again opens the follow-up, **Z** approves it. **X** goes back, and on the draft **X** skips. A gamepad uses the same buttons (A approve path, B back/skip).
+`POST /api/deals` also requires `x-worker-key`. The body is `{ area?, deals: [...] }`. `source` is `fb`, `craigslist`, `ebay`, or `offerup`. A seller name or a client-supplied profit is dropped. `GET /api/deals` returns the stored feed. The deals page shows it, and says `Filters not set` when ranking did not run.
 
-Seen and caught counts are on the list. `*` on a row means caught.
+If `min_profit`, `max_pickup_miles`, `sites`, or a fee rate for one of those sites is null, deals are stored and left unranked.
 
-## Phone scan (default when there is no Pi camera)
+## Server profit math
 
-`capture="environment"` opens the phone camera without HTTPS, so a LAN IP is enough. On the same Wi-Fi as the Pi or laptop:
+`web/lib/deals.js` scores each cleaned deal:
 
 ```text
-http://<that-machine-ip>:8741/scan
+profit = resale - ask - fee(platform) - shipping - gas
+gas = 2 * distance_mi * gas_per_mile
+fee = rate * resale + flat
 ```
 
-On the public demo, open `https://<your-vercel-app>/scan`. Ask first, check the consent box, then:
+Shipping is the median shipping on the comps that have it, otherwise 0. If `gas_per_mile` is null, gas is 0 and the deal is flagged `gas not included`. If a rate is set and `distance_mi` is missing, the deal is unranked (`distance unknown`).
 
-1. Photograph the QR code on their phone (LinkedIn, X, Luma, or any URL).
-2. Photograph them, if they agree. That frame becomes the sprite.
-3. If the QR will not read, type a name and company.
-4. Add them. They show up as **seen** with the next number (`#004`, `#005`, …).
+A comp is kept only when its URL is an eBay item (`/itm/<id>`) that is not marked active, or it is explicitly marked sold and the URL is not a search, a price guide, retail, or Craigslist. With no comps left, `resale` is null and the deal is unranked. One or two priced comps use their median. Three or more go through `estimate` in `web/lib/pricing.js`, which drops outliers and returns no price when fewer than three remain.
 
-The page decodes the QR in the browser (BarcodeDetector, then jsQR). The server also tries pyzbar, then OpenCV, when those libraries are installed. Capture priority on the Pi itself is picamera2, then a USB webcam, then this phone page.
+When the filters are set, deals that pass are ranked by profit, high first.
 
-A laptop with no camera can check consent and use **Sample · Luis Ortega** or **Samira Qureshi**, then **Demo research** on the dex. That stand-in calls the same profile and queue writes Grok Bot uses. It only knows the demo URLs.
+The buy search (`POST /api/buy/search`) is separate. It reads Facebook Marketplace through a signed-in Helium browser on that machine, then `web/lib/pricing.js` ranks those listings against matching eBay sold comps. Fewer than three matches is `not enough comps`, not a guessed price.
 
-## Deploy this on Vercel
+## Ledger
 
-Framework: **FastAPI**, Python **3.12**. There is no separate build step.
+The flip ledger is key-gated and encrypted. `GS_LEDGER_KEY` is required. `GET`, `POST`, `PATCH`, and `DELETE` under `/api/ledger` check the `x-ledger-key` header. A missing key is 503 (`ledger key not configured`). A wrong key is 401.
 
-| Setting | Value |
+The blob store is public, so the ledger is AES-256-GCM ciphertext. The object path is an HMAC of a fixed label. It is not listed, and its URL is not returned. With no `BLOB_READ_WRITE_TOKEN`, the ciphertext is `web/.data/ledger.json`. The `/ledger` page keeps the key in `sessionStorage` for that tab.
+
+`net_profit` is `sell_price - buy_price - gas - fees - repairs`, and it stays null until the item is sold. Bankroll is `starting_bankroll` minus money spent plus sales.
+
+```bash
+GS_LEDGER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node scripts/ledger.mjs list
+```
+
+`scripts/ledger-rekey.mjs` decrypts with the old key and writes with the new one. A decrypt failure throws before any write.
+
+## Env
+
+Names only. Set them in the host. Do not commit values.
+
+| Name | Used for |
 | --- | --- |
-| Root directory | the project root (the folder with `vercel.json`) |
-| Framework preset | FastAPI, or Other if the picker has no FastAPI row |
-| Entrypoint | `app/main.py` exporting `app`. Also set in `pyproject.toml` as `app.main:app` |
-| Install | `requirements.txt` / the dependencies in `pyproject.toml` |
-| Build command | empty |
-| Output directory | empty |
-
-`vercel.json` only raises the function duration to 30 seconds.
-
-Environment variables, all optional:
-
-| Variable | What it does |
-| --- | --- |
-| `KV_REST_API_URL` and `KV_REST_API_TOKEN` | Upstash / Vercel KV. Dex survives cold starts. |
-| `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` | Same REST store, Upstash's own names. |
-| `REDIS_URL` | TCP Redis (`redis://` or `rediss://`) if the REST vars are unset. |
-| `BLOB_READ_WRITE_TOKEN` | Photos and sprites go to Vercel Blob. Without it they are inline data URLs. |
-| `DEX_EVENT` | Area label. Default `Grok Bot Hackathon, Austin`. |
-| `MCP_TOKEN` | If set, `POST /mcp` requires `Authorization: Bearer …`. The browser stays open. |
-| `DECISION_WEBHOOK_URL` | POST the follow-up JSON when it is approved or rejected. |
-
-With none of the storage vars set, the function keeps a seeded dex in memory so the page always renders. A new scan lives on that instance until it goes cold. Set Redis before the judging demo if scans must stick.
-
-MCP endpoint: `https://<your-app>/mcp`
-
-Phone page: `https://<your-app>/scan`
-
-## Connect Grok Bot
-
-In the custom MCP connector, use streamable HTTP and the hub URL above. No tunnel to the Pi. The bot should:
-
-1. `scan_person` with `consent: true`, the QR `url`, any typed `name` / `company`, and an optional photo. `capture_badge` is the same tool.
-2. Research the URL or the name. Do not try to recognize a face.
-3. `attach_profile` with `id`, `name`, `category` (for example `the Founder Pokémon`), `types` (one or two tags such as `AI` or `Hardware`), `title`, `company`, `flavor_text`, and `email`.
-4. `queue_for_approval` with `to`, `subject`, `body`, and `contact_id`.
-5. `get_decision` (or `wait_for_decisions`) before treating the note as sent.
-
-```bash
-python3 examples/mcp_demo.py --url http://127.0.0.1:8741/mcp
-```
-
-That script is the same sequence, using a demo LinkedIn URL.
-
-Initialize:
-
-```bash
-curl -s http://127.0.0.1:8741/mcp \
-  -H 'content-type: application/json' \
-  -H 'accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"demo","version":"0"}}}'
-```
-
-## REST, for a future phone app
-
-The Game Boy and the browser are clients. A phone app can replace the Game Boy without a new backend. Resources:
-
-| Method | Path | Role |
-| --- | --- | --- |
-| GET | `/api/contacts?q=&type=&sort=number\|name\|type&limit=&offset=` | Dex list, plus `seen` and `caught` |
-| GET | `/api/contacts/{id}` | One entry |
-| POST | `/api/contacts/{id}/profile` | `attach_profile` |
-| POST | `/api/contacts/{id}/approve` | A, catch them |
-| POST | `/api/contacts/{id}/skip` | B on the draft |
-| POST | `/api/scans` | JSON or multipart. `consent` is required. |
-| POST | `/api/items` | Queue a follow-up |
-| GET | `/api/items/{id}` | Decision |
-| GET | `/docs` | OpenAPI |
-
-`sort` is `number` (scan order), `name`, or `type`. Numbers are `#001`, `#002`, in the order people are scanned.
-
-## Pi client
-
-The hub holds the dex. The Pi only needs the link cable and, if you have one, a camera.
-
-```bash
-pip install -r requirements.txt
-# optional camera stack:
-# sudo apt install python3-picamera2 libzbar0
-# pip install -r requirements-camera.txt
-export HUB_URL=https://<your-app>.vercel.app
-python3 -m pi_server --bridge
-```
-
-One consented photo from the Pi camera or a USB webcam:
-
-```bash
-python3 -m pi_server --capture --hub "$HUB_URL" --consent \
-  --name "Luis Ortega" --company "Northwind Ag"
-```
-
-`--capture` refuses to run without `--consent`. Order inside that command: picamera2, then OpenCV `VideoCapture`, then an error that points you at `/scan`.
-
-`--mock` never opens GPIO and ignores `HUB_URL`. It is the laptop demo.
-
-## Game Boy
-
-`gameboy/approval.gb` is built and ready for a flash cart (EverDrive, GBxCart, FlashGBX). Rebuild with GBDK-2020:
-
-```bash
-# https://github.com/gbdk-2020/gbdk-2020/releases/tag/4.5.0
-make -C gameboy GBDK=/opt/gbdk
-```
-
-The ROM shows the open entry (number, name, category, types, flavor, area). **A** opens the follow-up, **A** again approves, **B** skips, left/right move between people, up/down scroll. The Pi is the clock master. Byte layout, pins, and the level-shifter wiring are in [gameboy/PROTOCOL.md](gameboy/PROTOCOL.md).
-
-Short version: Game Boy pin 2 (SO, 5 V) → shifter → Pi BCM 23. Pi BCM 24 → shifter → pin 3 (SI). Pi BCM 25 → shifter → pin 4 (clock). Pin 5 to Pi GND. Pin 1 is the shifter's 5 V reference only. Never tie 5 V to a Pi GPIO.
-
-## Three-minute demo
-
-We only scan people who agree. Say that before anyone lifts a phone.
-
-1. **0:00** Open the dex. Seen 03, caught 01. Priya is already caught. Move to Jonah with the D-pad.
-2. **0:30** **Z** opens Jonah, the Buyer Pokémon. **Z** again shows the draft. Read one sentence. **Z** approves. Caught becomes 02.
-3. **1:10** On a phone, open `/scan`. Check consent. Either photograph a LinkedIn QR plus a portrait, or use the Luis sample if you are on a laptop.
-4. **1:50** He appears as seen, `#004`, sprite on the entry. If Grok Bot is connected, it calls `attach_profile` and `queue_for_approval` from the URL. If not, press **Demo research**. That is the same write, limited to the demo profiles.
-5. **2:30** Open the new draft and approve or skip it. Point at `/mcp` and, if the cart is flashed, at the DMG showing the same entry.
+| `GST_WORKER_KEY` | `x-worker-key` on scout config writes and `POST /api/deals` |
+| `GARAGESALE_BASE_URL` | Origin for the seed and ledger scripts, no trailing path |
+| `GS_LEDGER_KEY` | Ledger API and encryption |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob for jobs, images, the scout feed, and the ledger |
 
 ## Tests
 
+From `web/`:
+
 ```bash
-python3 -m pytest -q
+npm test
+npm run lint
+npm run build
 ```
 
-## Troubleshooting
-
-- **The phone camera input does nothing.** Use Safari or Chrome. The control is `<input type="file" accept="image/*" capture="environment">`, which works on `http://` LAN addresses. If the browser still refuses, upload from the photo library.
-- **QR reads blank.** Move closer, fill the frame with the code, or type the name and company. The entry can still be created.
-- **Scans disappear on Vercel.** The instance is using memory. Set the Upstash REST vars.
-- **Images are huge in the JSON.** Set `BLOB_READ_WRITE_TOKEN`. Until then sprites are data URLs, which is fine for a handful of people.
-- **MCP client hangs.** POST one JSON-RPC object to `/mcp` with `Accept: application/json, text/event-stream`. GET returns 405. A notification (no `id`) returns 202.
-- **`wait_for_decisions` returns nothing.** It only reports decisions newer than `since`. Omit `since` to wait for the next one. Timeout caps at 25 seconds.
-- **Demo research says it does not know this person.** The stand-in only fills the seeded and sample URLs. A real bot should call `attach_profile` itself.
-- **Pi camera missing.** That is expected. Use `/scan`. `--capture` prints the same instruction.
-- **Link cable is garbage.** Slow the clock with `LINK_HALF_PERIOD_US=400` or flip `LINK_CLK_IDLE=low`. Check the ground and the shifter. The browser dex does not need the cable.
-- **ROM will not boot.** Reflash `gameboy/approval.gb`. The header checksum is part of the test suite.
-
-## Hardware risks
-
-The DMG link port is 5 V and the Pi is 3.3 V. A Pi GPIO that sees 5 V from pin 2 is dead. Use the shifter. Do not power the Pi from pin 1. Clock polarity may need one flip on the first cable. The browser path is the demo if the cart or the cable fails.
+`npm test` runs `node --no-warnings --test lib/*.test.mjs` (pricing, deal scoring, and the ledger).
