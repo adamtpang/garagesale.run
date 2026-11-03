@@ -64,10 +64,25 @@ Names only. Set them in the host. Do not commit values.
 
 | Name | Used for |
 | --- | --- |
-| `GST_WORKER_KEY` | `x-worker-key` on scout config writes and `POST /api/deals` |
-| `GARAGESALE_BASE_URL` | Origin for the seed and ledger scripts, no trailing path |
+| `GST_WORKER_KEY` | `x-worker-key` on scout config writes, `POST /api/deals`, and the relay |
+| `GARAGESALE_BASE_URL` | Site origin for the seed and ledger scripts and the relay |
+| `GST_WEBHOOK_URL` | Relay webhook URL. See Relay config. Not logged. |
+| `GST_WEBHOOK_KEY` | Relay sender key. See Relay config. Not logged. |
 | `GS_LEDGER_KEY` | Ledger API and encryption |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob for jobs, images, the scout feed, and the ledger |
+
+## Relay config
+
+`relay/relay.py` polls `/api/pending` and wakes the Grok Bot worker. It reads these environment variables at startup. A missing or blank name is logged (the name only) and the process exits non-zero. It does not read config files.
+
+| Name | Used for |
+| --- | --- |
+| `GARAGESALE_BASE_URL` | Site origin. A trailing slash is removed. |
+| `GST_WORKER_KEY` | Sent as the `x-worker-key` header. |
+| `GST_WEBHOOK_URL` | Worker routine webhook URL. |
+| `GST_WEBHOOK_KEY` | Sent as `Authorization: Bearer ...`. |
+
+The webhook URL and the sender key come from the worker routine panel. Do not commit values. The relay never logs secret values or the webhook URL.
 
 ## Tests
 
@@ -80,3 +95,10 @@ npm run build
 ```
 
 `npm test` runs `node --no-warnings --test lib/*.test.mjs` (pricing, deal scoring, and the ledger).
+
+The relay config check uses the stdlib:
+
+```bash
+python -m py_compile relay/relay.py
+python -m unittest tests/test_relay_config.py
+```
