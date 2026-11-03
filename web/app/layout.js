@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
       <Assistant />
       <footer className="foot !mt-32 border-t border-border/60"><div className="wrap footin text-[13px] text-muted-foreground">
         <span>Built with Grok Bot · Austin · Oct 2026</span>
-        <a href="https://github.com/adamtpang/grokbothackathon" target="_blank" rel="noopener" className="hover:text-foreground">GitHub</a>
+        <a href="https://github.com/adamtpang/garagesale.run" target="_blank" rel="noopener" className="hover:text-foreground">GitHub</a>
       </div></footer>
     </body></html>
   );

@@ -211,7 +211,7 @@ export default function Home({ mode: initMode }) {
             <p><b>Built in 2.5 hours with Grok Bot.</b></p>
             <p><b>Built at</b> <a href="https://luma.com/x0qss5av?tk=Mdaf1N" target="_blank" rel="noreferrer">Grok Bot Hackathon</a>, Austin, TX, Oct 19, 2026</p>
             <p><b>Team</b> <a href="https://adampang.com" target="_blank" rel="noreferrer">Adam Pang</a> (<a href="https://github.com/adamtpang" target="_blank" rel="noreferrer">GitHub</a>), Pranav, Isaac</p>
-            <p><b>Code</b> <a href="https://github.com/adamtpang/grokbothackathon" target="_blank" rel="noreferrer">github.com/adamtpang/grokbothackathon</a></p>
+            <p><b>Code</b> <a href="https://github.com/adamtpang/garagesale.run" target="_blank" rel="noreferrer">github.com/adamtpang/garagesale.run</a></p>
           </div>
         </div>
       </div></section>}
