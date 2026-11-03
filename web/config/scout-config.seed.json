@@ -1,0 +1,22 @@
+{
+  "max_per_flip": 100,
+  "bankroll": 100,
+  "min_profit": 100,
+  "max_pickup_miles": 15,
+  "categories": ["electronics", "game consoles", "tools", "furniture", "bikes", "cameras"],
+  "sites": ["fb", "craigslist", "ebay", "offerup"],
+  "run_hours": "daily daytime",
+  "areas": [
+    { "name": "New Braunfels", "lat": 29.703, "lng": -98.1245 },
+    { "name": "San Marcos", "lat": 29.8833, "lng": -97.9414 },
+    { "name": "Austin", "lat": 30.2672, "lng": -97.7431 }
+  ],
+  "gas_per_mile": 0.18,
+  "gas_per_mile_note": "estimate: ~20 MPG, $3.50/gal premium",
+  "fees": {
+    "fb": { "rate": 0, "confirmed": false, "note": "default to be confirmed" },
+    "craigslist": { "rate": 0, "confirmed": false, "note": "default to be confirmed" },
+    "offerup": { "rate": 0, "plus_shipping": false, "confirmed": false, "note": "local pickup, default to be confirmed" },
+    "ebay": { "rate": 0.1325, "plus_shipping": true, "confirmed": false, "note": "default to be confirmed, plus shipping" }
+  }
+}

@@ -203,7 +203,7 @@ export default function JobPage({ params }) {
         </div>}
         {listingUrl && <div className="panel livep o0">
           {job.stage === 'live' && <div className="confetti" aria-hidden="true">{Array.from({ length: 60 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 12) * 0.06}s`, background: ['#1877f2', '#30d158', '#ffd60a', '#ff375f', '#ffffff', '#bf5af2'][i % 6], transform: `rotate(${i * 29}deg)` }} />)}</div>}
-          <h3 style={{ justifyContent: 'center', fontSize: 26 }}>🎉 It's live on Marketplace</h3>
+          <h3 style={{ justifyContent: 'center', fontSize: 26 }}>🎉 It&apos;s live on Marketplace</h3>
           <a className="pill blue big" href={listingUrl} target="_blank" rel="noopener">Open the real listing</a>
           <img src={`https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=0&data=${encodeURIComponent(listingUrl)}`} alt="QR code to the listing" />
           <p className="small muted" style={{ wordBreak: 'break-all' }}>{listingUrl}</p>
