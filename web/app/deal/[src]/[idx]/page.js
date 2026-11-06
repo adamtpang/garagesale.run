@@ -1,57 +1,58 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Photo from '../../../../components/Photo';
-const num = (x) => (x === null || x === undefined || x === '' || isNaN(Number(x)) ? null : Number(x));
-const $ = (v) => (num(v) === null ? '-' : '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-const BUY = { fb: 'Facebook Marketplace', craigslist: 'Craigslist', ebay: 'eBay', offerup: 'OfferUp' };
-function srcName(x) { const s = String(x || '').toLowerCase(); if (s === 'fb' || s.includes('facebook') || s.includes('marketplace')) return 'Facebook'; if (s === 'offerup' || s.includes('offerup')) return 'OfferUp'; if (s.includes('craigslist')) return 'Craigslist'; if (s.includes('ebay')) return 'eBay'; if (s.includes('amazon')) return 'Amazon'; return x ? String(x) : 'Resale'; }
+import { DealCard } from '../../../../components/DealFacts';
+import { assessDeal } from '../../../../lib/decision';
+
 export default function Deal({ params }) {
   const { src, idx } = params;
-  const [d, setD] = useState(undefined); const [ctx, setCtx] = useState('');
+  const [d, setD] = useState(undefined);
+  const [config, setConfig] = useState(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
+    let dead = false;
     (async () => {
       try {
-        if (src === 'feed') { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); setCtx('Scout feed'); setD(((f && f.deals) || [])[Number(idx)] || null); }
-        else { const j = await (await fetch(`/api/jobs/${encodeURIComponent(src)}`, { cache: 'no-store' })).json(); setCtx(j && j.query ? `For "${j.query}"` : ''); setD(((j && j.results && j.results.deals) || [])[Number(idx)] || null); }
-      } catch (e) { setD(null); }
+        const configRes = await fetch('/api/scout/config', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+        const cfg = configRes.ok ? await configRes.json() : {};
+        if (src === 'feed') {
+          const res = await fetch('/api/deals', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+          if (!res.ok) throw new Error(String(res.status));
+          const feed = await res.json();
+          if (!dead) { setConfig(cfg); setD(((feed && feed.deals) || [])[Number(idx)] || null); }
+        } else {
+          const res = await fetch(`/api/jobs/${encodeURIComponent(src)}`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+          if (!res.ok) throw new Error(String(res.status));
+          const job = await res.json();
+          const deals = (job && job.results && job.results.deals) || (job && job.deals) || [];
+          if (!dead) { setConfig(cfg); setD(deals[Number(idx)] || null); }
+        }
+      } catch (e) {
+        if (!dead) { setFailed(true); setD(null); }
+      }
     })();
+    return () => { dead = true; };
   }, [src, idx]);
-  if (d === undefined) return <main className="wrap dealp"><p className="muted">Loading deal...</p></main>;
-  if (!d) return <main className="wrap dealp"><h1>Deal not found</h1><p><a href="/dashboard" className="pill gray">Back to dashboard</a></p></main>;
-  const comps = Array.isArray(d.comps) ? d.comps : [];
-  const ask = num(d.ask ?? d.ask_price ?? d.buy_price ?? d.price);
-  const resell = num(d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price);
-  const rsrcRaw = d.resale_source || d.resell_source || d.resell_platform || (comps[0] && comps[0].source) || '';
-  const rsrc = srcName(rsrcRaw);
-  const rurl = d.resale_url || d.resell_url || (comps[0] && comps[0].url) || null;
-  const buyUrl = d.fb_url || d.source_url || d.link || d.url || null;
-  const profit = num(d.profit ?? d.est_profit) ?? (ask !== null && resell !== null ? resell - ask : null);
-  const buyName = BUY[d.source] || 'Facebook Marketplace';
-  let disc = num(d.discount_pct); if (disc !== null && disc > 0 && disc <= 1) disc *= 100;
-  if (disc === null && ask !== null && resell) disc = (1 - ask / resell) * 100;
-  const isEbay = /ebay/i.test(rsrcRaw);
+  if (d === undefined) return <main className="wrap py-16"><p className="text-sm text-muted-foreground">Loading deal…</p></main>;
+  if (failed) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Could not load this deal.</h1><p className="mt-3 text-sm text-muted-foreground">The page did not invent a price.</p><p className="mt-4"><a href="/dashboard" className="underline">Back to dashboard</a></p></main>;
+  if (!d) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Deal not found</h1><p className="mt-4"><a href="/dashboard" className="underline">Back to dashboard</a></p></main>;
+  const view = assessDeal(d, config || {});
   const photo = d.photo_url || d.image_url || d.image;
-  return <main className="wrap dealp">
-    <p className="eyebrow"><a href="/dashboard">Dashboard</a> · {ctx || 'Deal'}</p>
-    <div className="dhero">
-      <div className="dph"><Photo src={photo} title={d.title} fb={(d.fb_url || d.source_url || d.link || d.url)} /></div>
-      <h1>{d.title || d.area || 'Deal'}</h1>
+  return <main className="wrap max-w-3xl py-10 md:py-16">
+    <p className="mb-4 text-sm text-muted-foreground"><a href="/dashboard" className="text-[#8eb7ff]">Dashboard</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+      <Photo src={photo} title={view.title} fb={d.fb_url || d.url} />
     </div>
-    <div className="legs3">
-      <div className="lg buy"><span>Buy here</span><small>{buyName}</small><b>{$(ask)}</b>{buyUrl && <a className="pill blue" href={buyUrl} target="_blank" rel="noopener">Open listing</a>}</div>
-      <div className="lg sell"><span>Sell here</span><small>{rsrc}</small><b>{resell === null ? 'unknown' : $(resell)}</b>{rurl && <a className="pill gray" href={rurl} target="_blank" rel="noopener">Open comp</a>}</div>
-      <div className="lg spread"><span>Your spread</span><small>{disc !== null && isFinite(disc) ? `${Math.round(disc)}% under market` : 'Estimated'}</small><b className="green">{profit !== null ? `${profit >= 0 ? '+' : '-'}$${Math.abs(Math.round(profit)).toLocaleString()}` : '-'}</b>
-        {d.profit == null && isEbay && resell !== null && ask !== null && <em>about {$(resell * 0.87 - ask)} after the eBay fee (about 13%)</em>}</div>
+    <div className="mt-4">
+      <DealCard view={view} stacked />
     </div>
-    {comps.length > 0 && <section className="dsec"><h2>Comps <span className="muted small">{comps.length}</span></h2>
-      {comps.map((c, k) => <a key={k} className="comp" href={c.url || c.link || undefined} target="_blank" rel="noopener"><span><b>{c.title || c.source}</b><small>{c.source}</small></span><b>{$(c.price)}</b></a>)}</section>}
-    {Array.isArray(d.flags) && d.flags.length > 0 && <p className="muted">{d.flags.join(' · ')}</p>}
-    {d.risk_note && <p className="muted">{d.risk_note}</p>}
-    {d.rationale && <section className="dsec"><h2>Why it is a deal</h2><p className="muted">{d.rationale}</p></section>}
-    <section className="howflip"><h2>How to flip IRL</h2><div className="hf">
-      <div><i>1</i><b>Message the seller</b><p>Tap Open listing, say it is still available and offer the asking price or a little under.</p></div>
-      <div><i>2</i><b>Pick it up</b><p>Meet somewhere public, check it works, pay cash or with a payment app.</p></div>
-      <div><i>3</i><b>List it with Garage Sale</b><p>Snap a photo on the <a href="/sell">Sell</a> page. Grok Bot prices it from the comps and posts it for you.</p></div>
-    </div></section>
+    <section className="mt-6 rounded-2xl border border-white/10 bg-[#141416] p-5">
+      <h2 className="text-lg font-semibold">If you decide to pick it up</h2>
+      <div className="mt-3 grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
+        <p><b className="text-foreground">1. Open the listing yourself.</b> Garage Sale does not message the seller.</p>
+        <p><b className="text-foreground">2. Check the item in person.</b> The net above is an estimate, not a payout.</p>
+        <p><b className="text-foreground">3. Selling it later is a separate approval.</b> Snap it on <a href="/sell" className="text-[#8eb7ff] underline">Sell</a>. Nothing is posted until you approve it.</p>
+      </div>
+    </section>
   </main>;
 }

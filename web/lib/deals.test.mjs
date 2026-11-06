@@ -7,15 +7,31 @@ import { scoutFreshness, STALE_MS } from './ago.js';
 
 const seed = JSON.parse(fs.readFileSync(new URL('../config/scout-config.seed.json', import.meta.url), 'utf8'));
 
+function confirmFees(fees) {
+  return Object.fromEntries(Object.entries(fees).map(([k, v]) => [k, { ...v, confirmed: true }]));
+}
 function ready(over = {}) {
-  return cleanConfig({ ...seed, ...over, fees: over.fees || seed.fees, areas: over.areas || seed.areas });
+  const fees = Object.prototype.hasOwnProperty.call(over, 'fees') ? over.fees : confirmFees(seed.fees);
+  return cleanConfig({ ...seed, ...over, fees, areas: over.areas || seed.areas });
 }
 
-const ebayComp = (price, extra = {}) => ({ url: 'https://www.ebay.com/itm/1234567890', price, shipping: 10, title: 'Sold camera', ...extra });
+const ebayComp = (price, extra = {}) => ({ url: 'https://www.ebay.com/itm/1234567890', price, shipping: 10, title: 'Sold camera', sold: true, ...extra });
 const fbDeal = (extra = {}) => ({
   source: 'fb', url: 'https://www.facebook.com/marketplace/item/999/', title: 'Camera',
-  ask: 50, distance_mi: 10, area: 'Austin', seller_name: 'should drop', comps: [ebayComp(200)], ...extra,
+  ask: 50, distance_mi: 10, distance_from: 'New Braunfels', area: 'New Braunfels', seller_name: 'should drop', comps: [ebayComp(200)], ...extra,
 });
+const matched = (price, i) => ({
+  url: `https://www.ebay.com/itm/90000000020${i}`, price, shipping: 10, sold: true,
+  title: 'Canon EOS R body', condition: 'Used', model: 'EOS R', sold_at: '2026-10-01',
+});
+function buyable(extra = {}) {
+  const comps = [210, 220, 230, 240].map((price, i) => matched(price, i));
+  return {
+    source: 'fb', url: 'https://www.facebook.com/marketplace/item/321/', title: 'Canon EOS R body',
+    ask: 40, distance_mi: 8, distance_from: 'New Braunfels', area: 'New Braunfels',
+    category: 'cameras', condition: 'Used', model: 'EOS R', ...extra, comps: extra.comps || comps,
+  };
+}
 
 test('seed config has the owner values, including the gas estimate', () => {
   assert.equal(seed.max_per_flip, 100);
@@ -50,7 +66,9 @@ test('config defaults are null, and a missing required filter leaves deals unran
   const partial = buildFeed([fbDeal()], ready({ min_profit: null }));
   assert.equal(partial.filters_set, false);
   assert.equal(partial.deals[0].ranked, false);
-  assert.equal(partial.deals[0].profit, 136.4);
+  // 200 resale, 50 ask, eBay fee 26.50, shipping 10, gas 3.60. Buy source does not set the fee.
+  assert.equal(partial.deals[0].profit, 109.9);
+  assert.equal(partial.deals[0].resale_venue, 'ebay');
 });
 
 test('Craigslist, Swappa, search, retail and active comps are rejected', () => {
@@ -60,9 +78,11 @@ test('Craigslist, Swappa, search, retail and active comps are rejected', () => {
   assert.equal(cleanComp({ url: 'https://www.amazon.com/dp/B000000', price: 200, sold: true }), null);
   assert.equal(cleanComp({ url: 'https://www.ebay.com/itm/1234567890', price: 200, sold: false }), null);
   assert.equal(cleanComp({ url: 'https://www.ebay.com/itm/1234567890', price: 200, status: 'active' }), null);
+  assert.equal(cleanComp({ url: 'https://www.ebay.com/itm/1234567890', price: 200, shipping: 10 }), null);
   const kept = cleanComp(ebayComp(200));
   assert.equal(kept.source, 'ebay');
   assert.equal(kept.sold, true);
+  assert.equal(kept.sold_evidence, 'marked');
   const marked = cleanComp({ url: 'https://www.mercari.com/transaction/m123', price: 80, sold: true, source: 'mercari' });
   assert.equal(marked.price, 80);
 });
@@ -76,42 +96,56 @@ test('no comps left means resale is null and the deal is unranked', () => {
   assert.equal(d.resale, null);
   assert.equal(d.profit, null);
   assert.equal(d.ranked, false);
-  assert.equal(d.unranked_reason, 'no comps');
+  assert.match(d.unranked_reason, /sold comps/i);
   assert.equal(d.seller_name, undefined);
   assert.equal(d.title, 'Camera');
 });
 
-test('profit is resale minus ask, fee, shipping and the round trip for gas', () => {
+test('profit is resale minus ask, the resale-venue fee, shipping and the round trip for gas', () => {
   const ebay = buildFeed([fbDeal({ source: 'ebay', url: 'https://www.ebay.com/itm/555' })], ready());
   const d = ebay.deals[0];
-  // 200 resale, 50 ask, 13.25% of 200 = 26.50, shipping 10, gas 2 * 10mi * 0.18 = 3.60
+  // One sold comp at 200. Fee follows the comp venue (eBay), not a silent zero.
+  // 200 - 50 ask - 26.50 fee - 10 shipping - 3.60 gas.
   assert.equal(d.fee, 26.5);
   assert.equal(d.gas, 3.6);
+  assert.equal(d.shipping, 10);
   assert.equal(d.profit, 109.9);
-  assert.equal(d.ranked, true);
-  assert.equal(d.rank, 1);
-  assert.equal(d.flags.includes('gas not included'), false);
+  assert.equal(d.ranked, false);
+  assert.ok(d.decision_reasons.includes('thin-comps'));
 
   const local = buildFeed([fbDeal({ source: 'offerup', url: 'https://offerup.com/item/detail/1' })], ready());
-  assert.equal(local.deals[0].fee, 0);
-  assert.equal(local.deals[0].profit, 136.4);
+  assert.equal(local.deals[0].resale_venue, 'ebay');
+  assert.equal(local.deals[0].fee, 26.5);
+  assert.equal(local.deals[0].profit, 109.9);
 
   const noGas = buildFeed([fbDeal()], ready({ gas_per_mile: null }));
-  assert.equal(noGas.deals[0].gas, 0);
-  assert.equal(noGas.deals[0].profit, 140);
-  assert.deepEqual(noGas.deals[0].flags, ['gas not included']);
-  assert.equal(noGas.deals[0].ranked, true);
+  assert.equal(noGas.deals[0].gas, null);
+  assert.equal(noGas.deals[0].profit, null);
+  assert.ok(noGas.deals[0].flags.includes('gas rate unknown'));
+  assert.equal(noGas.deals[0].ranked, false);
+
+  const noShip = buildFeed([fbDeal({ comps: [ebayComp(200, { shipping: undefined })] })], ready());
+  assert.equal(noShip.deals[0].shipping, null);
+  assert.equal(noShip.deals[0].profit, null);
+  assert.ok(noShip.deals[0].flags.includes('shipping unknown'));
+
+  const buy = buildFeed([buyable()], ready());
+  assert.equal(buy.deals[0].profit, 142.31);
+  assert.equal(buy.deals[0].decision, 'buy');
+  assert.equal(buy.deals[0].ranked, true);
+  assert.equal(buy.deals[0].rank, 1);
 });
 
 test('config filters drop far, thin, off-site and over-cap deals from the ranking', () => {
   const cfg = ready();
-  assert.equal(buildFeed([fbDeal({ distance_mi: 20 })], cfg).deals[0].unranked_reason, 'too far');
-  assert.equal(buildFeed([fbDeal({ ask: 120 })], cfg).deals[0].unranked_reason, 'over max per flip');
-  assert.equal(buildFeed([fbDeal()], ready({ min_profit: 200 })).deals[0].unranked_reason, 'under min profit');
-  assert.equal(buildFeed([fbDeal()], ready({ sites: ['ebay'] })).deals[0].unranked_reason, 'site not in scout config');
+  assert.match(buildFeed([buyable({ distance_mi: 20 })], cfg).deals[0].unranked_reason, /outside the 15 mi pickup/);
+  assert.match(buildFeed([buyable({ ask: 120 })], cfg).deals[0].unranked_reason, /item cap/);
+  assert.match(buildFeed([buyable()], ready({ min_profit: 200 })).deals[0].unranked_reason, /minimum/);
+  assert.match(buildFeed([buyable()], ready({ sites: ['ebay'] })).deals[0].unranked_reason, /not in the stored source list/);
+  assert.match(buildFeed([buyable({ area: 'Austin', distance_from: null, distance_mi: 8 })], cfg).deals[0].unranked_reason, /not a pickup origin/);
   const ranked = buildFeed([
-    fbDeal({ url: 'https://www.facebook.com/marketplace/item/1/', ask: 40, title: 'Better' }),
-    fbDeal({ url: 'https://www.facebook.com/marketplace/item/2/', ask: 70, title: 'Ok' }),
+    buyable({ url: 'https://www.facebook.com/marketplace/item/1/', ask: 40, title: 'Better' }),
+    buyable({ url: 'https://www.facebook.com/marketplace/item/2/', ask: 70, title: 'Ok' }),
   ], cfg);
   assert.deepEqual(ranked.deals.filter((d) => d.ranked).map((d) => d.title), ['Better', 'Ok']);
   assert.deepEqual(ranked.deals.filter((d) => d.ranked).map((d) => d.rank), [1, 2]);
@@ -120,7 +154,7 @@ test('config filters drop far, thin, off-site and over-cap deals from the rankin
 
 test('a clean deal keeps only the whitelist fields', () => {
   const d = cleanDeal(fbDeal({ photo_url: 'https://images.example/a.jpg', risk_note: 'check the shutter', est_profit: 999, comps: [ebayComp(200)] }));
-  assert.deepEqual(Object.keys(d).sort(), ['area', 'ask', 'comps', 'distance_mi', 'photo_url', 'risk_note', 'source', 'title', 'url']);
+  assert.deepEqual(Object.keys(d).sort(), ['area', 'ask', 'category', 'comps', 'condition', 'distance_from', 'distance_mi', 'lat', 'lng', 'model', 'photo_url', 'rejected_comps', 'risk_note', 'source', 'title', 'url']);
   assert.equal(d.photo_url, 'https://images.example/a.jpg');
   assert.equal(d.risk_note, 'check the shutter');
 });

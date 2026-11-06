@@ -28,17 +28,19 @@ If `min_profit`, `max_pickup_miles`, `sites`, or a fee rate for one of those sit
 
 ## Server profit math
 
-`web/lib/deals.js` scores each cleaned deal:
+`web/lib/deals.js` scores each cleaned deal through `web/lib/decision.js`:
 
 ```text
-profit = resale - ask - fee(platform) - shipping - gas
-gas = 2 * distance_mi * gas_per_mile
+net = resale - ask - fee(resale venue) - shipping - gas
+gas = 2 * miles_from_new_braunfels * gas_per_mile
 fee = rate * resale + flat
 ```
 
-Shipping is the median shipping on the comps that have it, otherwise 0. If `gas_per_mile` is null, gas is 0 and the deal is flagged `gas not included`. If a rate is set and `distance_mi` is missing, the deal is unranked (`distance unknown`).
+The fee follows the sold-comp venue. An eBay sold comp uses the eBay rate even when the buy is on Facebook, Craigslist, or OfferUp. Pickup miles are from New Braunfels only. Austin and San Marcos are not home origins. A stored distance counts only when `distance_from` is New Braunfels, or when the listing has coordinates.
 
-A comp is kept only when its URL is an eBay item (`/itm/<id>`) that is not marked active, or it is explicitly marked sold and the URL is not a search, a price guide, retail, or Craigslist. With no comps left, `resale` is null and the deal is unranked. One or two priced comps use their median. Three or more go through `estimate` in `web/lib/pricing.js`, which drops outliers and returns no price when fewer than three remain.
+Shipping is the median shipping on the sold comps used for the estimate. If any of those comps is missing shipping, shipping stays null and the net stays null. It is not stored as 0. If `gas_per_mile` is null, gas stays null and the net stays null. A fee rate with `confirmed: false` still produces a calculated net, and the deal is not a buy.
+
+A comp is kept only when it is explicitly marked sold (`sold: true` or `status: "sold"`) and the URL is not a search, a price guide, retail, or Craigslist. An eBay `/itm/<id>` URL is not sold evidence by itself. With no sold comps left, `resale` is null and the deal is not a buy. One or two priced comps use their median and stay off the buy list. Three or more go through `estimate` in `web/lib/pricing.js`, which drops outliers and returns no price when fewer than three remain. A buy also needs a category in the six allowed categories, a confirmed model and condition match, a confirmed fee rate, and a net at or above `min_profit`.
 
 When the filters are set, deals that pass are ranked by profit, high first.
 
@@ -94,7 +96,7 @@ npm run lint
 npm run build
 ```
 
-`npm test` runs `node --no-warnings --test lib/*.test.mjs` (pricing, deal scoring, and the ledger).
+`npm test` runs `node --no-warnings --test lib/*.test.mjs components/*.test.mjs` (pricing, deal scoring, buy/skip decisions, the deal board markup, and the ledger).
 
 The relay config check uses the stdlib:
 
