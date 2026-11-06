@@ -17,11 +17,12 @@ export default function DealCard({ d, example }) {
   const photo = d.photo_url || d.image_url || d.image;
   const ask = d.ask ?? d.ask_price ?? d.buy_price ?? d.price;
   const resell = d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price;
-  const profit = d.profit ?? d.est_profit ?? (resell !== undefined && resell !== null && ask !== undefined && ask !== null && !isNaN(resell - ask) ? Number(resell) - Number(ask) : undefined);
+  const profit = d.profit ?? d.est_profit;
   const disc = d.discount_pct ?? (resell && ask ? (1 - ask / resell) * 100 : undefined);
   const comps = Array.isArray(d.comps) ? d.comps : [];
-  const sellUrl = d.resale_url || d.resell_url || (comps[0] && (comps[0].url || comps[0].link)) || undefined;
-  const [rb] = badge(d.resale_source || d.resell_source || d.resell_platform || (comps[0] && comps[0].source) || '');
+  const soldComp = comps.find((c) => c && c.sold_evidence === 'marked');
+  const sellUrl = d.resale_url || d.resell_url || (soldComp && (soldComp.url || soldComp.link)) || undefined;
+  const [rb] = badge(d.resale_source || d.resell_source || d.resell_platform || (soldComp && soldComp.source) || '');
   const spread = profit !== undefined && !isNaN(profit) && Number(ask) > 0 ? Math.round((Number(profit) / Number(ask)) * 100) : null;
   const href = d._href || link || undefined;
   return <div className="dcard dc2">
@@ -34,10 +35,10 @@ export default function DealCard({ d, example }) {
       <div className="dprice">{money(ask)}</div>
       <a className="dt" href={href}>{d.title}</a>
       <div className="dflip">
-        <a className="leg buyl" href={link || undefined} target="_blank" rel="noopener"><span>Buy here</span><b>FB {money(ask)}</b></a>
+        <a className="leg buyl" href={link || undefined} target="_blank" rel="noopener"><span>Buy here</span><b>{d.source === 'craigslist' ? 'Craigslist' : d.source === 'offerup' ? 'OfferUp' : d.source === 'ebay' ? 'eBay' : d.source === 'fb' || d.fb_url ? 'FB' : 'Source'} {money(ask)}</b></a>
         <a className="leg selll" href={sellUrl} target="_blank" rel="noopener"><span>Sell here</span><b>{resell !== undefined && resell !== null ? `${rb} ${money(resell)}` : 'unknown'}</b></a>
       </div>
-      {profit !== undefined && !isNaN(profit) && <em className="pchip big dpchip">+{money(profit)}{spread !== null && <small className="spct"> {spread}%</small>}</em>}
+      {profit !== undefined && profit !== null && !isNaN(profit) ? <em className="pchip big dpchip">+{money(profit)}{spread !== null && <small className="spct"> {spread}%</small>}</em> : <em className="pchip big dpchip dim">Net unknown</em>}
     </div>
   </div>;
 }
