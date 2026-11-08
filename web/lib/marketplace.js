@@ -2,7 +2,7 @@
 // Per search: one Marketplace results page, one eBay sold page, and up to DETAILS listing pages.
 // Seller names and profiles are never read or stored.
 import { browse, sleep, jitter } from './helium.js';
-import { parseRequest, rank } from './pricing.js';
+import { parseRequest, rank, soldQuery } from './pricing.js';
 
 const DETAILS = 6;
 const CACHE_MS = 15 * 60 * 1000;
@@ -55,10 +55,11 @@ export async function searchMarketplace({ query, max_price, city = 'Austin', rad
   const { core, max } = parseRequest(query, max_price);
   const key = JSON.stringify([core.toLowerCase(), max, slug(city), Number(radius_mi)]);
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return { ...hit.result, cached: true };
+  if (hit && hit.raw && Date.now() - hit.at < CACHE_MS) return { ...ranked(hit.raw), cached: true };
 
   const fbUrl = `https://www.facebook.com/marketplace/${slug(city) || 'austin'}/search/?query=${encodeURIComponent(core)}${max ? `&maxPrice=${max}` : ''}&radius=${Math.round(Number(radius_mi || 20) * 1.609)}&exact=false`;
-  const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(core)}&LH_Sold=1&LH_Complete=1&_ipg=120`;
+  // Used items only (LH_ItemCondition=3000), since Marketplace listings are almost always used.
+  const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(soldQuery(core))}&LH_Sold=1&LH_Complete=1&LH_ItemCondition=3000&_ipg=120`;
 
   // The same search asked twice while it runs shares one browsing session.
   if (inflight.has(key)) return inflight.get(key);
@@ -74,23 +75,28 @@ export async function searchMarketplace({ query, max_price, city = 'Austin', rad
 
     const listings = cards.map((c) => ({ ...c, ask: money(c.price_text), was: c.was_text ? money(c.was_text) : null, fb_url: `https://www.facebook.com/marketplace/item/${c.id}/` }))
       .filter((l) => isFinite(l.ask) && (max === null || l.ask <= max));
-    let ranked = rank(listings, sold, { core, city });
+    const first = rank(listings, sold, { core, city });
 
     // Open only the best few to read how long they have been listed and their condition.
-    const top = ranked.filter((d) => d.relevant.ok).slice(0, DETAILS);
+    const top = first.filter((d) => d.relevant.ok).slice(0, DETAILS);
     for (const d of top) {
       await sleep(jitter(2500, 5000));
       await page.goto(d.fb_url, 2000);
       Object.assign(d, await page.run(readDetail));
     }
-    const gone = ranked.filter((d) => d.gone).length;
-    ranked = rank(ranked.filter((d) => !d.gone).map(({ relevant, estimate, comps, score, reason, discount, target, ...l }) => l), sold, { core, city });
-    return { query, core, max, city, radius_mi: Number(radius_mi), area, fb_search_url: fbUrl, ebay_search_url: ebayUrl, sold_seen: sold.length, gone_removed: gone, details_checked: top.length, deals: ranked, searched_at: new Date().toISOString() };
+    const gone = first.filter((d) => d.gone).length;
+    const kept = first.filter((d) => !d.gone).map(({ relevant, estimate, comps, score, reason, discount, target, ...l }) => l);
+    return { query, core, max, city, radius_mi: Number(radius_mi), area, fb_search_url: fbUrl, ebay_search_url: ebayUrl, sold_seen: sold.length, sold, gone_removed: gone, details_checked: top.length, listings: kept, searched_at: new Date().toISOString() };
   });
   inflight.set(key, run);
   try {
-    const result = await run;
-    cache.set(key, { at: Date.now(), result });
-    return result;
+    // Cache what was read, not the ranking, so a pricing change applies without reading pages again.
+    const raw = await run;
+    cache.set(key, { at: Date.now(), raw });
+    return ranked(raw);
   } finally { inflight.delete(key); }
+}
+
+function ranked({ listings, ...meta }) {
+  return { ...meta, deals: rank(listings, meta.sold, { core: meta.core, city: meta.city }) };
 }

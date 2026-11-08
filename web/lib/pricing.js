@@ -4,9 +4,16 @@
 const STOP = new Set('a an and the with for of in on to my your our is it this that new used great good excellent condition works working comes set plus only like mint gently lightly barely perfect clean nice cheap obo firm price must go pickup asap'.split(' '));
 // Words that change what the item is. A comp only counts if it agrees with the listing on these.
 const HARD = new Set('lite oled pro max mini air ultra plus xl xs se m1 m2 m3 m4 m5 intel 2 3 4 5 parts broken cracked locked damaged repair'.split(' '));
-const ACCESSORY = /\b(games?|cartridges?|protectors?|thumb ?caps?|grips?|skins?|covers?|chargers?|charging|docks?|stands?|cables?|adapters?|bags?|sleeves?|keyboards?|mouse|cushions?|headrests?|arms?|casters?|wheels?|tires?|tubes?|pedals?|helmets?|saddles?|manuals?|box only|cases?|replacement|shell|joy[- ]?cons?|controllers?|amiibo)\b/i;
+const ACCESSORY = /\b(games?|cartridges?|protectors?|thumb ?caps?|grips?|skins?|covers?|chargers?|charging|docks?|stands?|cables?|adapters?|bags?|sleeves?|keyboards?|mouse|cushions?|headrests?|arms?|casters?|wheels?|tires?|tubes?|pedals?|helmets?|saddles?|manuals?|box only|cases?|replacement|shell|joy[- ]?cons?|controllers?|amiibo|cords?|hdmi)\b/i;
+// Accessory words to leave out of the eBay sold search, unless the request itself uses them.
+// Words a whole item is often listed "with" (dock, charger, case, controllers) stay in.
+const NEGATIVES = 'game games cartridge cover skin protector grips amiibo manual cushion headrest casters tire tires pedals helmet saddle'.split(' ');
+export function soldQuery(core) {
+  const have = new Set(tokens(core));
+  return [core, ...NEGATIVES.filter((w) => !have.has(w)).map((w) => `-${w}`)].join(' ');
+}
 // Words that say the accessory comes along with the item rather than being the item.
-const BUNDLE = /\b(with|w\/|bundle|includes?|extra|comes with)\b|\+/i;
+const BUNDLE = /\b(with|w\/|bundle|includes?|extra|comes with|console|system)\b|\+/i;
 const NOT_FOR_SALE = /\b(iso|wanted|looking for|wtb|trade only|in search of)\b/i;
 const BAD_SHAPE = /\b(for parts|parts only|not working|broken|cracked|as[- ]is|icloud locked|locked)\b/i;
 
@@ -22,6 +29,21 @@ export function parseRequest(q, max) {
   return { core: core || String(q || '').trim(), max: maxPrice };
 }
 
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// "Super Mario Party (Nintendo Switch, 2018)", "Paper Mario - Nintendo Switch", "Grips for Nintendo Switch":
+// the item name comes after the product's own name, so the product is made for the item.
+function madeFor(title, need, strict) {
+  if (!need.length) return false;
+  const t = String(title || '').toLowerCase();
+  const name = need.map(esc).join('[^a-z0-9]+');
+  if (new RegExp(`(\\(|\\s[-–|:]\\s*|\\bfor (the |a |your )?)${name}`).test(t)) return true;
+  if (!strict) return false;
+  // Comps only: more than two real words before the item name, unless it reads "... by <brand>".
+  const ws = tokens(t);
+  const at = ws.indexOf(need[0]);
+  return at > 2 && ws[at - 1] !== 'by';
+}
+
 // Accessory or wanted-ad check against the core request words.
 export function relevance(title, core) {
   const t = String(title || '');
@@ -33,22 +55,43 @@ export function relevance(title, core) {
   if (ACCESSORY.test(core)) return { ok: true };
   // "Joy cons for Nintendo switch", "Case Nintendo Switch": the accessory comes first or is "for" the item.
   const at = need[0] ? t.toLowerCase().indexOf(need[0]) : -1;
-  if ((at > 0 && ACCESSORY.test(t.slice(0, at))) || (need[0] && new RegExp(`\\bfor (the |a |your )?${need[0]}`, 'i').test(t))) return { ok: false, why: 'Looks like an accessory or game made for the item' };
+  if ((at > 0 && ACCESSORY.test(t.slice(0, at))) || (need[0] && new RegExp(`\\bfor (the |a |your )?${need[0]}`, 'i').test(t)) || madeFor(t, need, false)) return { ok: false, why: 'Looks like an accessory or game made for the item' };
   if (ACCESSORY.test(t) && !BUNDLE.test(t)) return { ok: false, why: 'Looks like an accessory or game, not the item' };
   return { ok: true };
 }
 
-function hardSet(title) { return new Set(tokens(title).filter((w) => HARD.has(w))); }
+// Variant words only count in the item's own name, not in the "with ..." or "bundle ..." extras.
+function hardSet(title) { return new Set(tokens(String(title || '').split(BUNDLE)[0]).filter((w) => HARD.has(w))); }
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
 
-// A comp matches a listing when it has the core words and agrees on the words that change the item.
+// Describing words that never name a model.
+const GENERIC = new Set('authentic genuine original vintage classic retro modern office desk home chair chairs seat ergonomic adjustable fully loaded size large small medium black white gray grey blue red green pink yellow brown silver gold color colour console system edition model version unit one bike bicycle laptop included includes everything complete bundle tested working handheld first gen generation'.split(' '));
+
+// Model words: listing words (before any "with ...") that comps also use, like "aeron" or
+// "sayl" in a "Herman Miller chair" search. A comp must share all of them.
+// A word no comp uses tells us nothing, so it is not required.
+function modelWords(title, comps, need) {
+  const head = String(title || '').split(BUNDLE)[0];
+  const df = new Map();
+  for (const c of comps) for (const w of new Set(tokens(c.title))) df.set(w, (df.get(w) || 0) + 1);
+  return tokens(head).filter((w) => w.length > 1 && !need.includes(w) && !GENERIC.has(w) && !HARD.has(w) && !ACCESSORY.test(w) && (df.get(w) || 0) >= 1);
+}
+
+// A comp matches a listing when it has the core words, the listing's model words,
+// and agrees on the words that change the item.
 export function compsFor(listing, comps, core) {
   const need = tokens(core);
   const lh = hardSet(listing.title);
+  const model = modelWords(listing.title, comps, need);
   const listingAcc = ACCESSORY.test(listing.title) && !BUNDLE.test(listing.title);
+  const listingFor = madeFor(listing.title, need, true);
   return comps.filter((c) => {
     const ct = new Set(tokens(c.title));
     if (!need.every((w) => ct.has(w))) return false;
+    // "Nintendo Tokyo Mirage Sessions ... Switch" is not a Nintendo Switch: the name has to stay together.
+    if (need.length > 1) { const ws = tokens(c.title); const i = ws.indexOf(need[0]); if (ws[i + 1] !== need[1]) return false; }
+    if (!listingFor && madeFor(c.title, need, true)) return false;
+    if (!model.every((w) => ct.has(w))) return false;
     if (!sameSet(hardSet(c.title), lh)) return false;
     if (!listingAcc && ACCESSORY.test(c.title) && !BUNDLE.test(c.title)) return false;
     if (/new/i.test(c.condition || '') && !/\b(new|sealed)\b/i.test(listing.title)) return false;
