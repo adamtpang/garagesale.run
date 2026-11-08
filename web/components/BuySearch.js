@@ -102,7 +102,7 @@ export default function BuySearch() {
   useEffect(() => {
     if (started.current) return; // dev strict mode runs effects twice
     started.current = true;
-    try { const last = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (last) { setRes(last); setQ(last.query || ''); } } catch (e) {}
+    try { const last = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (last) { setRes(last); setQ(last.query || ''); if (last.city) setCity(last.city); if (last.radius_mi) setRadius(last.radius_mi); setMax(last.max && !/under|below|max/i.test(last.query || '') ? String(last.max) : ''); } } catch (e) {}
     fetch('/api/saved', { cache: 'no-store' }).then((r) => r.json()).then((j) => setSaved(Object.fromEntries((j.deals || []).map((d) => [d.id, d])))).catch(() => {});
     const sp = new URLSearchParams(location.search);
     if (sp.get('q')) { setQ(sp.get('q')); if (sp.get('max')) setMax(sp.get('max')); run(sp.get('q'), sp.get('max') || ''); }

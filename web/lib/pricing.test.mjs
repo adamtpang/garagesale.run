@@ -29,6 +29,43 @@ test('comps must agree on variant words', () => {
   assert.deepEqual(compsFor({ title: 'Nintendo switch' }, comps, 'Nintendo Switch').map((c) => c.price), [150]);
 });
 
+test('a brand search prices each model only against that model', () => {
+  const core = 'Herman Miller chair';
+  const comps = [
+    // Aeron dominates the pool, so it must still count as a model word.
+    ...[700, 750, 800, 820].map((p) => sold('Herman Miller Aeron Chair Size B Fully Loaded', p)),
+    ...[650, 900, 950, 980].map((p) => sold('Herman Miller Aeron Remastered Chair', p)),
+    ...[300, 320, 350].map((p) => sold('Herman Miller Sayl Office Chair Black', p)),
+    ...[200, 220].map((p) => sold('Herman Miller Mirra 2 Chair', p)),
+    sold('Herman Miller Eames Lounge Chair', 4000),
+  ];
+  assert.deepEqual(compsFor({ title: 'Herman Miller Aeron Chair size B' }, comps, core).map((c) => c.price), [700, 750, 800, 820, 650, 900, 950, 980]);
+  // A bare "Herman Miller chair" has no model words, so it keeps every comp except the "Mirra 2" version.
+  assert.equal(compsFor({ title: 'Herman Miller chair' }, comps, core).length, comps.length - 2);
+  assert.deepEqual(compsFor({ title: 'Herman Miller Sayl Office Chair' }, comps, core).map((c) => c.price), [300, 320, 350]);
+  assert.equal(estimate(compsFor({ title: 'Authentic Vintage Herman Miller Eames Chairs' }, comps, core)).note, 'not enough comps');
+  // Bundle extras after "with" do not narrow the comps.
+  const sw = [140, 150, 160].map((p) => sold('Nintendo Switch Console', p)).concat([sold('Nintendo Switch Minecraft', 170), sold('Nintendo Switch Minecraft edition', 175)]);
+  assert.equal(compsFor({ title: 'Nintendo switch one(With Minecraft!!!)' }, sw, 'Nintendo Switch').length, 5);
+});
+
+test('games and accessories sold for the item are not comps for the item', () => {
+  // Real eBay sold titles from the Nov 8 "Nintendo Switch" search.
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Super Mario Party (Nintendo Switch, 2018)', 22), sold('Nintendo Switch Sports (Nintendo Switch, 2022) - Complete - Tested', 23.99),
+    sold('Paper Mario: the Origami King - Nintendo Switch', 28.49), sold('Nintendo Super Mario RPG for Nintendo Switch, Super Mario Series, E, N', 20),
+    sold('Donkey Kong Amino Super Mario Series Nintendo Switch EUC', 15.99), sold('Nintendo Tokyo Mirage Sessions #FE Encore Switch', 99),
+    sold('Nintendo Switch 32GB Handheld System - Gray', 114.99), sold('Nintendo Switch Console Gray Joy-Con HAC-001', 140), sold('Nintendo Switch V2 Console Neon', 160),
+  ];
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch' }, comps, core).map((c) => c.price), [114.99, 140, 160]);
+  // "Pro Controller" in the extras does not make it a "Switch Pro".
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch Bundle - 5 Joy-Cons, Pro Controller, Dock' }, comps, core).map((c) => c.price), [114.99, 140, 160]);
+  assert.equal(relevance('Nintendo Switch Power Cord', core).ok, false);
+  assert.equal(relevance('Bramble: The Mountain King (Nintendo Switch)', core).ok, false);
+  assert.equal(relevance('Authentic Eames Aluminum Management Chair by Herman Miller', 'Herman Miller chair').ok, true);
+});
+
 test('says not enough comps instead of guessing', () => {
   assert.equal(estimate([sold('a', 100), sold('b', 120)]).value, null);
   assert.equal(estimate([sold('a', 100), sold('b', 120)]).note, 'not enough comps');
