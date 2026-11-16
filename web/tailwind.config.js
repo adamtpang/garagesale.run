@@ -18,9 +18,14 @@ module.exports = {
         popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
         card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
         brand: 'hsl(var(--brand))', success: 'hsl(var(--success))',
+        // Dark sticker red for text links. Brand orange is too light for small text.
+        link: '#a52a14', price: '#d6321a',
       },
-      borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' },
-      fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'] },
+      // Price Tag corners are tight everywhere, so the big radii collapse to the same small one.
+      borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)', xl: 'var(--radius)', '2xl': 'var(--radius)', '3xl': 'var(--radius)', full: '6px' },
+      borderWidth: { DEFAULT: '2px' },
+      boxShadow: { tag: '4px 4px 0 hsl(var(--foreground))', 'tag-sm': '2px 2px 0 hsl(var(--foreground))' },
+      fontFamily: { marker: ['var(--font-marker)', '"Comic Sans MS"', 'cursive'], sans: ['var(--font-dm)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'] },
     },
   },
   plugins: [require('tailwindcss-animate')],

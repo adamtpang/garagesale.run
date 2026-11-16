@@ -37,7 +37,7 @@ export default function ModeFeed({ mode }) {
     {mode === 'buy' && <ScoutFreshness updatedAt={feed && feed.updated_at} filtersSet={feed && feed.filters_set} />}
     {items === null ? <p className="text-muted-foreground">Loading...</p> : items.length === 0 ? <p className="text-muted-foreground">{empty}</p> :
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{items.map((x) => <a key={x.key} href={x.href} target={x.ext ? '_blank' : undefined} rel="noopener" className="group">
-        <Card className="overflow-hidden border-border/60 transition-colors group-hover:border-muted-foreground/40">
+        <Card className="overflow-hidden border-border transition-colors group-hover:border-muted-foreground/40">
           <span className="block aspect-square overflow-hidden bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:transition-transform [&>img]:duration-500 group-hover:[&>img]:scale-[1.03]"><Photo src={x.photo} title={x.title} fb={x.fb} /></span>
           <span className="block p-4"><b className="block text-lg font-semibold">{x.top}</b><span className="block truncate text-sm text-muted-foreground">{x.title}</span><small className="mt-1 block text-xs text-success">{x.sub}</small></span>
         </Card></a>)}</div>}

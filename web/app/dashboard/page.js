@@ -27,11 +27,11 @@ export default function Dashboard() {
         <h2 className="text-2xl font-semibold tracking-tight">Your listings</h2>
         <Button asChild variant="brand" size="sm"><a href="/sell">Sell</a></Button>
       </div>
-      <Card className="overflow-hidden border-border/60">
+      <Card className="overflow-hidden border-border">
         {jobs === null && <div className="p-8 text-center text-sm text-muted-foreground">Loading listings…</div>}
         {failed && <div className="p-8 text-center text-sm text-muted-foreground">Could not load listings.</div>}
         {jobs && !failed && sells.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No listings yet. <a href="/sell" className="underline underline-offset-4">Snap one</a> when you have something to sell.</div>}
-        {sells.map((j, k) => <a key={j.id} href={`/job/${j.id}`} className={`flex items-center gap-4 px-5 py-4 hover:bg-accent/40 ${k ? 'border-t border-border/60' : ''}`}>
+        {sells.map((j, k) => <a key={j.id} href={`/job/${j.id}`} className={`flex items-center gap-4 px-5 py-4 hover:bg-accent/40 ${k ? 'border-t border-border' : ''}`}>
           <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover"><Photo src={j.image_url} title={j.title || 'Listing'} /></span>
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{j.title || 'Identifying…'}</span>
@@ -41,7 +41,7 @@ export default function Dashboard() {
         </a>)}
       </Card>
     </section>
-    <details className="mt-10 rounded-2xl border border-white/10 bg-[#141416] p-4">
+    <details className="mt-10 rounded-2xl border border-border bg-card p-4">
       <summary className="cursor-pointer text-sm font-medium">Saved deals</summary>
       <div className="mt-4"><SavedDeals /></div>
     </details>

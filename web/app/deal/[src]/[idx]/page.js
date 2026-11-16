@@ -39,19 +39,19 @@ export default function Deal({ params }) {
   const view = assessDeal(d, config || {});
   const photo = d.photo_url || d.image_url || d.image;
   return <main className="wrap max-w-3xl py-10 md:py-16">
-    <p className="mb-4 text-sm text-muted-foreground"><a href="/dashboard" className="text-[#8eb7ff]">Dashboard</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+    <p className="mb-4 text-sm text-muted-foreground"><a href="/dashboard" className="text-link">Dashboard</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
+    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-tag">
       <Photo src={photo} title={view.title} fb={d.fb_url || d.url} />
     </div>
     <div className="mt-4">
       <DealCard view={view} stacked />
     </div>
-    <section className="mt-6 rounded-2xl border border-white/10 bg-[#141416] p-5">
+    <section className="mt-6 rounded-2xl border border-border bg-card p-5">
       <h2 className="text-lg font-semibold">If you decide to pick it up</h2>
       <div className="mt-3 grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
         <p><b className="text-foreground">1. Open the listing yourself.</b> Garage Sale does not message the seller.</p>
         <p><b className="text-foreground">2. Check the item in person.</b> The net above is an estimate, not a payout.</p>
-        <p><b className="text-foreground">3. Selling it later is a separate approval.</b> Snap it on <a href="/sell" className="text-[#8eb7ff] underline">Sell</a>. Nothing is posted until you approve it.</p>
+        <p><b className="text-foreground">3. Selling it later is a separate approval.</b> Snap it on <a href="/sell" className="text-link underline">Sell</a>. Nothing is posted until you approve it.</p>
       </div>
     </section>
   </main>;

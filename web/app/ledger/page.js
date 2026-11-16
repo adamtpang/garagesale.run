@@ -112,7 +112,7 @@ export default function LedgerPage() {
       <h1 className="text-3xl font-semibold tracking-tight">Ledger</h1>
       <Button asChild variant="secondary" size="sm"><a href="/dashboard">Dashboard</a></Button>
     </div>
-    {!key && <Card className="max-w-md border-border/60 p-6">
+    {!key && <Card className="max-w-md border-border p-6">
       <form onSubmit={unlock} className="grid gap-3">
         <label className="text-sm font-medium" htmlFor="ledger-key">Ledger key</label>
         <Input id="ledger-key" type="password" autoComplete="off" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Stays in this tab only" />
@@ -122,12 +122,12 @@ export default function LedgerPage() {
     </Card>}
     {key && <>
       <div className="mb-4 flex justify-end"><Button variant="ghost" size="sm" onClick={forget}>Forget key</Button></div>
-      {err && <p className="mb-4 text-sm text-red-400">{err}</p>}
+      {err && <p className="mb-4 text-sm text-red-800">{err}</p>}
       {doc && <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/60 p-5"><div className="text-xs text-muted-foreground">Bankroll</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.bankroll)}</div></Card>
-        <Card className="border-border/60 p-5"><div className="text-xs text-muted-foreground">Realized profit</div><div className="mt-2 text-2xl font-semibold tabular-nums text-success">{$(totals.realized_profit)}</div></Card>
-        <Card className="border-border/60 p-5"><div className="text-xs text-muted-foreground">On hand</div><div className="mt-2 text-2xl font-semibold tabular-nums">{totals.on_hand_count ?? 0}</div></Card>
-        <Card className="border-border/60 p-5"><div className="text-xs text-muted-foreground">On-hand value</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.on_hand_value)}</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Bankroll</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.bankroll)}</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Realized profit</div><div className="mt-2 text-2xl font-semibold tabular-nums text-success">{$(totals.realized_profit)}</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">On hand</div><div className="mt-2 text-2xl font-semibold tabular-nums">{totals.on_hand_count ?? 0}</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">On-hand value</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.on_hand_value)}</div></Card>
       </div>}
       {doc && <form onSubmit={saveBankroll} className="mb-8 flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Starting bankroll</span>
@@ -135,7 +135,7 @@ export default function LedgerPage() {
         <Button type="submit" variant="secondary" size="sm">Save</Button>
       </form>}
       <h2 className="mb-3 text-sm font-medium text-muted-foreground">Add buy</h2>
-      <Card className="mb-10 border-border/60 p-4">
+      <Card className="mb-10 border-border p-4">
         <form onSubmit={addBuy} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Item</span><Input value={form.item} onChange={(e) => setField('item', e.target.value)} required aria-label="Item" /></label>
           <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Date bought</span><Input type="date" value={form.date_bought} onChange={(e) => setField('date_bought', e.target.value)} aria-label="Date bought" /></label>
@@ -159,7 +159,7 @@ export default function LedgerPage() {
             {doc && doc.items.map((it) => {
               const c = it.costs || {};
               const cost = (Number(c.gas) || 0) + (Number(c.fees) || 0) + (Number(c.repairs) || 0);
-              return <tr key={it.id} className="border-t border-border/60 align-top">
+              return <tr key={it.id} className="border-t border-border align-top">
                 <td className="py-3 pr-3"><div className="font-medium">{it.item}</div>{it.source_link && <a className="text-xs text-muted-foreground underline-offset-4 hover:underline" href={it.source_link} target="_blank" rel="noopener">Listing</a>}</td>
                 <td className="py-3 pr-3 text-muted-foreground">{it.date_bought || '—'}</td>
                 <td className="py-3 pr-3 tabular-nums">{$(it.buy_price)}</td>
@@ -173,7 +173,7 @@ export default function LedgerPage() {
                   {selling === it.id && <form onSubmit={markSold} className="mt-3 grid justify-items-end gap-2">
                     <Input className="w-28" inputMode="decimal" placeholder="Sell price" aria-label={`Sell price for ${it.item}`} value={sale.sell_price} onChange={(e) => setSale((s) => ({ ...s, sell_price: e.target.value }))} required />
                     <Input className="w-36" type="date" aria-label={`Sell date for ${it.item}`} value={sale.sell_date} onChange={(e) => setSale((s) => ({ ...s, sell_date: e.target.value }))} />
-                    <select className="h-10 w-36 rounded-md border border-input bg-background px-2 text-sm [color-scheme:dark]" aria-label={`Platform for ${it.item}`} value={sale.platform} onChange={(e) => setSale((s) => ({ ...s, platform: e.target.value }))}>{PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+                    <select className="h-10 w-36 rounded-md border border-foreground bg-white px-2 text-sm" aria-label={`Platform for ${it.item}`} value={sale.platform} onChange={(e) => setSale((s) => ({ ...s, platform: e.target.value }))}>{PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}</select>
                     <Button type="submit" size="sm" variant="brand">Save sale</Button>
                   </form>}
                 </td>
