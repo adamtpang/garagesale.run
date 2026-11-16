@@ -103,7 +103,8 @@ export function rulesAsConfig(rules = DEFAULT_RULES) {
     bankroll: rules.bankroll,
     categories: [...rules.categories],
     min_profit: rules.min_profit,
-    max_pickup_miles: rules.pickup_miles,
+    // The 15-mile rule for local listings. The wider surplus radius, when it is on, is for surplus lots only.
+    max_pickup_miles: rules.max_pickup_miles,
     sites: [...RULES_CONFIG.sites],
     areas: RULES_CONFIG.areas.map((a) => ({ ...a })),
     gas_per_mile: rules.gas_per_mile,

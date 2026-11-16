@@ -7,7 +7,8 @@ import { DEFAULT_RULES } from './rules.js';
 
 // The search starts at home with the pickup radius from the rules.
 export const HOME_CITY = DEFAULT_RULES.home.split(',')[0];
-export const HOME_RADIUS = DEFAULT_RULES.pickup_miles;
+// Local listings use the base pickup radius. The optional surplus radius never widens a listing search.
+export const HOME_RADIUS = DEFAULT_RULES.max_pickup_miles;
 
 const DETAILS = 6;
 const CACHE_MS = 15 * 60 * 1000;
@@ -110,7 +111,7 @@ export function capFlags(deals, rules = DEFAULT_RULES) {
 function ranked({ listings, ...meta }) {
   return {
     ...meta,
-    rules: { max_cost: DEFAULT_RULES.max_cost, min_profit: DEFAULT_RULES.min_profit, pickup_miles: DEFAULT_RULES.pickup_miles, home: DEFAULT_RULES.home },
+    rules: { max_cost: DEFAULT_RULES.max_cost, min_profit: DEFAULT_RULES.min_profit, pickup_miles: DEFAULT_RULES.max_pickup_miles, home: DEFAULT_RULES.home },
     deals: capFlags(rank(listings, meta.sold, { core: meta.core, city: meta.city })),
   };
 }

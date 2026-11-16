@@ -14,7 +14,7 @@ import { DEFAULT_RULES } from '@/lib/rules.js';
 
 // The form starts at home with the pickup radius from the rules. Wider searches are still one tap away.
 const HOME_CITY = DEFAULT_RULES.home.split(',')[0];
-const RADII = [...new Set([5, 10, DEFAULT_RULES.pickup_miles, 20, 40, 60])].sort((a, b) => a - b);
+const RADII = [...new Set([5, 10, DEFAULT_RULES.max_pickup_miles, 20, 40, 60])].sort((a, b) => a - b);
 const STEPS = [[0, 'Opening Marketplace in your Helium browser'], [12, 'Reading listings'], [22, 'Checking eBay sold prices'], [32, 'Opening the best few to check age and condition'], [70, 'Ranking deals']];
 const $ = (v) => (v === null || v === undefined || isNaN(Number(v)) ? '-' : '$' + Math.round(Number(v)).toLocaleString());
 const CONF = { high: 'success', medium: 'brand', low: 'warn' };
@@ -98,7 +98,7 @@ function Deal({ d, rank, query, saved, onSaved }) {
 }
 
 export default function BuySearch() {
-  const [q, setQ] = useState(''); const [max, setMax] = useState(''); const [city, setCity] = useState(HOME_CITY); const [radius, setRadius] = useState(DEFAULT_RULES.pickup_miles);
+  const [q, setQ] = useState(''); const [max, setMax] = useState(''); const [city, setCity] = useState(HOME_CITY); const [radius, setRadius] = useState(DEFAULT_RULES.max_pickup_miles);
   const [busy, setBusy] = useState(false); const [secs, setSecs] = useState(0);
   const [err, setErr] = useState(null); const [res, setRes] = useState(null);
   const [saved, setSaved] = useState({}); const [showOff, setShowOff] = useState(false);
