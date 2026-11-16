@@ -40,9 +40,9 @@ export default function Deal({ params }) {
   const photo = d.photo_url || d.image_url || d.image;
   return <main className="wrap max-w-3xl py-10 md:py-16">
     <p className="mb-4 text-sm text-muted-foreground"><a href="/dashboard" className="text-link">Dashboard</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
-    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-tag">
+    {(photo || d.fb_url || d.url) && <div className="overflow-hidden rounded-2xl border border-border bg-secondary shadow-tag">
       <Photo src={photo} title={view.title} fb={d.fb_url || d.url} />
-    </div>
+    </div>}
     <div className="mt-4">
       <DealCard view={view} stacked />
     </div>

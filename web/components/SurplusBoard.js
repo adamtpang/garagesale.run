@@ -5,7 +5,7 @@ import { BUY_STATUS, STATUSES } from '../lib/surplus.js';
 const e = React.createElement;
 const TONE = {
   watch: 'bg-amber-200 text-amber-950',
-  'needs preview': 'bg-brand/25 text-link',
+  'needs preview': 'bg-accent text-foreground',
   [BUY_STATUS]: 'bg-[#9be8b8] text-foreground',
   skip: 'bg-red-200 text-red-800',
 };
@@ -15,7 +15,7 @@ function chip(on, children, onClick) {
     type: 'button',
     onClick,
     'aria-pressed': on,
-    className: `rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-border bg-brand text-foreground' : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}`,
+    className: `rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-border bg-brand text-white' : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}`,
   }, children);
 }
 

@@ -18,8 +18,8 @@ module.exports = {
         popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
         card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
         brand: 'hsl(var(--brand))', success: 'hsl(var(--success))',
-        // Dark sticker red for text links. Brand orange is too light for small text.
-        link: '#a52a14', price: '#d6321a',
+        // Dark sticker red for text links. A shade darker than the accent so small text stays readable.
+        link: '#b91c1c', price: '#dc2626',
       },
       // Price Tag corners are tight everywhere, so the big radii collapse to the same small one.
       borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)', xl: 'var(--radius)', '2xl': 'var(--radius)', '3xl': 'var(--radius)', full: '6px' },

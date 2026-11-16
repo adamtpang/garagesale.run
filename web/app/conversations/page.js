@@ -91,7 +91,7 @@ export default function Conversations() {
           {q.status === 'drafted' ? <div className="grid gap-3">
             <Textarea rows={3} value={drafts[q.id] ?? q.draft_reply ?? ''} onChange={(e) => setDrafts({ ...drafts, [q.id]: e.target.value })} aria-label="Reply" />
             <Button variant="brand" className="justify-self-end" onClick={() => sendReply(j.id, q)} disabled={sending === q.id}>{sending === q.id ? 'Sending...' : 'Approve & send'}</Button>
-          </div> : <div className="ml-auto w-fit max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-brand px-4 py-2.5 text-foreground">{q.approved_text || q.draft_reply}</div>}
+          </div> : <div className="ml-auto w-fit max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-brand px-4 py-2.5 text-white">{q.approved_text || q.draft_reply}</div>}
         </div>)}</div>
       </Card>)}</div>}
   </main>;

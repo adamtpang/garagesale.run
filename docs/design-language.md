@@ -1,6 +1,6 @@
 # Design language: Price Tag
 
-Decided Nov 15, 2026. Adam picked it from four options shown on the real Zebra lot card.
+Decided Nov 15, 2026. Adam picked Price Tag from four options, then asked the same day for white as the main color and red as the accent. The first version used a poster-yellow page, and he found it ugly.
 
 ## The project
 
@@ -13,43 +13,44 @@ Shape: an app. About nine kinds of widget (buttons, inputs, tabs, badges, cards,
 ## Decision
 
 - **Component library:** keep shadcn/ui. It was already installed, and every color, corner and font goes through tokens. No library was added.
-- **Design language:** Price Tag.
+- **Design language:** Price Tag, in white and red.
 
 ## Where it comes from
 
-- A neon poster-board yard-sale sign: flat yellow, black marker outlines.
-- A price sticker: a hand-written number, slightly off-square.
+- A white price sticker with a red hand-written number.
+- A yard-sale sign: black marker outlines, nothing subtle.
 - A cardboard box flap: hard edges and hard shadows, nothing soft.
 
 ## Rules
 
 Each one can be checked on a screenshot.
 
-1. The page is poster-board yellow. Content sits on paper-white cards. Body text never sits on orange.
+1. The page is white. Cards are white too, and are told apart by their border and shadow, not by a fill.
 2. Every card, button, input and chip has a 2px ink border. No hairlines, no translucent borders.
 3. Raised things (cards, buttons) cast a hard 4px offset shadow in ink. No blur, no glow.
 4. Corners are tight: 8px on cards, 6px on controls and chips. Nothing is a pill.
-5. Prices that matter are written in marker, in sticker red. Everything else is DM Sans.
-6. Status is a solid fill plus a word (green sold, amber waiting, red problem). Color is never the only cue.
+5. Red is the only accent. It marks the main action on a screen, the active filter, and prices. Text on red is white.
+6. Prices that matter are written in marker, in red. Everything else is DM Sans.
+7. Status is a solid pastel fill plus a word (green sold, amber waiting, red problem). Color is never the only cue.
 
 ## Tokens
 
-Source of truth: `web/app/shadcn.css` (shadcn tokens) and the `:root` line of `web/app/globals.css` (older pages).
+Source of truth: `web/app/shadcn.css` (shadcn tokens) and the first line of `web/app/globals.css` (older pages).
 
 | Layer | Token | Value | May change? |
 | --- | --- | --- | --- |
-| Neutral | background | `#ffd84a` poster yellow | No |
-| Neutral | card | `#fffdf6` paper | No |
+| Neutral | background, card | `#ffffff` | No |
 | Neutral | foreground, border | `#141414` marker ink | No |
-| Neutral | secondary | `#fff2c2` pale yellow | No |
+| Neutral | secondary | `#f5f5f4` quiet gray | No |
+| Neutral | muted text | `#545454` | No |
 | Semantic | success | `#0b7a3b`, chip fill `#9be8b8` | No |
 | Semantic | warning chip | `#ffd08a` | No |
-| Semantic | danger | `#d6321a`, chip fill `#ffb4a8` | No |
-| Brand | brand | `#ff5a36` sticker orange | Yes, per season or event |
-| Brand | price | `#d6321a` | Yes, with brand |
-| Brand | link | `#a52a14` | Yes, with brand |
+| Semantic | danger chip | `#ffb4a8` | No |
+| Brand | brand, price | `#dc2626` red | Yes, per season or event |
+| Brand | link | `#b91c1c` darker red for small text | Yes, with brand |
+| Brand | accent tint | `#fee2e2` hover and highlight | Yes, with brand |
 
-There is one theme. Dark mode was removed on purpose: a yard-sale sign has no night version.
+There is one theme. Dark mode was removed on purpose.
 
 ## Type
 
@@ -62,12 +63,39 @@ Both load through `next/font/google` in `web/app/layout.js`.
 
 The marker price. Use the `font-marker text-price` classes (or `.price-tag` on older pages). Keep it to the one or two prices that matter on a screen.
 
+## Icons
+
+`web/app/icon.svg`, `favicon.ico` and `apple-icon.png` are a white price tag on a red tile. They are drawn from the same shape, so change all three together.
+
 ## How it was built
 
 - Tokens and Tailwind scale: `web/app/shadcn.css`, `web/tailwind.config.js` (2px default border, small radii, `shadow-tag`).
 - Nine shared components in `web/components/ui/`.
-- The older stylesheet `web/app/globals.css` was recolored in place, with a Price Tag block at the end.
+- The older stylesheet `web/app/globals.css` was recolored in place, with Price Tag blocks at the end.
 - The garage illustration was recolored from night to day.
+
+## Sweep, Nov 15, 2026
+
+A pass over every page, using the review order from the adapted ai-design-skills policy in `shapeable.art/reference/ai-design-skills-adoption.md`: broken tasks first, then unclear actions, then evidence, then hierarchy and mobile, then feedback states.
+
+Fixed:
+
+- The inactive Buy or Sell tab had no visible label.
+- The deal page showed an empty bordered strip when a deal had no photo.
+- A photo that failed to load left a blank white hole. It is a gray well with the item's first letter now.
+- The job stepper wrapped into two uneven rows. It is one row on desktop and two even rows on a phone.
+- The home page showed three-week-old deals tagged "Real". Deals older than 7 days are not shown as real. Labeled examples show instead.
+- Buy-result cards were too narrow to read the buy and sell prices.
+- The approve form's price box had no label, and its pickup fields were cut off at 170px.
+- The phone approve bar was a dark glass strip.
+- The dashboard opened with five "not stored" tiles and a repeated warning. It is one notice now when no rule is stored.
+
+Found, not changed:
+
+- The dashboard table repeats a long explanation in every row when rules are missing. A shorter row needs a product decision on what to hide.
+- The About link drops off the nav on phones. Fixing it needs a menu.
+- The agent log on a job page is long and technical. It could collapse by default.
+- Old scout-feed photos are dead links, because Facebook image links expire. Storing a copy at scout time would fix it.
 
 ## Checked
 
@@ -81,12 +109,13 @@ The marker price. Use the `font-marker text-price` classes (or `.price-tag` on o
 | Option | Verdict |
 | --- | --- |
 | Midnight (the old look) | Polished, but looked like any dark app. |
+| Price Tag on poster yellow | Built first. Adam found it ugly on the real site. |
 | Lot Ticket (auction receipt) | Best for dense numbers. Adam found Price Tag more fun. |
 | Trading Desk (price board) | Good for scanning. Too close to the old look. |
 | neobrutalism.dev components | MIT licensed (checked Nov 15, 2026), but the author has posted that he stopped working on it. The style was copied by hand instead of adding the dependency. |
 
 ## Revisit when
 
-- The site gets real outside users and yellow tests badly with them.
+- The site gets real outside users.
 - A dark mode is asked for.
 - The board grows past what a card layout can show and needs a denser table style.

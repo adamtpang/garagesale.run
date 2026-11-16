@@ -20,6 +20,9 @@ const TILES = [
 const FEED = ['Scanning new Austin listings', 'Comparing with eBay sold', 'Checking Amazon price', 'Found 3 local comps', 'Flagged under-market listing', 'Drafting listing copy'];
 
 const EXAMPLES = TILES.map(([ic, nm, ask, mkt]) => ({ photo: `/items/${ic}.jpg`, name: nm, ask, mkt }));
+// A deal older than this is not shown as a real, current find on the home page.
+const FRESH_MS = 7 * 24 * 60 * 60 * 1000;
+const fresh = (iso) => !!iso && Date.now() - new Date(iso).getTime() < FRESH_MS;
 const r0 = (v) => (v === undefined || v === null || isNaN(Number(v)) ? undefined : Math.round(Number(v)));
 function toTile(d, href) {
   return { href, photo: d.photo_url || d.image_url || d.image || null, name: d.title || d.area || 'Deal', ask: r0(d.ask ?? d.ask_price ?? d.buy_price ?? d.price), mkt: r0(d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price), link: d.fb_url || d.source_url || d.link || d.url || null };
@@ -30,8 +33,8 @@ function useRealTiles() {
     let stop = false;
     (async () => {
       const out = [];
-      try { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); if (f && !f.test) (f.deals || []).forEach((d, i) => { if (!d.example) out.push(toTile(d, `/deal/feed/${i}`)); }); } catch (e) {}
-      try { const r = await (await fetch('/api/jobs?recent=1', { cache: 'no-store' })).json(); (r.jobs || []).filter((j) => j.kind === 'buy' && j.stage === 'done').forEach((j) => (j.deals || []).forEach((d, i) => out.push(toTile(d, `/deal/${j.id}/${i}`)))); } catch (e) {}
+      try { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); if (f && !f.test && fresh(f.updated_at)) (f.deals || []).forEach((d, i) => { if (!d.example) out.push(toTile(d, `/deal/feed/${i}`)); }); } catch (e) {}
+      try { const r = await (await fetch('/api/jobs?recent=1', { cache: 'no-store' })).json(); (r.jobs || []).filter((j) => j.kind === 'buy' && j.stage === 'done' && fresh(j.updated_at || j.created_at)).forEach((j) => (j.deals || []).forEach((d, i) => out.push(toTile(d, `/deal/${j.id}/${i}`)))); } catch (e) {}
       if (!stop) setTiles(out.filter((x, i, a) => x.name && x.photo && a.findIndex((y) => y.photo === x.photo) === i).slice(0, 6));
     })();
     return () => { stop = true; };

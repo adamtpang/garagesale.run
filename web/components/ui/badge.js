@@ -10,7 +10,7 @@ const badgeVariants = cva(
         secondary: 'bg-secondary',
         destructive: 'bg-destructive text-destructive-foreground',
         outline: 'bg-card',
-        brand: 'bg-brand',
+        brand: 'bg-brand text-white',
         success: 'bg-[#9be8b8]',
         warn: 'bg-amber-300',
       },

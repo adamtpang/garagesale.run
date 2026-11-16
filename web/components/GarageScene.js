@@ -3,17 +3,17 @@ export default function GarageScene() {
     <div className="gscene" aria-label="Animated illustration: Grok Bot agents pricing items at a garage sale">
       <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMax slice" role="img">
         <defs>
-          <linearGradient id="gs-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff2c2" /><stop offset="1" stopColor="#ffe680" /></linearGradient>
-          <linearGradient id="gs-door" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fffdf6" /><stop offset="1" stopColor="#f1ead6" /></linearGradient>
+          <linearGradient id="gs-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#f5f5f4" /></linearGradient>
+          <linearGradient id="gs-door" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#f5f5f4" /></linearGradient>
         </defs>
         <rect width="800" height="260" fill="url(#gs-sky)" />
-        <path d="M40 120 L190 60 L340 120 Z" fill="#ff5a36" />
-        <rect x="60" y="120" width="260" height="110" fill="#fffdf6" />
+        <path d="M40 120 L190 60 L340 120 Z" fill="#dc2626" />
+        <rect x="60" y="120" width="260" height="110" fill="#ffffff" />
         <rect x="90" y="140" width="200" height="90" fill="url(#gs-door)" />
         <g className="gs-door-lines" stroke="#141414" strokeWidth="2">{[0, 1, 2, 3].map((i) => <line key={i} x1="90" x2="290" y1={140 + i * 6} y2={140 + i * 6} />)}</g>
         <rect x="160" y="96" width="60" height="14" rx="3" fill="#141414" /><text x="190" y="107" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">SALE</text>
-        <path d="M90 230 L290 230 L330 260 L50 260 Z" fill="#e9dfc2" />
-        <rect x="0" y="230" width="800" height="30" fill="#f4c93a" />
+        <path d="M90 230 L290 230 L330 260 L50 260 Z" fill="#e7e5e4" />
+        <rect x="0" y="230" width="800" height="30" fill="#d6d3d1" />
         {[[380, 'a'], [560, 'b']].map(([x, k]) => (
           <g key={k}>
             <rect x={x} y="196" width="150" height="8" rx="2" fill="#141414" />
@@ -29,7 +29,7 @@ export default function GarageScene() {
             <g className="gs-bob">
               <ellipse cx="0" cy="30" rx="11" ry="3" fill="#000" opacity=".5" />
               <rect x="-9" y="2" width="18" height="24" rx="8" fill="#141414" />
-              <circle cx="0" cy="-6" r="11" fill="#ff5a36" />
+              <circle cx="0" cy="-6" r="11" fill="#dc2626" />
               <text y="-2" textAnchor="middle" fontSize="11" fontWeight="900" fill="#fff">G</text>
               <g transform="translate(12 6) rotate(-12)"><rect width="22" height="13" rx="3" fill="#fff" /><text x="11" y="10" textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#141414">${['40', '15', '120', '65'][i]}</text></g>
             </g>

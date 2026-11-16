@@ -11,7 +11,7 @@ export const metadata = {
   applicationName: 'Garage Sale',
   description: 'Snap a photo to sell, or tell us what you want to buy. Grok Bot agents research real prices, write the listing, and find under-market deals on Facebook Marketplace.',
 };
-export const viewport = { themeColor: '#ffd84a', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
+export const viewport = { themeColor: '#ffffff', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${dm.variable} ${marker.variable}`}><body className="bg-background font-sans text-foreground antialiased">

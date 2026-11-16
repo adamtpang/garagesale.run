@@ -3,31 +3,32 @@
 @tailwind utilities;
 
 @layer base {
-  /* Price Tag: poster-board yellow, paper cards, black marker ink, sticker orange. One theme, no dark mode. */
+  /* Price Tag: white paper, black marker ink, one sticker red. One theme, no dark mode. */
   :root {
-    --background: 47 100% 65%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 8%;
-    --card: 47 100% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 0 0% 8%;
-    --popover: 47 100% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 0 0% 8%;
     --primary: 0 0% 8%;
-    --primary-foreground: 47 100% 98%;
-    --secondary: 47 100% 88%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 5% 96%;
     --secondary-foreground: 0 0% 8%;
-    --muted: 47 100% 88%;
-    --muted-foreground: 46 16% 25%;
-    --accent: 47 100% 80%;
+    --muted: 60 5% 96%;
+    --muted-foreground: 0 0% 33%;
+    --accent: 0 93% 94%;
     --accent-foreground: 0 0% 8%;
-    --destructive: 8 78% 47%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 8%;
     --input: 0 0% 8%;
-    --ring: 11 100% 50%;
-    --brand: 11 100% 61%;
+    --ring: 0 72% 51%;
+    --brand: 0 72% 51%;
     --success: 146 83% 26%;
     --radius: 0.5rem;
   }
+
 
   /* Preflight is off, so give Tailwind border utilities a solid style. */
   *, ::before, ::after { border-width: 0; border-style: solid; border-color: hsl(var(--border)); }

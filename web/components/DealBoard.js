@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 const EMPTY_FILTERS = { verdict: 'all', source: 'all', category: 'all', pickup: 'all' };
 
 function Chip({ on, children, onClick }) {
-  return <button type="button" onClick={onClick} aria-pressed={on} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-border bg-brand text-foreground' : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}`}>{children}</button>;
+  return <button type="button" onClick={onClick} aria-pressed={on} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-border bg-brand text-white' : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}`}>{children}</button>;
 }
 
 export default function DealBoard() {
@@ -52,6 +52,8 @@ export default function DealBoard() {
   const activeConfig = sample ? SAMPLE_CONFIG : (config || {});
   const rules = rulesFrom(activeConfig);
   const summary = ruleSummary(rules);
+  // True when not one flip rule is stored, which is the state until the worker key is fixed.
+  const rulesMissing = !sample && !loading && [summary.bankroll, summary.maxPerFlip, summary.minProfit, summary.maxMiles, summary.gas].every((v) => /not stored/.test(String(v)));
   const fresh = scoutFreshness(sample ? null : feed && feed.updated_at);
   const views = useMemo(() => {
     if (sample) {
@@ -92,7 +94,7 @@ export default function DealBoard() {
       </div>
     </div>
 
-    <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       {[
         ['Bankroll', summary.bankroll],
         ['Max per item', summary.maxPerFlip],
@@ -100,11 +102,11 @@ export default function DealBoard() {
         ['Pickup', summary.maxMiles],
         ['Gas', summary.gas],
       ].map(([k, v]) => <div key={k} className="rounded-2xl border border-border bg-card px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-1 text-sm font-medium">{v}</div></div>)}
-    </div>
+    </div>}
     <p className="mb-4 text-sm text-muted-foreground">{HOME_LINE} {summary.gasNote || ''} Cash already spent stays in the encrypted ledger and is not loaded here.</p>
     {!sample && config && Array.isArray(config.areas) && config.areas.length > 0 && <p className="mb-4 text-sm text-muted-foreground">Stored search areas: {config.areas.map((a) => a.name).filter(Boolean).join(', ')}. Those names are not pickup origins.</p>}
     {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p className="mb-4 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
-    {!sample && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
+    {!sample && !rulesMissing && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
 
     <div className="mb-4 text-sm text-muted-foreground">
       {sample ? 'Sample clock is off. These rows are not from the stored feed.' : fresh.label ? `Stored feed updated ${fresh.label}${feed && feed.updated_at ? ` (${new Date(feed.updated_at).toLocaleString()})` : ''}.` : 'No stored scout feed yet.'}
