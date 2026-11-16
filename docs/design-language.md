@@ -89,10 +89,10 @@ Fixed:
 - The approve form's price box had no label, and its pickup fields were cut off at 170px.
 - The phone approve bar was a dark glass strip.
 - The dashboard opened with five "not stored" tiles and a repeated warning. It is one notice now when no rule is stored.
+- Dashboard rows repeated up to six sentences of explanation. Each row shows the first one, and the others open from an "N more" toggle.
 
 Found, not changed:
 
-- The dashboard table repeats a long explanation in every row when rules are missing. A shorter row needs a product decision on what to hide.
 - The About link drops off the nav on phones. Fixing it needs a menu.
 - The agent log on a job page is long and technical. It could collapse by default.
 - Old scout-feed photos are dead links, because Facebook image links expire. Storing a copy at scout time would fix it.

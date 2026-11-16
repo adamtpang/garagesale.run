@@ -27,6 +27,22 @@ function link(href, text) {
   return e('a', { href, target: '_blank', rel: 'noopener', className: 'text-link underline-offset-4 hover:underline' }, text);
 }
 
+// A long reason repeats on every row when rules are missing. Show the first sentence and fold the rest,
+// so nothing is hidden for good and the table stays scannable.
+export function splitReason(text) {
+  const parts = String(text || '').split(/(?<=\.)\s+(?=[A-Z0-9$])/).map((t) => t.trim()).filter(Boolean);
+  return { first: parts[0] || '', rest: parts.slice(1) };
+}
+
+function reason(text, className) {
+  const { first, rest } = splitReason(text || 'Passes the stored rules.');
+  return e('div', { className, 'data-region': 'reason' },
+    e('p', null, first),
+    rest.length ? e('details', { className: 'mt-1' },
+      e('summary', { className: 'cursor-pointer font-medium text-link' }, `${rest.length} more`),
+      e('ul', { className: 'mt-1 list-disc pl-4' }, rest.map((t, i) => e('li', { key: i }, t)))) : null);
+}
+
 function compList(view) {
   const rows = [
     ...(view.comps || []).map((c, i) => e('li', { key: `c${i}`, className: 'border-t border-border py-2' },
@@ -55,7 +71,7 @@ function moneyBlock(view) {
   return e('div', { className: 'rounded-xl bg-white p-3' },
     e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, net.label),
     e('div', { className: `mt-1 text-2xl font-semibold tabular-nums ${tone}`, 'data-net': net.value }, net.value),
-    e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, view.reasonText || 'Passes the stored rules.'),
+    reason(view.reasonText, 'mt-2 text-xs leading-5 text-muted-foreground'),
     view.riskNote ? e('p', { className: 'mt-1 text-xs text-muted-foreground' }, view.riskNote) : null);
 }
 
@@ -106,11 +122,11 @@ export function DealTableRow({ view, sample }) {
       e('div', null, `Fee ${view.feeText}`),
       e('div', null, `Shipping ${ship}`),
       e('div', null, `Gas ${view.gasText}`),
-      view.feeNote ? e('div', { className: 'mt-1 text-muted-foreground' }, view.feeNote) : null),
+      view.feeNote ? reason(view.feeNote, 'mt-1 text-muted-foreground') : null),
     e('td', { className: 'px-3 py-3' },
       e('div', { className: 'text-[11px] uppercase tracking-wide text-muted-foreground' }, net.label),
       e('div', { className: 'text-lg font-semibold tabular-nums', 'data-net': net.value }, net.value),
-      e('p', { className: 'mt-1 max-w-xs text-xs leading-5 text-muted-foreground' }, view.reasonText || 'Passes the stored rules.')));
+      reason(view.reasonText, 'mt-1 max-w-xs text-xs leading-5 text-muted-foreground')));
 }
 
 export const TABLE_HEAD = ['Decision', 'Item', 'Buy', 'Pickup', 'Resale', 'Costs', 'Net'];
