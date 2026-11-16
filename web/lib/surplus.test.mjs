@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
-import { assessLot, assessSnapshot, formatClose, tripGroups, resaleCases, BUY_STATUS } from './surplus.js';
+import { assessLot, assessSnapshot, cleanSnapshot, formatClose, tripGroups, resaleCases, BUY_STATUS, MAX_COMPS } from './surplus.js';
 import { activeRules, checkLot, DEFAULT_RULES } from './rules.js';
 import { RULES_CONFIG } from '../config/rules.js';
 
@@ -613,9 +613,64 @@ test('the max bid respects the cost cap, the minimum profit and the low case', (
 });
 
 test('a phone lot cannot reach $100 in any case, so it has no max bid', () => {
-  const phone = assessLot(seed.lots.find((l) => l.id === 'ps-4123524'), NOW);
+  const phone = assessSnapshot(seed, NOW).lots.find((l) => l.id === 'ps-4123524');
   assert.equal(phone.cases.length, 3);
   assert.equal(phone.max_bid, null);
   assert.match(phone.max_bid_note, /No bid works/);
-  assert.match(phone.status_reason, /Even the high case, \$85\.88 at the current bid, is under the \$100\.00 minimum/);
+  // High case: a working phone at $89.99. Fee 13.6% + $0.40 = $12.64, shipping $6, all-in $12.26. Profit $59.09.
+  assert.match(phone.status_reason, /Even the high case, \$59\.09 at the current bid, is under the \$100\.00 minimum/);
+});
+
+test('the S20 FE lots use all 35 sold comps, with working and for-parts sales kept apart', () => {
+  assert.equal(seed.comp_sets['sm-g781v-128gb'].length, 35);
+  const view = assessSnapshot(seed, NOW);
+  const phones = view.lots.filter((l) => /S20 FE/.test(l.title));
+  assert.equal(phones.length, 6);
+  for (const phone of phones) {
+    assert.equal(phone.comps.length, 35, phone.id);
+    assert.equal(phone.comps_working_sales, 24);
+    assert.equal(phone.comps_parts_sales, 11);
+    assert.equal(phone.comps_dropped, 0);
+    assert.equal(phone.condition, 'unknown');
+    // Condition unknown: low and middle come from for-parts sales, high from working sales. Nothing is blended.
+    assert.deepEqual(phone.cases.map((c) => c.unit), [37.5, 69.99, 89.99]);
+    assert.match(phone.cases[1].basis, /Median of 11 for-parts sales\. The condition is unknown/);
+    assert.match(phone.cases[2].basis, /Median of 24 working sales\. Only if it powers on and is not locked/);
+    assert.match(phone.lock_flag, /Fleet device\. A device-management, Google account or carrier lock is likely/);
+    assert.match(phone.case_caveats.join(' '), /No cited sale is of a locked unit/);
+    for (const c of phone.comps) assert.match(c.url, /^https:\/\/www\.ebay\.com\/itm\/\d+$/);
+  }
+  // The old number was $68: a median across 7 working and 5 for-parts sales picked from the 35.
+  assert.notEqual(phones[0].unit_resale, 68);
+});
+
+test('a known condition picks its own sales, and a missing kind is said out loud', () => {
+  const working = { ...sale(90), lot_size: null, battery: 'unknown', condition: 'working' };
+  const working2 = { ...sale(110), lot_size: null, battery: 'unknown', condition: 'working' };
+  const parts = { ...sale(40), lot_size: null, battery: 'unknown', condition: 'parts' };
+  const base = { batteries: 'unknown', battery_cost: null, quantity: 1, fleet_device: false };
+  assert.deepEqual(resaleCases({ ...base, condition: 'working' }, [working, working2, parts]).cases.map((c) => c.unit), [90, 100, 110]);
+  assert.deepEqual(resaleCases({ ...base, condition: 'parts' }, [working, working2, parts]).cases.map((c) => c.unit), [40, 40, 40]);
+  assert.deepEqual(resaleCases({ ...base, condition: 'unknown' }, [working, working2, parts]).cases.map((c) => c.unit), [40, 40, 100]);
+  const onlyWorking = resaleCases({ ...base, condition: 'unknown' }, [working, working2]);
+  assert.match(onlyWorking.caveats.join(' '), /Every cited sale is working\. The condition of this lot is unknown/);
+  assert.equal(resaleCases({ ...base, condition: 'unknown', fleet_device: false }, [working, parts]).caveats.length, 0);
+});
+
+test('a comp set is shared by name, and a missing set is an error', () => {
+  const doc = cleanSnapshot({
+    comp_sets: { widgets: [sale(40), sale(50)] },
+    lots: [{ id: 'a', comp_set: 'widgets' }, { id: 'b', comp_set: 'widgets', comps: [sale(60)] }, { id: 'c' }],
+  });
+  assert.deepEqual(doc.lots.map((l) => l.comps.length), [2, 3, 0]);
+  assert.throws(() => cleanSnapshot({ lots: [{ id: 'a', comp_set: 'nope' }] }), /names comp set nope/);
+});
+
+test('comps past the cap are counted, not dropped in silence', () => {
+  const many = Array.from({ length: MAX_COMPS + 5 }, (_, i) => sale(10 + i));
+  const lot = assessLot(confirmedLot({ comps: many }), NOW);
+  assert.equal(lot.comps.length, MAX_COMPS);
+  assert.equal(lot.comps_dropped, 5);
+  assert.match(lot.comps_note, /5 more comps were sent than the 80 this board keeps/);
+  assert.equal(assessLot(confirmedLot(), NOW).comps_note, null);
 });

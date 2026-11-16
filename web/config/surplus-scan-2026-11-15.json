@@ -5,6 +5,360 @@
   "label": "Nov 15, 2026 scan snapshot. Real lots from Adam's Public Surplus scan. Not a sample. Schertz lots were refreshed that evening with eBay sold comps.",
   "notice": "Numbers that were not in the scan are null and show as unknown. Asking comps are not resale. Nothing in this feed places a bid.",
   "places_bids": false,
+  "comp_sets": {
+    "sm-g781v-128gb": [
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 37.5,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V Blue 128GB Bar Smartphone For Parts",
+        "url": "https://www.ebay.com/itm/287731611943",
+        "condition": "parts",
+        "sold_on": "Nov 15, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 44.84,
+        "title": "Samsung Galaxy S20 FE 5G 128GB Blue SM-G781V",
+        "url": "https://www.ebay.com/itm/128052318623",
+        "condition": "parts",
+        "sold_on": "Sep 4, 2026",
+        "note": "eBay condition: Parts Only. Sale type not shown."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 44.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Verizon For Parts",
+        "url": "https://www.ebay.com/itm/800909971433",
+        "condition": "parts",
+        "sold_on": "Nov 12, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.97,
+        "title": "1 Samsung Galaxy S20 FE 5G UW G781V 128GB UNLOCKED MODERATE SCREEN CRACK TESTED",
+        "url": "https://www.ebay.com/itm/227486681756",
+        "condition": "parts",
+        "sold_on": "Sep 1, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.98,
+        "title": "1 Samsung Galaxy S20 FE 5G UW G781V 128GB UNLOCKED MODERATE SCREEN CRACK TESTED",
+        "url": "https://www.ebay.com/itm/227432680760",
+        "condition": "parts",
+        "sold_on": "Aug 17, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Wi-Fi + 5G Verizon For Parts",
+        "url": "https://www.ebay.com/itm/840100700591",
+        "condition": "parts",
+        "sold_on": "Nov 14, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Wi-Fi + 5G Verizon For Parts",
+        "url": "https://www.ebay.com/itm/840100517362",
+        "condition": "parts",
+        "sold_on": "Nov 14, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Wi-Fi + 5G Verizon For Parts",
+        "url": "https://www.ebay.com/itm/840100482256",
+        "condition": "parts",
+        "sold_on": "Nov 11, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Wi-Fi + 5G Verizon For Parts",
+        "url": "https://www.ebay.com/itm/840100628398",
+        "condition": "parts",
+        "sold_on": "Nov 11, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 69.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Wi-Fi + 5G Verizon For Parts",
+        "url": "https://www.ebay.com/itm/840100628633",
+        "condition": "parts",
+        "sold_on": "Nov 9, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 80,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Verizon Only (Wi-Fi + 5G)",
+        "url": "https://www.ebay.com/itm/407312556048",
+        "condition": "parts",
+        "sold_on": "Nov 11, 2026",
+        "note": "eBay condition: Parts Only. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 59,
+        "title": "Samsung Galaxy S20 FE 5G 128GB SM-G781V Navy Unlocked 353173654520467",
+        "url": "https://www.ebay.com/itm/900069071954",
+        "condition": "working",
+        "sold_on": "Nov 5, 2026",
+        "note": "eBay condition: Pre-Owned. 5 bids."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 60,
+        "title": "Samsung Galaxy S20 FE 5G 128GB SM-G781V Blue Unlocked 353173653674281",
+        "url": "https://www.ebay.com/itm/307247639669",
+        "condition": "working",
+        "sold_on": "Oct 31, 2026",
+        "note": "eBay condition: Pre-Owned. 17 bids."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 66,
+        "title": "Samsung Galaxy S20 FE 5G - SM-G781V - 128GB - Blue - Unlocked",
+        "url": "https://www.ebay.com/itm/800860411825",
+        "condition": "working",
+        "sold_on": "Nov 7, 2026",
+        "note": "eBay condition: Pre-Owned. 3 bids."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 70,
+        "title": "Samsung Galaxy S20 FE 5G UW 128GB Cloud Navy Smartphone SM-G781V",
+        "url": "https://www.ebay.com/itm/227598562565",
+        "condition": "working",
+        "sold_on": "Nov 4, 2026",
+        "note": "eBay condition: Pre-Owned. Best offer accepted."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 75,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V Unlocked 128GB Navy Blue Good Condition",
+        "url": "https://www.ebay.com/itm/377618759262",
+        "condition": "working",
+        "sold_on": "Nov 3, 2026",
+        "note": "eBay condition: Pre-Owned. Sale type not shown."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 82.99,
+        "title": "Verizon Samsung Galaxy S20 FE 6GB RAM 128GB SM-G781V Lavender",
+        "url": "https://www.ebay.com/itm/137903432313",
+        "condition": "working",
+        "sold_on": "Nov 9, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89,
+        "title": "Samsung Galaxy S20 FE 5G - SM-G781V - 128GB Blue (Unlocked)",
+        "url": "https://www.ebay.com/itm/168853135425",
+        "condition": "working",
+        "sold_on": "Nov 14, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Unlocked Samsung Galaxy S20 FE 6GB RAM 128GB SM-G781V Cloud Navy",
+        "url": "https://www.ebay.com/itm/960187781928",
+        "condition": "working",
+        "sold_on": "Nov 12, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Verizon Samsung Galaxy S20 FE 5G 6GB RAM 128GB SM-G781V Cloud Navy",
+        "url": "https://www.ebay.com/itm/880103376919",
+        "condition": "working",
+        "sold_on": "Nov 10, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Blue Wi-Fi + 5G Verizon Only",
+        "url": "https://www.ebay.com/itm/840097545537",
+        "condition": "working",
+        "sold_on": "Nov 8, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Blue Wi-Fi + 5G Verizon Only",
+        "url": "https://www.ebay.com/itm/840097545643",
+        "condition": "working",
+        "sold_on": "Nov 8, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Blue Wi-Fi + 5G Verizon Only",
+        "url": "https://www.ebay.com/itm/840100672381",
+        "condition": "working",
+        "sold_on": "Nov 8, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Blue Wi-Fi + 5G Verizon Only",
+        "url": "https://www.ebay.com/itm/840097616383",
+        "condition": "working",
+        "sold_on": "Nov 7, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 128 GB Android 13 Blue Wi-Fi + 5G Verizon Only",
+        "url": "https://www.ebay.com/itm/840097575466",
+        "condition": "working",
+        "sold_on": "Nov 6, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 89.99,
+        "title": "Verizon Samsung Galaxy S20 FE 6GB RAM 128GB SM-G781V Cloud Mint",
+        "url": "https://www.ebay.com/itm/117485223626",
+        "condition": "working",
+        "sold_on": "Nov 1, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 99.95,
+        "title": "Samsung Galaxy S20 FE 5G 128GB (Unlocked) SM-G781V Cloud Navy - Good",
+        "url": "https://www.ebay.com/itm/147681225699",
+        "condition": "working",
+        "sold_on": "Nov 14, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 99.99,
+        "title": "Verizon Samsung Galaxy S20 FE 6GB RAM 128GB SM-G781V Mint",
+        "url": "https://www.ebay.com/itm/860106793129",
+        "condition": "working",
+        "sold_on": "Nov 4, 2026",
+        "note": "eBay condition: Pre-Owned. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 99.99,
+        "title": "Samsung Galaxy S20 FE 128GB Android Navy Verizon SM-G781V Smartphone",
+        "url": "https://www.ebay.com/itm/127282248990",
+        "condition": "working",
+        "sold_on": "Apr 23, 2026",
+        "note": "eBay condition: Pre-Owned. Best offer accepted."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 110,
+        "title": "Verizon Samsung Galaxy S20 FE 5G 6GB RAM 128GB SM-G781V Navy",
+        "url": "https://www.ebay.com/itm/940071768736",
+        "condition": "working",
+        "sold_on": "Nov 7, 2026",
+        "note": "eBay condition: Pre-Owned. Sale type not shown."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 115,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V - Cloud Navy",
+        "url": "https://www.ebay.com/itm/920074447460",
+        "condition": "working",
+        "sold_on": "Nov 12, 2026",
+        "note": "eBay condition: Pre-Owned. Sale type not shown."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 121,
+        "title": "Samsung Galaxy S20 FE 5G 128GB SM-G781V Navy Unlocked 353173654702099",
+        "url": "https://www.ebay.com/itm/900089360280",
+        "condition": "working",
+        "sold_on": "Nov 13, 2026",
+        "note": "eBay condition: Pre-Owned. 29 bids."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 124.99,
+        "title": "Samsung Galaxy S20 FE 5G SM-G781V 6.5\" Verizon 128GB 32MP NFC Cloud Navy Blue",
+        "url": "https://www.ebay.com/itm/198786242425",
+        "condition": "working",
+        "sold_on": "Nov 10, 2026",
+        "note": "eBay condition: Very Good - Refurbished. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 129.95,
+        "title": "Samsung Galaxy S20 FE 5G 128GB Navy SM-G781V Verizon Clean ESN Very Good (CX)",
+        "url": "https://www.ebay.com/itm/198766097331",
+        "condition": "working",
+        "sold_on": "Nov 5, 2026",
+        "note": "eBay condition: Very Good - Refurbished. Buy It Now."
+      },
+      {
+        "marketplace": "eBay",
+        "type": "sold",
+        "price": 149.99,
+        "title": "Samsung Galaxy S20 FE 5G UW 128GB Cloud Navy SM-G781V Verizon Unlocked NEW",
+        "url": "https://www.ebay.com/itm/407358804664",
+        "condition": "working",
+        "sold_on": "Nov 14, 2026",
+        "note": "eBay condition: Brand New. Buy It Now."
+      }
+    ]
+  },
   "lots": [
     {
       "id": "ps-4123518",
@@ -129,7 +483,8 @@
       "resale_note": "Priced from cited sales of units without batteries. Lot sales set the middle and high cases. The low case is the lowest cited sale of any kind.",
       "batteries": "none",
       "battery_cost": null,
-      "battery_cost_note": "No battery price is cited, so the one sale that included a battery is not adjusted. It only sets the low case."
+      "battery_cost_note": "No battery price is cited, so the one sale that included a battery is not adjusted. It only sets the low case.",
+      "fleet_device": true
     },
     {
       "id": "ps-4123530",
@@ -160,104 +515,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -276,7 +534,10 @@
       "opening_bid": 5,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123522",
@@ -305,104 +566,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -422,7 +586,10 @@
       "fee_fixed": 0.4,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123523",
@@ -451,104 +618,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -568,7 +638,10 @@
       "fee_fixed": 0.4,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123524",
@@ -597,104 +670,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -714,7 +690,10 @@
       "fee_fixed": 0.4,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123526",
@@ -743,104 +722,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -860,7 +742,10 @@
       "fee_fixed": 0.4,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123528",
@@ -889,104 +774,7 @@
         "eBay",
         "Facebook Marketplace"
       ],
-      "comps": [
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 37.5,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts",
-          "url": "https://www.ebay.com/itm/287731611943",
-          "note": "Sold Nov 15, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.84,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V, parts only",
-          "url": "https://www.ebay.com/itm/128052318623",
-          "note": "Sold Sep 4, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 44.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/800909971433",
-          "note": "Sold Nov 12, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 69.99,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Verizon, for parts",
-          "url": "https://www.ebay.com/itm/840100700591",
-          "note": "Sold Nov 14, 2026. Parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 80,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB, Verizon only",
-          "url": "https://www.ebay.com/itm/407312556048",
-          "note": "Sold Nov 11, 2026. Listed as parts only."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 59,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900069071954",
-          "note": "Sold Nov 5, 2026 at auction, 5 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 60,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Blue, unlocked",
-          "url": "https://www.ebay.com/itm/307247639669",
-          "note": "Sold Oct 31, 2026 at auction, 17 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 66,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/800860411825",
-          "note": "Sold Nov 7, 2026 at auction, 3 bids. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 75,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Navy, good condition",
-          "url": "https://www.ebay.com/itm/377618759262",
-          "note": "Sold Nov 3, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89,
-          "title": "Galaxy S20 FE 5G SM-G781V 128GB Blue, unlocked",
-          "url": "https://www.ebay.com/itm/168853135425",
-          "note": "Sold Nov 14, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 89.99,
-          "title": "Galaxy S20 FE SM-G781V 128GB Cloud Navy, unlocked",
-          "url": "https://www.ebay.com/itm/960187781928",
-          "note": "Sold Nov 12, 2026. Working."
-        },
-        {
-          "marketplace": "eBay",
-          "type": "sold",
-          "price": 121,
-          "title": "Galaxy S20 FE 5G 128GB SM-G781V Navy, unlocked",
-          "url": "https://www.ebay.com/itm/900089360280",
-          "note": "Sold Nov 13, 2026 at auction, 29 bids. Working."
-        }
-      ],
+      "comps": [],
       "fee_basis": "stated",
       "fee_note": "eBay selling fees page, most categories: 13.6% plus $0.40 per order. Checked Nov 15, 2026.",
       "shipping_basis": "assumption",
@@ -1006,7 +794,10 @@
       "fee_fixed": 0.4,
       "shipping": 6,
       "shipping_note": "Assumed: one phone by USPS Ground Advantage. No quote yet.",
-      "resale_note": "7 working and 5 for-parts comps, mixed because the lock and power state are unknown. No sold comp named a Google-locked unit."
+      "resale_note": "All 35 eBay sold listings for SM-G781V 128GB found on Nov 15, 2026: 24 working and 11 for parts, kept apart. The power and lock state of this phone are unknown, so the middle case prices it for parts. No sold comp named a locked unit.",
+      "comp_set": "sm-g781v-128gb",
+      "condition": "unknown",
+      "fleet_device": true
     },
     {
       "id": "ps-4123532",

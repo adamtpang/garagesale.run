@@ -40,6 +40,10 @@ export const RULES = rulesView();
 
 const money = parseMoney;
 const BATTERY_STATES = ['included', 'none', 'unknown'];
+// Whether a unit works. "parts" is a for-parts or not-working sale.
+const CONDITIONS = ['working', 'parts', 'unknown'];
+// The most comps one lot keeps. Anything past this is counted and reported, not dropped in silence.
+export const MAX_COMPS = 80;
 
 function str(v, n) {
   if (v === null || v === undefined) return null;
@@ -142,6 +146,7 @@ function cleanComp(c) {
     lot_size: lotSize != null && lotSize > 1 ? lotSize : null,
     lot_price: lotSize != null && lotSize > 1 && lotPrice != null && lotPrice >= 0 ? lotPrice : null,
     battery,
+    condition: CONDITIONS.includes(c.condition) ? c.condition : 'unknown',
     sold_on: str(c.sold_on, 40),
   };
 }
@@ -159,7 +164,8 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
   const shipping = shippingBasis === 'unknown' ? null : money(raw.shipping);
   const status = STATUSES.includes(raw.status) ? raw.status : 'watch';
-  const comps = (Array.isArray(raw.comps) ? raw.comps : []).slice(0, 12).map(cleanComp).filter(Boolean);
+  const allComps = (Array.isArray(raw.comps) ? raw.comps : []).map(cleanComp).filter(Boolean);
+  const comps = allComps.slice(0, MAX_COMPS);
   const marketplaces = (Array.isArray(raw.marketplaces) ? raw.marketplaces : []).map((m) => str(m, 80)).filter(Boolean).slice(0, 6);
   const risks = (Array.isArray(raw.risks) ? raw.risks : []).map((r) => str(r, 240)).filter(Boolean).slice(0, 8);
   const quantity = intOrNull(raw.quantity);
@@ -209,6 +215,11 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     shipping_basis: shipping != null && shipping >= 0 ? shippingBasis : 'unknown',
     shipping_note: str(raw.shipping_note, 240),
     resale_note: str(raw.resale_note, 300),
+    comps_dropped: allComps.length - comps.length,
+    // Whether the units work. Unknown is the honest value for a phone nobody has powered on.
+    condition: CONDITIONS.includes(raw.condition) ? raw.condition : 'unknown',
+    // A phone or handheld from an agency fleet. A device-management or carrier lock is likely.
+    fleet_device: raw.fleet_device === true,
     // Whether the units in this lot come with batteries. "none" means resale is priced from battery-less sales.
     batteries: BATTERY_STATES.includes(raw.batteries) ? raw.batteries : 'unknown',
     // What one battery costs, only when a source is cited. Without it, a sale that included a battery cannot be adjusted.
@@ -224,8 +235,13 @@ export function cleanSnapshot(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('body must be {lots:[...]}');
   if (!Array.isArray(input.lots)) throw new Error('body must be {lots:[...]}');
   if (input.lots.length > 100) throw new Error('too many lots');
+  // Lots that share comps can name a set once ("comp_set": "sm-g781v") instead of repeating every row.
+  const sets = input.comp_sets && typeof input.comp_sets === 'object' && !Array.isArray(input.comp_sets) ? input.comp_sets : {};
   const lots = input.lots.map((lot, i) => {
-    const cleaned = cleanLot(lot);
+    const name = lot && typeof lot.comp_set === 'string' ? lot.comp_set : null;
+    const own = lot && Array.isArray(lot.comps) ? lot.comps : [];
+    if (name && !Array.isArray(sets[name])) throw new Error(`lot ${i} names comp set ${name}, which is not in comp_sets`);
+    const cleaned = cleanLot(name ? { ...lot, comps: [...sets[name], ...own] } : lot);
     if (!cleaned) throw new Error(`lot ${i} is missing a usable id`);
     return cleaned;
   });
@@ -266,6 +282,40 @@ function presentComp(c) {
 // When it is not, that sale still counts toward the low case, unadjusted.
 export function resaleCases(lot, soldCited) {
   if (!soldCited.length) return null;
+  // Working and for-parts sales are different markets, so they are never blended into one median.
+  const working = soldCited.filter((c) => c.condition === 'working');
+  const parts = soldCited.filter((c) => c.condition === 'parts');
+  if (working.length || parts.length) {
+    const prices = (list) => list.map((c) => c.price);
+    const counts = { used: 0, lot_sales: soldCited.filter((c) => c.lot_size != null).length, single_sales: soldCited.filter((c) => c.lot_size == null).length, working_sales: working.length, parts_sales: parts.length };
+    const lock = lot.fleet_device ? ['No cited sale is of a locked unit. If these are locked, the price is unknown and may be under the low case.'] : [];
+    const band = (list, label) => [
+      { name: 'low', unit: round2(Math.min(...prices(list))), basis: `Lowest of ${list.length} ${label} sale${list.length === 1 ? '' : 's'}.` },
+      { name: 'middle', unit: median(prices(list)), basis: `Median of ${list.length} ${label} sale${list.length === 1 ? '' : 's'}.` },
+      { name: 'high', unit: round2(Math.max(...prices(list))), basis: `Highest of ${list.length} ${label} sale${list.length === 1 ? '' : 's'}.` },
+    ];
+    if (lot.condition === 'working' && working.length) return { cases: band(working, 'working'), ...counts, used: working.length, caveats: lock };
+    if (lot.condition === 'parts' && parts.length) return { cases: band(parts, 'for-parts'), ...counts, used: parts.length, caveats: lock };
+    if (working.length && parts.length) {
+      // Condition unknown: the middle case assumes the unit is only good for parts. Working is the high case.
+      return {
+        cases: [
+          { name: 'low', unit: round2(Math.min(...prices(parts))), basis: `Lowest of ${parts.length} for-parts sales.` },
+          { name: 'middle', unit: median(prices(parts)), basis: `Median of ${parts.length} for-parts sales. The condition is unknown, so the middle case does not assume it works.` },
+          { name: 'high', unit: median(prices(working)), basis: `Median of ${working.length} working sales. Only if it powers on and is not locked.` },
+        ],
+        ...counts,
+        used: working.length + parts.length,
+        caveats: lock,
+      };
+    }
+    const only = working.length ? working : parts;
+    const label = working.length ? 'working' : 'for-parts';
+    const missing = lot.condition === 'unknown'
+      ? [`Every cited sale is ${label}. The condition of this lot is unknown.`]
+      : [`This lot is marked ${lot.condition}, but every cited sale is ${label}.`];
+    return { cases: band(only, label), ...counts, used: only.length, caveats: [...missing, ...lock] };
+  }
   const noBatteries = lot.batteries === 'none';
   const adjusted = soldCited.map((c) => {
     if (noBatteries && c.battery === 'included' && lot.battery_cost != null) {
@@ -507,6 +557,10 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     case_caveats: resale ? resale.caveats : [],
     comps_lot_sales: resale ? resale.lot_sales : 0,
     comps_single_sales: resale ? resale.single_sales : 0,
+    comps_working_sales: resale ? (resale.working_sales || 0) : 0,
+    comps_parts_sales: resale ? (resale.parts_sales || 0) : 0,
+    comps_note: lot.comps_dropped > 0 ? `${lot.comps_dropped} more comp${lot.comps_dropped === 1 ? ' was' : 's were'} sent than the ${MAX_COMPS} this board keeps. They are not counted.` : null,
+    lock_flag: lot.fleet_device ? 'Fleet device. A device-management, Google account or carrier lock is likely, and it cannot be checked before pickup.' : null,
     max_bid: maxBid,
     max_bid_text: maxBid == null ? 'none' : moneyText(maxBid),
     max_bid_all_in: maxCost ? maxCost.all_in : null,
