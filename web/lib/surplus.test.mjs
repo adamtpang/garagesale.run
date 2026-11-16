@@ -684,4 +684,19 @@ test('comps past the cap are counted, not dropped in silence', () => {
   assert.equal(lot.comps_dropped, 5);
   assert.match(lot.comps_note, /5 more comps were sent than the 80 this board keeps/);
   assert.equal(assessLot(confirmedLot(), NOW).comps_note, null);
+  // The board cleans a snapshot and then cleans each lot again. The count has to survive both passes.
+  const view = assessSnapshot({ lots: [confirmedLot({ comps: many })] }, NOW);
+  assert.equal(view.lots[0].comps.length, MAX_COMPS);
+  assert.equal(view.lots[0].comps_dropped, 5);
+  assert.match(view.lots[0].comps_note, /5 more comps were sent/);
+});
+
+test('a fleet device gets the lock warning on its cases, whichever way it is priced', () => {
+  // The Zebra lot is priced from battery-less lot sales, not from working and for-parts sales.
+  const zebra = assessSnapshot(seed, NOW).lots.find((l) => l.id === 'ps-4123518');
+  assert.equal(zebra.fleet_device, true);
+  assert.match(zebra.case_caveats.join(' '), /No cited sale is of a locked unit/);
+  assert.match(zebra.case_caveats.join(' '), /biggest cited lot sale was 5 units/);
+  const plain = assessLot(confirmedLot({ quantity: 10 }), NOW);
+  assert.equal(plain.case_caveats.some((c) => /locked/.test(c)), false);
 });

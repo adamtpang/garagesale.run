@@ -215,7 +215,8 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     shipping_basis: shipping != null && shipping >= 0 ? shippingBasis : 'unknown',
     shipping_note: str(raw.shipping_note, 240),
     resale_note: str(raw.resale_note, 300),
-    comps_dropped: allComps.length - comps.length,
+    // A snapshot is cleaned once when stored and again when shown. Carry the count forward so the second pass keeps it.
+    comps_dropped: (intOrNull(raw.comps_dropped) || 0) + (allComps.length - comps.length),
     // Whether the units work. Unknown is the honest value for a phone nobody has powered on.
     condition: CONDITIONS.includes(raw.condition) ? raw.condition : 'unknown',
     // A phone or handheld from an agency fleet. A device-management or carrier lock is likely.
@@ -280,6 +281,11 @@ function presentComp(c) {
 // When the lot has no batteries, only battery-less sales set the middle and high cases.
 // A sale that included a battery is lowered by the battery cost when that cost is cited.
 // When it is not, that sale still counts toward the low case, unadjusted.
+// A fleet device may be locked. No cited sale tells us what a locked one sells for.
+function lockCaveat(lot) {
+  return lot.fleet_device ? ['No cited sale is of a locked unit. If these are locked, the price is unknown and may be under the low case.'] : [];
+}
+
 export function resaleCases(lot, soldCited) {
   if (!soldCited.length) return null;
   // Working and for-parts sales are different markets, so they are never blended into one median.
@@ -288,7 +294,7 @@ export function resaleCases(lot, soldCited) {
   if (working.length || parts.length) {
     const prices = (list) => list.map((c) => c.price);
     const counts = { used: 0, lot_sales: soldCited.filter((c) => c.lot_size != null).length, single_sales: soldCited.filter((c) => c.lot_size == null).length, working_sales: working.length, parts_sales: parts.length };
-    const lock = lot.fleet_device ? ['No cited sale is of a locked unit. If these are locked, the price is unknown and may be under the low case.'] : [];
+    const lock = lockCaveat(lot);
     const band = (list, label) => [
       { name: 'low', unit: round2(Math.min(...prices(list))), basis: `Lowest of ${list.length} ${label} sale${list.length === 1 ? '' : 's'}.` },
       { name: 'middle', unit: median(prices(list)), basis: `Median of ${list.length} ${label} sale${list.length === 1 ? '' : 's'}.` },
@@ -340,6 +346,7 @@ export function resaleCases(lot, soldCited) {
   if (!lotSales.length && lot.quantity != null && lot.quantity > 1) caveats.push('No cited sale was a lot, so the cases use single-unit prices. A lot usually sells for less a unit.');
   const biggest = lotSales.reduce((m, c) => Math.max(m, c.lot_size), 0);
   if (lotSales.length && lot.quantity != null && biggest && lot.quantity > biggest) caveats.push(`The biggest cited lot sale was ${biggest} units. This lot is ${lot.quantity}.`);
+  caveats.push(...lockCaveat(lot));
   return {
     cases: [
       { name: 'low', unit: round2(lowUnit), basis: `Lowest cited sale of any kind${lowComp && lowComp.fit !== 'match' ? ` (${lowComp.fit})` : ''}.` },
