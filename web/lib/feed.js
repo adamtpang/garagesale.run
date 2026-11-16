@@ -110,7 +110,15 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     const most = Math.floor(Math.min(byProfit, byCost));
     maxOffer = most >= 1 ? most : null;
   }
-  const decision = v.verdict === 'buy' ? 'buy' : (v.verdict === 'skip' ? 'skip' : 'watch');
+  let decision = v.verdict === 'buy' ? 'buy' : (v.verdict === 'skip' ? 'skip' : 'watch');
+  const reasons = v.reasons.map((r) => r.text);
+  // The listing check looks at the ask alone. The max cost counts gas too, the same as for a surplus lot.
+  // So an ask that fits but whose ask plus gas does not is a skip, and the feed cannot call it a buy
+  // while showing a max offer below the ask.
+  if (allIn != null && allIn > rules.max_cost && decision !== 'skip') {
+    decision = 'skip';
+    reasons.push(`Ask plus gas is ${moneyText(allIn)}, over the ${moneyText(rules.max_cost)} max per flip.`);
+  }
   const item = {
     kind: 'listing',
     id: deal.url,
@@ -137,7 +145,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
       ? 'No offer works, or a cost is unknown.'
       : `The most to offer: the cost stays inside ${moneyText(rules.max_cost)} and the middle case still makes ${moneyText(rules.min_profit)}. The offer is Adam's to make. Nothing here contacts a seller.`,
     risks: [v.riskNote, ...v.flags].filter(Boolean),
-    decision: { value: decision, reasons: v.reasons.map((r) => r.text), needs_adam_yes: true },
+    decision: { value: decision, reasons, needs_adam_yes: true },
   };
   return { ...item, unknown: unknownFields(item) };
 }
@@ -171,7 +179,8 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
     surplusAge != null && surplusAge >= 2 ? `The surplus scan is ${surplusAge} days old.` : null,
     surplus && surplus.source === 'seed' ? 'No surplus scan has been posted. These lots are the Nov 15, 2026 scan file.' : null,
     dealsAge != null && dealsAge >= 2 ? `The listings feed is ${dealsAge} days old.` : null,
-    deals && !deals.updated_at ? 'No listings feed has been posted.' : null,
+    // A feed that was never posted and a feed that could not be read both arrive here as nothing.
+    !deals || !deals.updated_at ? 'No listings feed was found. Either none has been posted or it could not be read, so local listings are missing from this feed.' : null,
   ].filter(Boolean);
   return {
     kind: 'daily-deals-feed',

@@ -18,8 +18,19 @@ export function withRules(stored) {
     const v = s[key];
     if (v == null || (Array.isArray(v) && v.length === 0)) continue;
     if (key === 'fees') {
-      // A stored fee replaces the default for that site only.
-      for (const [site, fee] of Object.entries(v)) if (fee && fee.rate != null) base.fees[site] = fee;
+      // A stored fee changes that site only, and only the parts it sets. A stored rate with no flat fee
+      // keeps the default flat fee, so eBay's $0.40 per order is not lost when only the rate is sent.
+      for (const [site, fee] of Object.entries(v)) {
+        if (!fee || fee.rate == null) continue;
+        const was = base.fees[site] || {};
+        base.fees[site] = {
+          rate: fee.rate,
+          flat: fee.flat != null ? fee.flat : (was.flat ?? null),
+          plus_shipping: fee.plus_shipping === true || was.plus_shipping === true,
+          confirmed: fee.confirmed === true,
+          note: fee.note || was.note || null,
+        };
+      }
     } else base[key] = v;
   }
   return { ...base, rules_source: RULES_SOURCE };
