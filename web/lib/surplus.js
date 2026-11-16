@@ -309,6 +309,10 @@ export function assessLot(raw, nowMs = null) {
     premium_amount: premium,
     premium_text: premiumPct == null ? 'unknown' : `${round2(premiumPct)}%`,
     premium_amount_text: moneyOrUnknown(premium),
+    premium_note: [
+      premium != null ? `Premium dollars ${moneyText(premium)}` : null,
+      lot.premium_min != null ? `Minimum ${moneyText(lot.premium_min)} per auction.` : null,
+    ].filter(Boolean).join('. ') || null,
     tax_amount: tax,
     tax_text: moneyOrUnknown(tax),
     tax_label: lot.tax_basis === 'assumption'

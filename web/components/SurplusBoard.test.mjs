@@ -39,7 +39,15 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /Used for resale/);
   assert.match(html, /data-field="net-estimate"/);
   assert.match(html, /Estimate, not confirmed/);
-  assert.match(html, /Minimum \$1 per auction/);
+  assert.match(html, /Minimum \$1\.00 per auction/);
+  const noBid = renderToStaticMarkup(e(SurplusBoard, {
+    view: { ...view, lots: view.lots.filter((lot) => lot.id === 'ps-4123530'), trips: [] },
+    loading: false,
+    failed: false,
+  }));
+  assert.match(noBid, /8\.5%/);
+  assert.match(noBid, /Minimum \$1\.00 per auction/);
+  assert.equal(noBid.includes('Premium dollars'), false);
   assert.equal(html.includes('Place bid'), false);
   assert.equal(html.includes('<form'), false);
   assert.equal((html.match(/data-lot=/g) || []).length, 13);
