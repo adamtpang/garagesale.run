@@ -85,3 +85,37 @@ test('the check endpoint and the write endpoints give the reason on a 401', asyn
     if (prev === undefined) delete process.env.GST_WORKER_KEY; else process.env.GST_WORKER_KEY = prev;
   }
 });
+
+test('every worker route goes through the shared key check, with no raw compare left', async () => {
+  const fs = await import('fs');
+  const path = await import('path');
+  const root = path.join(process.cwd(), 'app', 'api');
+  const files = [];
+  const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); if (e.isDirectory()) walk(f); else if (e.name === 'route.js') files.push(f); } };
+  walk(root);
+  assert.ok(files.length > 10);
+  // The key env var is read in lib/workerKey.js only. A route that reads it is doing its own compare.
+  const raw = files.filter((f) => /GST_WORKER_KEY/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(root, f));
+  assert.deepEqual(raw, []);
+});
+
+test('the job events route accepts a padded stored key and a rotated key', async () => {
+  const prev = { k: process.env.GST_WORKER_KEY, n: process.env.GST_WORKER_KEY_NEXT };
+  process.env.GST_WORKER_KEY = `${KEY}\n`;
+  process.env.GST_WORKER_KEY_NEXT = NEXT;
+  try {
+    const events = await import('../app/api/jobs/[id]/events/route.js');
+    const post = (headers) => events.POST(new Request('http://localhost/api/jobs/abc123/events', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: '{}' }), { params: { id: 'abc123' } });
+    const denied = await post({ 'x-worker-key': 'nope' });
+    assert.equal(denied.status, 401);
+    assert.equal((await denied.json()).reason, 'key-does-not-match');
+    // An accepted key gets past the check. The empty body is then refused for its own reason, not as unauthorized.
+    for (const headers of [{ 'x-worker-key': KEY }, { 'x-worker-key': NEXT }, { authorization: `Bearer ${KEY}` }]) {
+      const res = await post(headers);
+      assert.equal(res.status, 400);
+      assert.match((await res.json()).error, /body must have type/);
+    }
+  } finally {
+    for (const [k, name] of [['k', 'GST_WORKER_KEY'], ['n', 'GST_WORKER_KEY_NEXT']]) { if (prev[k] === undefined) delete process.env[name]; else process.env[name] = prev[k]; }
+  }
+});
