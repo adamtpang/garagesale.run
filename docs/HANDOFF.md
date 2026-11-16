@@ -1,5 +1,7 @@
 # Garage Sale handoff
 
+Start here next: docs/REVIEW-2026-11-16.md (review of PRs #6 to #12 and the build plan).
+
 Plain status for the next session. Nov 16, 2026. No secrets in this file. Env var names only. Never print key values.
 
 Repo: [adamtpang/garagesale.run](https://github.com/adamtpang/garagesale.run). App is Next.js in `web/`. Live site is the Vercel project `grokbothackathon`.
