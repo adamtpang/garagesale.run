@@ -39,18 +39,50 @@ test('haul is round-trip miles times $0.18 and all-in adds premium and assumed t
   const lot = assessLot(seed.lots[0], NOW);
   assert.equal(lot.round_trip_miles, 32);
   assert.equal(lot.haul_cost, 5.76);
-  assert.equal(lot.premium_amount, 0.85);
-  assert.equal(lot.tax_amount, 0.9);
+  // City of Schertz states a $1 minimum premium per auction, which beats 8.5% of $10.
+  assert.equal(lot.premium_amount, 1);
+  assert.equal(lot.tax_amount, 0.91);
   assert.equal(lot.tax_rate, 0.0825);
   assert.equal(lot.tax_label, 'seller says tax added, rate not stated');
-  assert.equal(lot.all_in, 17.51);
+  assert.equal(lot.all_in, 17.67);
   assert.equal(lot.all_in_basis, 'assumption');
   assert.match(lot.all_in_note, /assumed 8.25% tax/);
 });
 
+test('a stated minimum premium applies only when it is higher than the percentage', () => {
+  assert.equal(assessLot({ ...seed.lots[0], premium_min: null }).premium_amount, 0.85);
+  assert.equal(assessLot({ ...seed.lots[0], current_bid: 5 }).premium_amount, 1);
+  assert.equal(assessLot({ ...seed.lots[0], current_bid: 100 }).premium_amount, 8.5);
+});
+
+test('an estimate needs every input, is labeled, and never makes a lot a buy', () => {
+  const lot = assessLot({ ...seed.lots[0], status: BUY_STATUS }, NOW);
+  assert.equal(lot.unit_resale, 36.67);
+  assert.equal(lot.gross, 293.36);
+  assert.equal(lot.fee_amount, 40.3);
+  assert.equal(lot.shipping_text, '$25.00 assumption');
+  assert.equal(lot.net, null);
+  assert.equal(lot.profit_confidence, 'unknown');
+  assert.equal(lot.net_estimate, 210.39);
+  assert.match(lot.net_estimate_note, /Estimate, not confirmed/);
+  assert.match(lot.net_estimate_note, /tax rate, miles, shipping/);
+  assert.match(lot.net_estimate_note, /every unit sells/);
+  assert.equal(lot.status, 'watch');
+  assert.match(lot.profit_reason, /shipping/);
+
+  const noShip = assessLot({ ...seed.lots[0], shipping: null, shipping_basis: 'unknown' }, NOW);
+  assert.equal(noShip.net_estimate, null);
+  const confirmed = assessLot(confirmedLot(), NOW);
+  assert.notEqual(confirmed.net, null);
+  assert.equal(confirmed.net_estimate, null);
+});
+
+const ASKING_ONLY = [{ marketplace: 'eBay', type: 'asking', price: 114.98, title: 'Used Zebra TC700K with cradle', url: null }];
+
 test('asking comps do not set resale, profit, ROI, or a buy mark', () => {
   const lot = assessLot({
     ...seed.lots[0],
+    comps: ASKING_ONLY,
     net: 999,
     profit: 999,
     all_in: 1,
@@ -63,6 +95,7 @@ test('asking comps do not set resale, profit, ROI, or a buy mark', () => {
   assert.equal(lot.net, null);
   assert.equal(lot.roi, null);
   assert.equal(lot.net_text, 'unknown');
+  assert.equal(lot.net_estimate, null);
   assert.equal(lot.roi_text, 'unknown');
   assert.equal(lot.profit_confidence, 'unknown');
   assert.equal(lot.status, 'watch');
@@ -75,7 +108,14 @@ test('asking comps do not set resale, profit, ROI, or a buy mark', () => {
 });
 
 test('a scan bid range is not used as the lot bid', () => {
-  const lot = assessLot(seed.lots.find((l) => l.id === 'ps-4123530'), NOW);
+  const lot = assessLot({
+    ...seed.lots.find((l) => l.id === 'ps-4123530'),
+    bid_scan_low: 5,
+    bid_scan_high: 5.5,
+    bid_scan_note: 'A range across six auctions, not this auction\'s bid.',
+  }, NOW);
+  assert.equal(lot.opening_bid, 5);
+  assert.equal(lot.net_estimate, null);
   assert.equal(lot.bid_count, 0);
   assert.equal(lot.current_bid, null);
   assert.equal(lot.current_bid_text, 'unknown');
@@ -155,9 +195,9 @@ test('omitted shipping stays unknown and a non-positive confirmed net is not a b
 });
 
 test('needs preview and skip are kept when resale is unknown', () => {
-  assert.equal(assessLot({ ...seed.lots[0], status: 'needs preview' }).status, 'needs preview');
-  assert.equal(assessLot({ ...seed.lots[0], status: 'skip' }).status, 'skip');
-  assert.equal(assessLot({ ...seed.lots[0], status: 'buy now' }).status, 'watch');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'needs preview' }).status, 'needs preview');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'skip' }).status, 'skip');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'buy now' }).status, 'watch');
 });
 
 test('same pickup address shares one haul and unknown addresses do not', () => {
@@ -208,16 +248,30 @@ test('the Nov 15 2026 snapshot is real scan data and marks nothing a buy', () =>
     'ps-4123506', 'ps-4123508', 'ps-4123518', 'ps-4123522', 'ps-4123523', 'ps-4123524',
     'ps-4123526', 'ps-4123528', 'ps-4123530', 'ps-4123532', 'ps-4124526', 'ps-4128202', 'ps-4128212',
   ].sort());
+  const schertzWithComps = ['ps-4123518', 'ps-4123522', 'ps-4123523', 'ps-4123524', 'ps-4123526', 'ps-4123528', 'ps-4123530'];
   for (const lot of view.lots) {
+    // Nothing is confirmed: the tax rate, miles, and shipping are still assumptions.
     assert.equal(lot.net, null);
     assert.equal(lot.roi, null);
-    assert.equal(lot.unit_resale, null);
     assert.notEqual(lot.status, BUY_STATUS);
-    assert.equal(lot.comps.some((c) => c.type === 'sold'), false);
     assert.equal(lot.places_bids, false);
+    // Every sold comp is a cited eBay listing. Lots without research stay unknown.
+    for (const c of lot.comps.filter((x) => x.type === 'sold')) assert.match(c.url, /^https:\/\/www\.ebay\.com\/itm\/\d+$/);
+    if (!schertzWithComps.includes(lot.id)) {
+      assert.equal(lot.unit_resale, null);
+      assert.equal(lot.net_estimate, null);
+    }
   }
   assert.equal(byId['ps-4123518'].status, 'watch');
   assert.equal(byId['ps-4123518'].quantity, 8);
+  assert.equal(byId['ps-4123518'].unit_resale, 36.67);
+  assert.equal(byId['ps-4123524'].quantity, 1);
+  assert.equal(byId['ps-4123524'].current_bid, 5);
+  assert.equal(byId['ps-4123524'].premium_amount, 1);
+  assert.equal(byId['ps-4123524'].all_in, 12.26);
+  assert.equal(byId['ps-4123528'].current_bid, 5.5);
+  assert.equal(byId['ps-4123530'].current_bid, null);
+  assert.equal(byId['ps-4123530'].net_estimate, null);
   assert.equal(byId['ps-4124526'].status, 'needs preview');
   assert.equal(byId['ps-4124526'].all_in, 165.02);
   assert.equal(byId['ps-4124526'].close_text, 'Fri, Nov 20, 2026, 3:00 PM CT');
@@ -228,11 +282,14 @@ test('the Nov 15 2026 snapshot is real scan data and marks nothing a buy', () =>
   assert.equal(byId['ps-4128202'].all_in, null);
   assert.equal(byId['ps-4128202'].close_text, 'unknown');
   assert.equal(byId['ps-4123532'].current_bid, 1);
-  assert.equal(byId['ps-4123532'].all_in, null);
+  assert.equal(byId['ps-4123532'].all_in, 7.93);
+  assert.equal(byId['ps-4123532'].unit_resale, null);
   assert.equal(byId['ps-4123508'].bid_count, 0);
   assert.equal(byId['ps-4123506'].bid_count, 0);
-  assert.equal(view.trips.length, 0);
-  assert.match(view.trip_note, /nothing is combined/);
+  // The Zebra lot, six S20 FE phones, and the S10e share the Schertz pickup address.
+  assert.equal(view.trips.length, 1);
+  assert.equal(view.trips[0].lot_ids.length, 8);
+  assert.equal(view.trips[0].shared_haul, 5.76);
 });
 
 test('GET is public, POST requires the worker key, and a local write does not change the seed', async () => {
@@ -251,7 +308,7 @@ test('GET is public, POST requires the worker key, and a local write does not ch
     assert.equal(body.sample, false);
     assert.equal(body.places_bids, false);
     assert.equal(body.lots.length, 13);
-    assert.equal(body.lots.find((l) => l.id === 'ps-4123518').all_in, 17.51);
+    assert.equal(body.lots.find((l) => l.id === 'ps-4123518').all_in, 17.67);
 
     const denied = await surplus.POST(new Request('http://localhost/api/surplus', {
       method: 'POST',

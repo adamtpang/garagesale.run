@@ -94,6 +94,23 @@ Pickup the scan recorded for this seller: appointment only, weekdays 9:00 AM–4
 
 Tax on these lots: seller says tax is added. The rate was not stated. The board labels 8.25% as that assumption.
 
+#### Schertz refresh, Nov 15, 2026, 8 PM CT (Claude Code)
+
+Read-only. No bids, no seller messages. The board seed now holds this.
+
+- Bids: Zebra $10 (1 bid). S20 FE auctions 4123522, 4123523, 4123524, 4123526 at $5 (1 bid each), 4123528 at $5.50 (2 bids), 4123530 no bids ($5 opening). S10e $1 (2 bids).
+- Close: Tue Nov 17, 2026, 8:00 PM CT (the page says 7:00 PM MST) and "might extend."
+- All eight lots list the same pickup: 1400 Schertz Pkwy Bldg 9. One trip covers them.
+- Premium is 8.5% with a $1 minimum per auction. The board math used to miss the minimum.
+- Zebra photos: 8 units, every battery bay is empty, no chargers or cradles. They cannot be powered on at preview.
+- Each S20 FE auction is one phone, not a group. Back labels read at full size on 4123524 and 4123530: SM-G781V (Verizon), 128GB. The other four have the same style of label and were not read. Lock and power state are unknown.
+- eBay sold comps were read through Adam's own Helium browser. Cloud scrapers are blocked.
+  - Zebra TC700K, as-is or for parts: about $30 to $44 a unit. A lot of 5 of the same model number sold for $200 on Oct 19, 2026 (item 128064350319). A tested unit with a battery sold for $17.99 at auction.
+  - SM-G781V 128GB working: 24 sold, $59 to $149.99, median $89.99. For parts: 11 sold, $37.50 to $80. No sold listing named a Google-locked unit, so that price is unknown.
+- eBay fee: 13.6% plus $0.40 per order, from eBay's selling fees page on Nov 15, 2026.
+- Still assumptions: 8.25% tax, 16 miles, shipping ($25 for the Zebra box, $6 a phone).
+- Rule check: Schertz is about 16 miles and the flip rule is 15. One phone alone cannot reach $100 profit. Adam has not approved a bid on any lot.
+
 ### TFC, east Austin
 
 Lot 13, auc 4124526. 6506 Bolm Road, Austin 78721, about 52 miles. 4 DVRs, 2 money counters, 4 monitors, 2 tablets. $127.50, 6 bids. Closes Fri Nov 20, 2026, 3:00 PM CT. Preview Thu Nov 19, 8:30 AM–4:00 PM. Removal Nov 23–Dec 7, weekdays. 6% premium. Status on the board: needs preview. Resale unknown.

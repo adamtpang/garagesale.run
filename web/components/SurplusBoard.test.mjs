@@ -32,7 +32,14 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /Tue, Nov 17, 2026, 8:00 PM CT/);
   assert.match(html, /needs preview/);
   assert.match(html, /Combine trips/);
-  assert.match(html, /nothing is combined/);
+  // The Schertz lots share one pickup address, so one haul covers them.
+  assert.match(html, /One round trip is \$5\.76/);
+  // Sold comps are clickable, and the estimate is labeled as an estimate.
+  assert.match(html, /href="https:\/\/www\.ebay\.com\/itm\/128064350319"/);
+  assert.match(html, /Used for resale/);
+  assert.match(html, /data-field="net-estimate"/);
+  assert.match(html, /Estimate, not confirmed/);
+  assert.match(html, /Minimum \$1 per auction/);
   assert.equal(html.includes('Place bid'), false);
   assert.equal(html.includes('<form'), false);
   assert.equal((html.match(/data-lot=/g) || []).length, 13);

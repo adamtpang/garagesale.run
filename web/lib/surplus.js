@@ -127,8 +127,8 @@ export function cleanLot(raw) {
   if (taxBasis === 'assumption' && taxRate == null) taxRate = TAX_ASSUMPTION_RATE;
   const feeBasis = raw.fee_basis === 'stated' || raw.fee_basis === 'assumption' ? raw.fee_basis : 'unknown';
   const feeRate = feeBasis === 'unknown' ? null : rate(raw.fee_rate);
-  const shippingBasis = raw.shipping_basis === 'stated' ? 'stated' : 'unknown';
-  const shipping = shippingBasis === 'stated' ? money(raw.shipping) : null;
+  const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
+  const shipping = shippingBasis === 'unknown' ? null : money(raw.shipping);
   const status = STATUSES.includes(raw.status) ? raw.status : 'watch';
   const comps = (Array.isArray(raw.comps) ? raw.comps : []).slice(0, 12).map(cleanComp).filter(Boolean);
   const marketplaces = (Array.isArray(raw.marketplaces) ? raw.marketplaces : []).map((m) => str(m, 80)).filter(Boolean).slice(0, 6);
@@ -160,6 +160,8 @@ export function cleanLot(raw) {
       return new Date(Date.parse(s)).toISOString();
     })(),
     premium_pct: (() => { const n = money(raw.premium_pct); return n != null && n >= 0 ? n : null; })(),
+    // Some sellers state a minimum premium per auction (City of Schertz: $1).
+    premium_min: (() => { const n = money(raw.premium_min); return n != null && n >= 0 ? n : null; })(),
     tax_rate: taxRate != null && taxRate >= 0 ? taxRate : null,
     tax_basis: taxBasis,
     pickup_address: str(raw.pickup_address, 200),
@@ -172,8 +174,12 @@ export function cleanLot(raw) {
     fee_rate: feeRate != null && feeRate >= 0 ? feeRate : null,
     fee_basis: feeBasis,
     fee_note: str(raw.fee_note, 240),
-    shipping: shipping != null && shipping >= 0 ? shipping : (shippingBasis === 'stated' ? null : null),
-    shipping_basis: shipping != null && shipping >= 0 ? 'stated' : 'unknown',
+    // Flat platform fee for the whole lot, such as eBay's per-order fee times the number of orders.
+    fee_fixed: (() => { const n = feeBasis === 'unknown' ? null : money(raw.fee_fixed); return n != null && n >= 0 ? n : null; })(),
+    shipping: shipping != null && shipping >= 0 ? shipping : null,
+    shipping_basis: shipping != null && shipping >= 0 ? shippingBasis : 'unknown',
+    shipping_note: str(raw.shipping_note, 240),
+    resale_note: str(raw.resale_note, 300),
     status,
     risks,
     scan_notes: str(raw.scan_notes, 500),
@@ -223,7 +229,7 @@ export function assessLot(raw, nowMs = null) {
   if (!lot) return null;
   const bid = lot.current_bid;
   const premiumPct = lot.premium_pct;
-  const premium = bid != null && premiumPct != null ? round2(bid * (premiumPct / 100)) : null;
+  const premium = bid != null && premiumPct != null ? round2(Math.max(bid * (premiumPct / 100), lot.premium_min || 0)) : null;
   const taxBase = bid != null && premium != null ? round2(bid + premium) : null;
   const tax = taxBase != null && lot.tax_rate != null && lot.tax_basis !== 'unknown'
     ? round2(taxBase * lot.tax_rate) : null;
@@ -242,12 +248,21 @@ export function assessLot(raw, nowMs = null) {
   const quantity = lot.quantity;
   const gross = unitResale != null && quantity != null ? round2(unitResale * quantity) : null;
   const feeKnown = lot.fee_rate != null && (lot.fee_basis === 'stated' || lot.fee_basis === 'assumption');
-  const fee = gross != null && feeKnown ? round2(gross * lot.fee_rate) : null;
-  const ship = lot.shipping_basis === 'stated' && lot.shipping != null ? lot.shipping : null;
+  const fee = gross != null && feeKnown ? round2(gross * lot.fee_rate + (lot.fee_fixed || 0)) : null;
+  const ship = lot.shipping_basis !== 'unknown' && lot.shipping != null ? lot.shipping : null;
   const inputsConfirmed = unitResale != null && gross != null && fee != null && lot.fee_basis === 'stated'
-    && ship != null && allIn != null && allInBasis === 'stated';
+    && ship != null && lot.shipping_basis === 'stated' && allIn != null && allInBasis === 'stated';
   const net = inputsConfirmed ? round2(gross - fee - ship - allIn) : null;
   const roi = net != null && allIn > 0 ? round4(net / allIn) : null;
+  // An estimate needs every input present. It is shown apart from confirmed profit and never makes a lot a buy.
+  const netEstimate = net == null && gross != null && fee != null && ship != null && allIn != null
+    ? round2(gross - fee - ship - allIn) : null;
+  const estimateAssumptions = netEstimate == null ? [] : [
+    lot.tax_basis !== 'stated' ? 'tax rate' : null,
+    lot.miles_approximate !== false ? 'miles' : null,
+    lot.fee_basis !== 'stated' ? 'platform fee' : null,
+    lot.shipping_basis !== 'stated' ? 'shipping' : null,
+  ].filter(Boolean);
   const profitConfidence = net != null ? 'confirmed' : 'unknown';
 
   let profitReason;
@@ -258,7 +273,7 @@ export function assessLot(raw, nowMs = null) {
   else {
     const missing = [];
     if (!(lot.fee_rate != null && lot.fee_basis === 'stated')) missing.push('platform fee');
-    if (ship == null) missing.push('shipping');
+    if (ship == null || lot.shipping_basis !== 'stated') missing.push('shipping');
     if (allInBasis !== 'stated') missing.push('all-in cost');
     if (quantity == null) missing.push('unit count');
     profitReason = `Profit is not confirmed. Missing or unconfirmed: ${missing.join(', ') || 'a required cost'}. Missing costs are not treated as zero.`;
@@ -323,11 +338,15 @@ export function assessLot(raw, nowMs = null) {
     fee_text: lot.fee_basis === 'unknown' || lot.fee_rate == null
       ? 'unknown'
       : `${round2(lot.fee_rate * 100)}% ${lot.fee_basis === 'assumption' ? 'assumption' : 'stated'}`,
-    shipping_text: ship == null ? 'unknown' : moneyText(ship),
+    shipping_text: ship == null ? 'unknown' : `${moneyText(ship)}${lot.shipping_basis === 'assumption' ? ' assumption' : ''}`,
     gross,
     gross_text: moneyOrUnknown(gross),
     net,
     net_text: moneyOrUnknown(net),
+    net_estimate: netEstimate,
+    net_estimate_text: netEstimate == null ? null : moneyText(netEstimate),
+    net_estimate_note: netEstimate == null ? null
+      : `Estimate, not confirmed. Assumed: ${estimateAssumptions.join(', ') || 'none'}. It also assumes every unit sells at the median sold comp.`,
     roi,
     roi_text: roi == null ? 'unknown' : `${round2(roi * 100)}%`,
     profit_confidence: profitConfidence,
