@@ -26,6 +26,18 @@ function fact(label, value, extra, className) {
     extra ? e('div', { className: 'mt-0.5 break-words text-xs text-muted-foreground' }, extra) : null);
 }
 
+const RULE_TONE = { pass: 'bg-[#9be8b8] text-foreground', fail: 'bg-red-200 text-red-800', unknown: 'bg-amber-200 text-amber-950' };
+const RULE_WORD = { pass: 'Pass', fail: 'Fail', unknown: 'Unknown' };
+
+// Each rule shows a word as well as a color.
+function ruleChecks(lot) {
+  if (!lot.rule_checks || !lot.rule_checks.length) return null;
+  return e('ul', { className: 'mb-3 grid gap-1.5 rounded-xl border border-border bg-white p-3', 'data-field': 'rule-checks', 'aria-label': 'Rule checks' },
+    lot.rule_checks.map((c) => e('li', { key: c.rule, className: 'flex items-start gap-2 text-xs leading-5', 'data-rule': c.rule, 'data-result': c.result },
+      e('span', { className: `inline-flex w-[4.5rem] shrink-0 justify-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${RULE_TONE[c.result]}` }, RULE_WORD[c.result]),
+      e('span', { className: 'min-w-0' }, e('span', { className: 'font-semibold' }, `${c.label}. `), c.text))));
+}
+
 function link(href, text) {
   if (!href) return e('span', { className: 'text-muted-foreground' }, 'no link');
   return e('a', { href, target: '_blank', rel: 'noopener', className: 'break-all text-link underline-offset-4 hover:underline' }, text);
@@ -74,7 +86,7 @@ function lotCard(lot) {
       fact('Closes', lot.close_text, lot.countdown ? `Countdown ${lot.countdown}` : null),
       fact('Premium', lot.premium_text, lot.premium_note),
       fact('Tax', lot.tax_text, `${lot.tax_rate_text}. ${lot.tax_label}`),
-      fact('Haul', lot.haul_text, lot.round_trip_miles == null ? 'Round trip unknown.' : `${lot.round_trip_miles} round-trip miles × $0.18. ${lot.miles_note || ''}`.trim()),
+      fact('Haul', lot.haul_text, lot.round_trip_miles == null ? 'Round trip unknown.' : `${lot.round_trip_miles} round-trip miles × ${lot.haul_rate_text}. ${lot.miles_note || ''}`.trim()),
       fact('Pickup', lot.pickup_address || 'unknown', [lot.pickup_terms, lot.pickup_deadline].filter(Boolean).join(' '), 'col-span-2'),
       fact('Quantity', lot.quantity == null ? 'unknown' : String(lot.quantity), lot.quantity_note),
       fact('All-in', lot.all_in_text, lot.all_in_note, 'col-span-2'))));
@@ -109,7 +121,8 @@ function lotCard(lot) {
       e('h2', { className: 'text-lg font-semibold leading-snug' }, lot.title || 'Untitled lot'),
       e('p', { className: 'mt-1 text-xs text-muted-foreground' }, [lot.seller, lot.city, lot.auction_id ? `Auction ${lot.auction_id}` : null].filter(Boolean).join(' · '))),
     e('span', { className: `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${TONE[lot.status] || TONE.watch}` }, lot.status)),
-  lot.status_reason ? e('p', { className: 'mb-3 text-xs text-amber-950' }, lot.status_reason) : null,
+  lot.status_reason ? e('p', { className: 'mb-3 text-sm font-medium', 'data-field': 'status-reason' }, lot.status_reason) : null,
+  ruleChecks(lot),
   e('div', { 'data-sides': 'buy-sell', className: 'grid gap-3 md:grid-cols-2' }, buy, sell),
   lot.risks.length ? e('p', { className: 'mt-3 text-xs text-amber-950' }, `Risk: ${lot.risks.join(' ')}`) : null,
   lot.scan_notes ? e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, lot.scan_notes) : null);
@@ -143,11 +156,11 @@ export default function SurplusBoard({ view, failed, loading }) {
           view.notice,
         ].filter(Boolean).join(' '))),
 
-      e('div', { className: 'mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4' },
-        [['Home', view.rules.home], ['Haul', '$0.18 × round-trip miles'], ['Tax assumption', '8.25%'], ['Bids', 'Not placed here']].map(([k, v]) => e('div', { key: k, className: 'rounded-2xl border border-border bg-card px-4 py-3' },
+      e('div', { className: 'mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3', 'data-field': 'rules' },
+        [['Max cost per flip', view.rules.max_cost_text], ['Min profit', `${view.rules.min_profit_text} after fees and gas`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Haul', `${view.rules.haul_per_mile_text} × round-trip miles${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Tax assumption', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v]) => e('div', { key: k, className: 'rounded-2xl border border-border bg-card px-4 py-3' },
           e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, k),
           e('div', { className: 'mt-1 text-sm font-medium' }, v)))),
-      e('p', { className: 'mb-4 text-sm text-muted-foreground' }, `${view.rules.tax_assumption_label}. ${view.rules.tax_base_note} A lot stays off the buy list while resale or any cost is unknown.`),
+      e('p', { className: 'mb-4 text-sm text-muted-foreground' }, `${view.rules.tax_assumption_label}. ${view.rules.tax_base_note} A lot that breaks a rule is skipped, with the reason on the lot. A lot stays off the buy list while resale or any cost is unknown.`),
 
       e('div', { className: 'mb-5 rounded-2xl border border-border bg-card p-4' },
         e('h2', { className: 'text-sm font-semibold' }, 'Combine trips'),

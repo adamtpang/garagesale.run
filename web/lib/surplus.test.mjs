@@ -2,6 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import { assessLot, assessSnapshot, formatClose, tripGroups, BUY_STATUS } from './surplus.js';
+import { activeRules, checkLot, DEFAULT_RULES } from './rules.js';
+import { RULES_CONFIG } from '../config/rules.js';
+
+// Rules wide enough to never trip. Tests about comps, fees and confirmation use these,
+// so they check that logic alone. The rule tests below use Adam's real rules.
+const LOOSE = activeRules({ min_profit: 0, max_pickup_miles: 100000, max_per_flip: 100000, bankroll: 100000 });
 
 const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
@@ -65,7 +71,7 @@ test('the premium minimum stays visible when there is no current bid', () => {
 });
 
 test('an estimate needs every input, is labeled, and never makes a lot a buy', () => {
-  const lot = assessLot({ ...seed.lots[0], status: BUY_STATUS }, NOW);
+  const lot = assessLot({ ...seed.lots[0], status: BUY_STATUS }, NOW, LOOSE);
   assert.equal(lot.unit_resale, 36.67);
   assert.equal(lot.gross, 293.36);
   assert.equal(lot.fee_amount, 40.3);
@@ -97,7 +103,7 @@ test('asking comps do not set resale, profit, ROI, or a buy mark', () => {
     all_in: 1,
     unit_resale: 114.98,
     status: BUY_STATUS,
-  }, NOW);
+  }, NOW, LOOSE);
   assert.equal(lot.unit_resale, null);
   assert.equal(lot.resale_basis, 'unknown');
   assert.equal(lot.gross, null);
@@ -140,7 +146,7 @@ test('confirmed profit uses sold comps only and ROI is net divided by all-in', (
       { type: 'asking', price: 5, url: 'https://www.ebay.com/itm/123456789013', title: 'Cheap ask', marketplace: 'eBay' },
       { type: 'sold', price: 50, url: 'https://www.ebay.com/itm/123456789014', title: 'Other sold', marketplace: 'eBay' },
     ],
-  }), NOW);
+  }), NOW, LOOSE);
   assert.equal(lot.unit_resale, 45);
   assert.equal(lot.resale_basis, 'sold');
   assert.equal(lot.gross, 90);
@@ -157,7 +163,7 @@ test('confirmed profit uses sold comps only and ROI is net divided by all-in', (
 });
 
 test('missing shipping, an assumed fee, assumed tax, or a sold comp without a URL blocks confirmation', () => {
-  const noShip = assessLot(confirmedLot({ shipping: null, shipping_basis: 'unknown' }));
+  const noShip = assessLot(confirmedLot({ shipping: null, shipping_basis: 'unknown' }), null, LOOSE);
   assert.equal(noShip.shipping_text, 'unknown');
   assert.equal(noShip.net, null);
   assert.equal(noShip.status, 'watch');
@@ -169,7 +175,7 @@ test('missing shipping, an assumed fee, assumed tax, or a sold comp without a UR
   assert.equal(assumedFee.net, null);
   assert.equal(assumedFee.profit_confidence, 'unknown');
 
-  const assumedTax = assessLot(confirmedLot({ tax_basis: 'assumption', tax_rate: 0.0825 }));
+  const assumedTax = assessLot(confirmedLot({ tax_basis: 'assumption', tax_rate: 0.0825 }), null, LOOSE);
   assert.equal(assumedTax.tax_amount, 0.83);
   assert.equal(assumedTax.all_in_basis, 'assumption');
   assert.notEqual(assumedTax.all_in, null);
@@ -182,13 +188,13 @@ test('missing shipping, an assumed fee, assumed tax, or a sold comp without a UR
 
   const noUrl = assessLot(confirmedLot({
     comps: [{ type: 'sold', price: 40, url: null, title: 'Sold with no link', marketplace: 'eBay' }],
-  }));
+  }), null, LOOSE);
   assert.equal(noUrl.unit_resale, null);
   assert.match(noUrl.profit_reason, /no URL/);
   assert.equal(noUrl.status, 'watch');
 });
 
-test('omitted shipping stays unknown and a non-positive confirmed net is not a buy', () => {
+test('omitted shipping stays unknown and a confirmed loss is skipped', () => {
   const omitted = assessLot(confirmedLot({ shipping: undefined, shipping_basis: undefined }));
   assert.equal(omitted.shipping, null);
   assert.equal(omitted.net, null);
@@ -196,17 +202,17 @@ test('omitted shipping stays unknown and a non-positive confirmed net is not a b
   const loser = assessLot(confirmedLot({
     current_bid: 100,
     comps: [{ type: 'sold', price: 20, url: 'https://www.ebay.com/itm/123456789012', title: 'Sold', marketplace: 'eBay' }],
-  }));
+  }), null, LOOSE);
   assert.ok(loser.net < 0);
   assert.equal(loser.profit_confidence, 'confirmed');
-  assert.equal(loser.status, 'watch');
-  assert.match(loser.status_reason, /not above zero/);
+  assert.equal(loser.status, 'skip');
+  assert.match(loser.status_reason, /Confirmed profit -?\$?-?[\d.]+ is under the \$0\.00 minimum/);
 });
 
 test('needs preview and skip are kept when resale is unknown', () => {
-  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'needs preview' }).status, 'needs preview');
-  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'skip' }).status, 'skip');
-  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'buy now' }).status, 'watch');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'needs preview' }, null, LOOSE).status, 'needs preview');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'skip' }, null, LOOSE).status, 'skip');
+  assert.equal(assessLot({ ...seed.lots[0], comps: ASKING_ONLY, status: 'buy now' }, null, LOOSE).status, 'watch');
 });
 
 test('same pickup address shares one haul and unknown addresses do not', () => {
@@ -242,7 +248,7 @@ test('close time is 12-hour Central time with a countdown', () => {
   assert.equal(friday.close_text, 'Fri, Nov 20, 2026, 3:00 PM CT');
 });
 
-test('the Nov 15 2026 snapshot is real scan data and marks nothing a buy', () => {
+test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and every lot breaks a rule', () => {
   assert.equal(seed.sample, false);
   assert.equal(seed.scanned_on, '2026-11-15');
   assert.match(seed.label, /Nov 15, 2026 scan snapshot/);
@@ -271,7 +277,18 @@ test('the Nov 15 2026 snapshot is real scan data and marks nothing a buy', () =>
       assert.equal(lot.net_estimate, null);
     }
   }
-  assert.equal(byId['ps-4123518'].status, 'watch');
+  // Under Adam's rules every lot in this scan is past the 15-mile radius: Schertz is about 16 miles,
+  // TFC about 52 and Hallettsville about 73.
+  for (const lot of view.lots) {
+    assert.equal(lot.status, 'skip', lot.id);
+    assert.match(lot.status_reason, /Skipped by rule\..*past the 15-mile pickup limit/, lot.id);
+  }
+  assert.match(byId['ps-4124526'].status_reason, /About 52 mi/);
+  assert.match(byId['ps-4124526'].status_reason, /All-in cost \$165\.02 is over the \$100\.00 max per flip/);
+  assert.match(byId['ps-4128212'].status_reason, /About 73 mi/);
+  assert.equal(view.rules.max_cost, 100);
+  assert.equal(view.rules.min_profit, 100);
+  assert.equal(view.rules.pickup_miles, 15);
   assert.equal(byId['ps-4123518'].quantity, 8);
   assert.equal(byId['ps-4123518'].unit_resale, 36.67);
   assert.equal(byId['ps-4123524'].quantity, 1);
@@ -281,7 +298,6 @@ test('the Nov 15 2026 snapshot is real scan data and marks nothing a buy', () =>
   assert.equal(byId['ps-4123528'].current_bid, 5.5);
   assert.equal(byId['ps-4123530'].current_bid, null);
   assert.equal(byId['ps-4123530'].net_estimate, null);
-  assert.equal(byId['ps-4124526'].status, 'needs preview');
   assert.equal(byId['ps-4124526'].all_in, 165.02);
   assert.equal(byId['ps-4124526'].close_text, 'Fri, Nov 20, 2026, 3:00 PM CT');
   assert.equal(byId['ps-4128212'].all_in, 32.27);
@@ -341,8 +357,10 @@ test('GET is public, POST requires the worker key, and a local write does not ch
     }, NOW);
     assert.equal(written.source, 'stored');
     assert.equal(written.places_bids, false);
-    assert.equal(written.lots[0].status, BUY_STATUS);
+    // A write goes through the same rules. $58.40 is under the $100 minimum, so the incoming buy mark does not stick.
     assert.equal(written.lots[0].net, 58.4);
+    assert.equal(written.lots[0].status, 'skip');
+    assert.match(written.lots[0].status_reason, /under the \$100\.00 minimum/);
     const again = await readSurplus(NOW);
     assert.equal(again.source, 'stored');
     assert.equal(again.lots[0].id, 'stored-1');
@@ -354,4 +372,140 @@ test('GET is public, POST requires the worker key, and a local write does not ch
     if (prevKey === undefined) delete process.env.GST_WORKER_KEY; else process.env.GST_WORKER_KEY = prevKey;
     if (prevBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN; else process.env.BLOB_READ_WRITE_TOKEN = prevBlob;
   }
+});
+
+// Adam's rules, from config/rules.js.
+
+function ruleLot(extra = {}) {
+  // 10 units at a $40 sold comp, 10 miles out, $10 bid: confirmed net is $346.40.
+  return confirmedLot({ quantity: 10, ...extra });
+}
+const ruleOf = (lot, name) => lot.rule_checks.find((c) => c.rule === name);
+
+test('the rules config holds the Nov 3 numbers and the proposed rules are off', () => {
+  assert.equal(RULES_CONFIG.max_per_flip, 100);
+  assert.equal(RULES_CONFIG.bankroll, 100);
+  assert.equal(RULES_CONFIG.min_profit, 100);
+  assert.equal(RULES_CONFIG.max_pickup_miles, 15);
+  assert.equal(RULES_CONFIG.gas_per_mile, 0.18);
+  assert.equal(RULES_CONFIG.gas_per_mile_confirmed, false);
+  assert.equal(RULES_CONFIG.home, 'New Braunfels, TX');
+  assert.equal(RULES_CONFIG.optional.lot_roi.enabled, false);
+  assert.equal(RULES_CONFIG.optional.surplus_radius.enabled, false);
+  assert.equal(DEFAULT_RULES.pickup_miles, 15);
+  assert.equal(DEFAULT_RULES.max_cost, 100);
+});
+
+test('a lot that passes every rule with confirmed profit keeps its buy mark', () => {
+  const lot = assessLot(ruleLot(), NOW);
+  assert.equal(lot.net, 346.4);
+  assert.equal(lot.status, BUY_STATUS);
+  assert.equal(lot.rules_pass, true);
+  assert.deepEqual(lot.rule_checks.map((c) => [c.rule, c.result]), [['radius', 'pass'], ['max_cost', 'pass'], ['min_profit', 'pass']]);
+});
+
+test('past the pickup radius is a skip, at the limit is not', () => {
+  const far = assessLot(ruleLot({ miles_from_home: 15.1 }), NOW);
+  assert.equal(far.status, 'skip');
+  assert.equal(ruleOf(far, 'radius').result, 'fail');
+  assert.match(far.status_reason, /15\.1 mi from New Braunfels, TX is past the 15-mile pickup limit/);
+  const edge = assessLot(ruleLot({ miles_from_home: 15 }), NOW);
+  assert.equal(ruleOf(edge, 'radius').result, 'pass');
+  assert.equal(edge.status, BUY_STATUS);
+  // A watch lot is skipped too. The rule does not depend on the status that came in.
+  assert.equal(assessLot(ruleLot({ miles_from_home: 52, status: 'needs preview' }), NOW).status, 'skip');
+});
+
+test('an unknown distance is not a pass and cannot be a buy', () => {
+  const lot = assessLot(ruleLot({ miles_from_home: null }), NOW);
+  assert.equal(ruleOf(lot, 'radius').result, 'unknown');
+  assert.notEqual(lot.status, BUY_STATUS);
+  assert.notEqual(lot.status, 'skip');
+});
+
+test('all-in cost over $100 is a skip, and exactly $100 is not', () => {
+  // Bid $96.40 with no premium or tax, plus $3.60 gas, is $100.00 all-in.
+  const edge = assessLot(ruleLot({ current_bid: 96.4, quantity: 20 }), NOW);
+  assert.equal(edge.all_in, 100);
+  assert.equal(ruleOf(edge, 'max_cost').result, 'pass');
+  const over = assessLot(ruleLot({ current_bid: 96.41, quantity: 20 }), NOW);
+  assert.equal(over.all_in, 100.01);
+  assert.equal(over.status, 'skip');
+  assert.match(over.status_reason, /All-in cost \$100\.01 is over the \$100\.00 max per flip/);
+  // The bankroll caps cost too when it is the smaller number.
+  assert.equal(activeRules({ bankroll: 60 }).max_cost, 60);
+});
+
+test('a bid over the cap is a skip even when the all-in cost is unknown', () => {
+  const lot = assessLot(ruleLot({ current_bid: 127.5, premium_pct: null }), NOW);
+  assert.equal(lot.all_in, null);
+  assert.equal(lot.status, 'skip');
+  assert.match(lot.status_reason, /The bid alone, \$127\.50, is over/);
+  const opening = assessLot(ruleLot({ current_bid: null, opening_bid: 150 }), NOW);
+  assert.equal(opening.status, 'skip');
+  const unknown = assessLot(ruleLot({ current_bid: null }), NOW);
+  assert.equal(ruleOf(unknown, 'max_cost').result, 'unknown');
+  assert.notEqual(unknown.status, 'skip');
+});
+
+test('profit under $100 is a skip, confirmed or estimated, and exactly $100 passes', () => {
+  // 2 units at $40: gross $80, fee $8, all-in $13.60, net $58.40.
+  const low = assessLot(confirmedLot(), NOW);
+  assert.equal(low.net, 58.4);
+  assert.equal(low.status, 'skip');
+  assert.match(low.status_reason, /Confirmed profit \$58\.40 is under the \$100\.00 minimum/);
+  const estLow = assessLot(confirmedLot({ fee_basis: 'assumption' }), NOW);
+  assert.equal(estLow.net, null);
+  assert.equal(estLow.net_estimate, 58.4);
+  assert.equal(estLow.status, 'skip');
+  assert.match(estLow.status_reason, /Estimated profit \$58\.40 is under/);
+  // Bid $10, gas $3.60, no fee: 3 units at $37.87 is $113.61 gross and $100.01 net; at $37.86 it is $99.98.
+  const comp = (price) => [{ type: 'sold', price, url: 'https://www.ebay.com/itm/123456789012', title: 'Sold', marketplace: 'eBay' }];
+  const pass = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.87) }), NOW);
+  assert.equal(pass.net, 100.01);
+  assert.equal(ruleOf(pass, 'min_profit').result, 'pass');
+  const fail = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.86) }), NOW);
+  assert.equal(fail.net, 99.98);
+  assert.equal(ruleOf(fail, 'min_profit').result, 'fail');
+});
+
+test('an estimate that clears $100 stays unknown, and unknown profit is not a skip', () => {
+  const est = assessLot(ruleLot({ fee_basis: 'assumption' }), NOW);
+  assert.equal(est.net, null);
+  assert.equal(ruleOf(est, 'min_profit').result, 'unknown');
+  assert.equal(est.status, 'watch');
+  const none = assessLot(ruleLot({ comps: ASKING_ONLY, status: 'needs preview' }), NOW);
+  assert.equal(ruleOf(none, 'min_profit').result, 'unknown');
+  assert.equal(none.status, 'needs preview');
+});
+
+test('several broken rules are all named', () => {
+  const lot = assessLot(confirmedLot({ miles_from_home: 52, current_bid: 127.5 }), NOW);
+  assert.equal(lot.status, 'skip');
+  assert.deepEqual(lot.rule_checks.filter((c) => c.result === 'fail').map((c) => c.rule), ['radius', 'max_cost', 'min_profit']);
+});
+
+test('the proposed rules do nothing until they are switched on', () => {
+  const at40 = ruleLot({ miles_from_home: 40 });
+  assert.equal(assessLot(at40, NOW).status, 'skip');
+  const wide = activeRules({ optional: { surplus_radius: { enabled: true } } });
+  assert.equal(wide.pickup_miles, 60);
+  assert.equal(ruleOf(assessLot(at40, NOW, wide), 'radius').result, 'pass');
+  // "enabled" has to be exactly true.
+  assert.equal(activeRules({ optional: { surplus_radius: { enabled: 'yes' } } }).pickup_miles, 15);
+
+  assert.equal(ruleOf(assessLot(ruleLot(), NOW), 'lot_roi'), undefined);
+  const roiOn = activeRules({ optional: { lot_roi: { enabled: true } } });
+  // $80 bid, 10 units at $40: all-in $83.60, net $276.40, return about 3.31x.
+  assert.equal(ruleOf(assessLot(ruleLot({ current_bid: 80 }), NOW, roiOn), 'lot_roi').result, 'pass');
+  // $90 bid: all-in $93.60, net $266.40, return about 2.85x.
+  const thin = assessLot(ruleLot({ current_bid: 90 }), NOW, roiOn);
+  assert.equal(ruleOf(thin, 'lot_roi').result, 'fail');
+  assert.equal(thin.status, 'skip');
+});
+
+test('the gas rate comes from the rules', () => {
+  assert.equal(assessLot(ruleLot(), NOW).haul_cost, 3.6);
+  assert.equal(assessLot(ruleLot(), NOW, activeRules({ gas_per_mile: 0.5 })).haul_cost, 10);
+  assert.equal(checkLot({}, DEFAULT_RULES).all_pass, false);
 });
