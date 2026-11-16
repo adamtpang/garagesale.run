@@ -47,7 +47,7 @@ function check(rule, label, pass, text) {
   return { rule, label, pass, result: pass === true ? 'pass' : (pass === false ? 'fail' : 'unknown'), text };
 }
 
-// facts: { miles, miles_approximate, all_in, price_floor, net, net_estimate, roi }
+// facts: { miles, miles_approximate, all_in, price_floor, net, net_estimate, net_low, net_high, roi }
 // Every number is in dollars or miles, or null when unknown.
 export function checkLot(facts, rules = DEFAULT_RULES) {
   const f = facts || {};
@@ -72,7 +72,9 @@ export function checkLot(facts, rules = DEFAULT_RULES) {
   const min = moneyText(rules.min_profit);
   if (net != null && net < rules.min_profit) checks.push(check('min_profit', 'Min profit', false, `Confirmed profit ${moneyText(net)} is under the ${min} minimum.`));
   else if (net != null) checks.push(check('min_profit', 'Min profit', true, `Confirmed profit ${moneyText(net)} meets the ${min} minimum.`));
-  else if (est != null && est < rules.min_profit) checks.push(check('min_profit', 'Min profit', false, `Estimated profit ${moneyText(est)} is under the ${min} minimum.`));
+  else if (est != null && num(f.net_high) != null && f.net_high < rules.min_profit) checks.push(check('min_profit', 'Min profit', false, `Even the high case, ${moneyText(f.net_high)} at the current bid, is under the ${min} minimum.`));
+  else if (est != null && num(f.net_high) == null && est < rules.min_profit) checks.push(check('min_profit', 'Min profit', false, `Estimated profit ${moneyText(est)} is under the ${min} minimum.`));
+  else if (est != null && num(f.net_low) != null && f.net_low < rules.min_profit) checks.push(check('min_profit', 'Min profit', null, `At the current bid the estimate runs from ${moneyText(f.net_low)} (low case) to ${moneyText(num(f.net_high) != null ? f.net_high : est)} (high case). The low case is under the ${min} minimum, and nothing is confirmed.`));
   else if (est != null) checks.push(check('min_profit', 'Min profit', null, `Estimated profit ${moneyText(est)} would meet the ${min} minimum, but it is not confirmed.`));
   else checks.push(check('min_profit', 'Min profit', null, `Profit is unknown, so the ${min} minimum cannot be checked.`));
 

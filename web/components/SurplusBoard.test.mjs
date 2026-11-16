@@ -36,7 +36,19 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   // Sold comps are clickable, and the estimate is labeled as an estimate.
   assert.match(html, /href="https:\/\/www\.ebay\.com\/itm\/128064350319"/);
   assert.match(html, /Used for resale/);
-  assert.match(html, /data-field="net-estimate"/);
+  // The Zebra lot shows three cases and a max bid, with profit at the max bid.
+  assert.match(html, /data-field="cases"/);
+  assert.match(html, /data-case="low"/);
+  assert.match(html, /data-case="middle"/);
+  assert.match(html, /data-case="high"/);
+  assert.match(html, /data-field="max-bid"/);
+  assert.match(html, /Profit at the \$79\.00 max bid/);
+  assert.match(html, /data-field="profit-max-low">\$0\.40</);
+  assert.match(html, /data-field="profit-max-middle">\$152\.53</);
+  assert.match(html, /Lot of 5 for \$200\.00/);
+  assert.match(html, /No battery/);
+  assert.match(html, /Battery included/);
+  assert.match(html, /Single unit/);
   assert.match(html, /Estimate, not confirmed/);
   assert.match(html, /Minimum \$1\.00 per auction/);
   const noBid = renderToStaticMarkup(e(SurplusBoard, {

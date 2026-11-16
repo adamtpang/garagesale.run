@@ -62,11 +62,46 @@ function comps(lot) {
     e('span', { className: 'min-w-0' },
       e('span', { className: `inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.type === 'asking' ? 'bg-amber-200 text-amber-950' : 'bg-[#9be8b8] text-foreground'}` }, c.type_label),
       e('span', { className: 'mt-1 block text-sm font-medium' }, c.title || 'Comp'),
-      e('span', { className: 'mt-0.5 block text-xs text-muted-foreground' }, [c.marketplace, c.confidence === 'lower' ? 'Lower confidence' : 'Used for resale'].filter(Boolean).join(' · ')),
+      e('span', { className: 'mt-0.5 block text-xs text-muted-foreground' }, [
+        c.marketplace,
+        c.confidence === 'lower' ? 'Lower confidence' : 'Used for resale',
+        c.type === 'sold' ? (c.lot_size ? `Lot of ${c.lot_size}${c.lot_price != null ? ` for $${c.lot_price.toFixed(2)}` : ''}` : 'Single unit') : null,
+        c.type === 'sold' && c.battery === 'none' ? 'No battery' : null,
+        c.type === 'sold' && c.battery === 'included' ? 'Battery included' : null,
+        c.type === 'sold' && c.sold_on ? `Sold ${c.sold_on}` : null,
+      ].filter(Boolean).join(' · ')),
       c.note ? e('span', { className: 'mt-1 block text-xs text-muted-foreground' }, c.note) : null),
     e('span', { className: 'shrink-0 text-right' },
       e('span', { className: 'block font-semibold tabular-nums' }, c.price_text),
+      c.type === 'sold' && c.lot_size ? e('span', { className: 'block text-[11px] text-muted-foreground' }, 'a unit') : null,
       e('span', { className: 'mt-1 block text-xs' }, c.url ? link(c.url, 'Open comp') : 'no comp URL in the scan'))))));
+}
+
+const CASE_NAME = { low: 'Low', middle: 'Middle', high: 'High' };
+
+// Low, middle and high resale, with profit at the max bid first and at today's bid second.
+function casesBlock(lot) {
+  if (!lot.cases || !lot.cases.length) return null;
+  const atMax = lot.max_bid != null;
+  return e('div', { className: 'rounded-xl border border-border bg-white p-3', 'data-field': 'cases' },
+    e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, 'Resale cases (estimates, sold as one lot)'),
+    e('div', { className: 'mt-2 rounded-lg border border-border bg-amber-200 p-2', 'data-field': 'max-bid' },
+      e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-amber-950' }, 'Max bid'),
+      e('div', { className: 'mt-0.5 font-marker text-2xl text-price' }, lot.max_bid_text),
+      e('p', { className: 'mt-1 text-xs leading-5 text-foreground' }, lot.max_bid_note)),
+    e('ul', { className: 'mt-2 grid list-none gap-2 p-0' }, lot.cases.map((c) => e('li', { key: c.name, className: 'border-t border-border pt-2', 'data-case': c.name },
+      e('div', { className: 'flex items-baseline justify-between gap-3' },
+        e('span', { className: 'text-sm font-semibold' }, CASE_NAME[c.name]),
+        e('span', { className: 'text-sm tabular-nums' }, `${c.unit_text} a unit · ${c.gross_text} for the lot`)),
+      e('div', { className: 'mt-1 flex items-baseline justify-between gap-3 text-sm' },
+        e('span', { className: 'text-muted-foreground' }, atMax ? `Profit at the ${lot.max_bid_text} max bid` : 'Profit at the max bid'),
+        e('span', { className: 'font-semibold tabular-nums', 'data-field': `profit-max-${c.name}` }, atMax ? c.profit_at_max_bid_text : 'no max bid')),
+      e('div', { className: 'mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted-foreground' },
+        e('span', null, `At today's ${lot.current_bid_text} bid`),
+        e('span', { className: 'tabular-nums' }, c.profit_at_current_bid_text)),
+      e('p', { className: 'mt-1 text-xs leading-5 text-muted-foreground' }, c.basis)))),
+    lot.case_caveats.length ? e('p', { className: 'mt-2 text-xs leading-5 text-foreground', 'data-field': 'case-caveats' }, lot.case_caveats.join(' ')) : null,
+    e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, `After the platform fee and shipping. ${lot.net_estimate_note || 'Not confirmed.'}`));
 }
 
 function lotCard(lot) {
@@ -93,22 +128,20 @@ function lotCard(lot) {
 
   const sell = side('sell', e('div', { className: 'mt-3 grid gap-3' },
     fact('Marketplaces', lot.marketplaces_text),
-    fact('Resale / unit', lot.unit_resale_text, lot.resale_basis === 'sold' ? ['Median of the cited sold comps.', lot.resale_note].filter(Boolean).join(' ') : 'Unknown until a sold comp is cited.'),
+    fact('Resale / unit', lot.unit_resale_text, lot.resale_basis === 'sold' ? ['Middle case.', lot.resale_note].filter(Boolean).join(' ') : 'Unknown until a sold comp is cited.'),
+    lot.batteries !== 'unknown' ? fact('Batteries', lot.batteries_text, lot.battery_cost_note) : null,
     fact('Unit count', lot.unit_count_text, lot.quantity_note),
     fact('Platform fee', lot.fee_text, lot.fee_note),
     fact('Shipping', lot.shipping_text, lot.shipping_text === 'unknown' ? 'Unknown shipping is not treated as $0.' : lot.shipping_note),
     fact('Gross resale', lot.gross_text),
     e('div', { className: 'rounded-xl bg-white p-3' },
-      e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, 'Est. net'),
+      e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, 'Confirmed net'),
       e('div', { className: 'mt-1 text-2xl font-semibold tabular-nums', 'data-field': 'net' }, lot.net_text),
       e('div', { className: 'mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, 'ROI'),
       e('div', { className: 'mt-1 text-lg font-semibold tabular-nums', 'data-field': 'roi' }, lot.roi_text),
-      lot.net_estimate_text ? e('div', { className: 'mt-2 rounded-lg border border-border bg-amber-200 p-2', 'data-field': 'net-estimate' },
-        e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-amber-950' }, 'Rough estimate'),
-        e('div', { className: 'mt-1 text-lg font-semibold tabular-nums' }, lot.net_estimate_text),
-        e('p', { className: 'mt-1 text-xs leading-5 text-muted-foreground' }, lot.net_estimate_note)) : null,
       e('p', { className: 'mt-2 text-xs text-muted-foreground' }, lot.profit_confidence === 'confirmed' ? 'Profit confirmed.' : 'Profit not confirmed.'),
       e('p', { className: 'mt-1 text-xs leading-5 text-muted-foreground' }, lot.profit_reason)),
+    casesBlock(lot),
     comps(lot)));
 
   return e('article', {

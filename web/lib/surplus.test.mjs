@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
-import { assessLot, assessSnapshot, formatClose, tripGroups, BUY_STATUS } from './surplus.js';
+import { assessLot, assessSnapshot, formatClose, tripGroups, resaleCases, BUY_STATUS } from './surplus.js';
 import { activeRules, checkLot, DEFAULT_RULES } from './rules.js';
 import { RULES_CONFIG } from '../config/rules.js';
 
@@ -72,15 +72,17 @@ test('the premium minimum stays visible when there is no current bid', () => {
 
 test('an estimate needs every input, is labeled, and never makes a lot a buy', () => {
   const lot = assessLot({ ...seed.lots[0], status: BUY_STATUS }, NOW, LOOSE);
-  assert.equal(lot.unit_resale, 36.67);
-  assert.equal(lot.gross, 293.36);
-  assert.equal(lot.fee_amount, 40.3);
+  // Middle case: two battery-less lot sales at $40 a unit. 8 x $40 = $320, fee 13.6% + $0.40 = $43.92.
+  assert.equal(lot.unit_resale, 40);
+  assert.equal(lot.gross, 320);
+  assert.equal(lot.fee_amount, 43.92);
   assert.equal(lot.shipping_text, '$25.00 assumption');
   assert.equal(lot.net, null);
   assert.equal(lot.profit_confidence, 'unknown');
-  assert.equal(lot.net_estimate, 210.39);
+  assert.equal(lot.net_estimate, 233.41);
   assert.match(lot.net_estimate_note, /Estimate, not confirmed/);
   assert.match(lot.net_estimate_note, /tax rate, miles, shipping/);
+  assert.match(lot.net_estimate_note, /middle case at the current bid/);
   assert.match(lot.net_estimate_note, /every unit sells/);
   assert.equal(lot.status, 'watch');
   assert.match(lot.profit_reason, /shipping/);
@@ -290,7 +292,7 @@ test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and every
   assert.equal(view.rules.min_profit, 100);
   assert.equal(view.rules.pickup_miles, 15);
   assert.equal(byId['ps-4123518'].quantity, 8);
-  assert.equal(byId['ps-4123518'].unit_resale, 36.67);
+  assert.equal(byId['ps-4123518'].unit_resale, 40);
   assert.equal(byId['ps-4123524'].quantity, 1);
   assert.equal(byId['ps-4123524'].current_bid, 5);
   assert.equal(byId['ps-4123524'].premium_amount, 1);
@@ -458,7 +460,7 @@ test('profit under $100 is a skip, confirmed or estimated, and exactly $100 pass
   assert.equal(estLow.net, null);
   assert.equal(estLow.net_estimate, 58.4);
   assert.equal(estLow.status, 'skip');
-  assert.match(estLow.status_reason, /Estimated profit \$58\.40 is under/);
+  assert.match(estLow.status_reason, /Even the high case, \$58\.40 at the current bid, is under the \$100\.00 minimum/);
   // Bid $10, gas $3.60, no fee: 3 units at $37.87 is $113.61 gross and $100.01 net; at $37.86 it is $99.98.
   const comp = (price) => [{ type: 'sold', price, url: 'https://www.ebay.com/itm/123456789012', title: 'Sold', marketplace: 'eBay' }];
   const pass = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.87) }), NOW);
@@ -508,4 +510,112 @@ test('the gas rate comes from the rules', () => {
   assert.equal(assessLot(ruleLot(), NOW).haul_cost, 3.6);
   assert.equal(assessLot(ruleLot(), NOW, activeRules({ gas_per_mile: 0.5 })).haul_cost, 10);
   assert.equal(checkLot({}, DEFAULT_RULES).all_pass, false);
+});
+
+// Resale cases and the max bid.
+
+const sale = (price, extra = {}) => ({ type: 'sold', price, url: `https://www.ebay.com/itm/${100000000000 + Math.round(price * 100)}`, title: 'Sold', marketplace: 'eBay', ...extra });
+const caseOf = (lot, name) => lot.cases.find((c) => c.name === name);
+
+test('the Zebra lot shows low, middle and high cases priced from battery-less sales', () => {
+  const lot = assessLot(seed.lots[0], NOW);
+  assert.equal(lot.batteries, 'none');
+  assert.equal(lot.batteries_text, 'No batteries');
+  assert.equal(lot.comps_lot_sales, 3);
+  assert.equal(lot.comps_single_sales, 3);
+  // Low: the lowest cited sale of any kind, $17.99, a tested unit that had a battery.
+  // 8 x $17.99 = $143.92. Fee 13.6% + $0.40 = $19.97. Shipping $25. Left over: $98.95.
+  assert.deepEqual([caseOf(lot, 'low').unit, caseOf(lot, 'low').gross, caseOf(lot, 'low').proceeds], [17.99, 143.92, 98.95]);
+  assert.match(caseOf(lot, 'low').basis, /Lowest cited sale of any kind \(has battery\)/);
+  // Middle and high: the two lot sales that state no batteries, both $40 a unit.
+  // 8 x $40 = $320. Fee $43.92. Shipping $25. Left over: $251.08.
+  assert.deepEqual([caseOf(lot, 'middle').unit, caseOf(lot, 'middle').gross, caseOf(lot, 'middle').proceeds], [40, 320, 251.08]);
+  assert.match(caseOf(lot, 'middle').basis, /Median of 2 lot sales without batteries/);
+  assert.equal(caseOf(lot, 'high').unit, 40);
+  // The lot of 3 ($33.33, battery not stated) and the $29.99 single (not re-read) do not set the middle case.
+  assert.match(lot.case_caveats.join(' '), /biggest cited lot sale was 5 units\. This lot is 8/);
+});
+
+test('the Zebra max bid is $79, and profit is shown at that bid, not only at today\'s bid', () => {
+  const lot = assessLot(seed.lots[0], NOW);
+  // At $79: premium 8.5% = $6.72 (rounded), tax 8.25% of $85.72 = $7.07, gas $5.76. All-in $98.55.
+  assert.equal(lot.max_bid, 79);
+  assert.equal(lot.max_bid_all_in, 98.55);
+  assert.equal(caseOf(lot, 'low').profit_at_max_bid, 0.4);
+  assert.equal(caseOf(lot, 'middle').profit_at_max_bid, 152.53);
+  // At today's $10 bid the all-in is $17.67.
+  assert.equal(caseOf(lot, 'low').profit_at_current_bid, 81.28);
+  assert.equal(caseOf(lot, 'middle').profit_at_current_bid, 233.41);
+  // One dollar more and the low case loses money: all-in at $80 is $99.71, over the $98.95 left in the low case.
+  assert.ok(98.95 - 99.71 < 0);
+  assert.match(lot.max_bid_note, /low case does not lose money/);
+  assert.match(lot.max_bid_note, /never bids/);
+  assert.equal(lot.bid_past_max, false);
+  assert.equal(assessLot({ ...seed.lots[0], current_bid: 85 }, NOW).bid_past_max, true);
+  // The profit rule sees the range: the low case is under $100, so it is not a pass.
+  const profit = lot.rule_checks.find((c) => c.rule === 'min_profit');
+  assert.equal(profit.result, 'unknown');
+  assert.match(profit.text, /runs from \$81\.28 \(low case\) to \$233\.41 \(high case\)/);
+});
+
+test('with no batteries, a sale that had a battery is lowered by a cited battery cost or left to the low case', () => {
+  const lot = { batteries: 'none', battery_cost: null, quantity: 4 };
+  const withBattery = resaleCases(lot, [sale(30, { battery: 'none' }), sale(50, { battery: 'included' })].map((c) => ({ lot_size: null, ...c })));
+  // The $50 sale had a battery, so it does not set the middle or high case.
+  assert.deepEqual(withBattery.cases.map((c) => c.unit), [30, 30, 30]);
+  const cheapWithBattery = resaleCases(lot, [sale(30, { battery: 'none' }), sale(12, { battery: 'included' })].map((c) => ({ lot_size: null, ...c })));
+  // A cheaper sale that had a battery still pulls the low case down.
+  assert.deepEqual(cheapWithBattery.cases.map((c) => c.unit), [12, 30, 30]);
+  const adjusted = resaleCases({ ...lot, battery_cost: 15 }, [sale(30, { battery: 'none' }), sale(50, { battery: 'included' })].map((c) => ({ lot_size: null, ...c })));
+  // With a cited $15 battery, the $50 sale counts as $35.
+  assert.deepEqual(adjusted.cases.map((c) => c.unit), [30, 32.5, 35]);
+  const noneKnown = resaleCases(lot, [sale(50, { battery: 'unknown' })].map((c) => ({ lot_size: null, ...c })));
+  assert.match(noneKnown.caveats.join(' '), /likely too high/);
+});
+
+test('lot sales set the middle case and single sales stay apart', () => {
+  const lot = { batteries: 'unknown', battery_cost: null, quantity: 6 };
+  const mixed = resaleCases(lot, [
+    { ...sale(20), lot_size: 4, battery: 'unknown' },
+    { ...sale(30), lot_size: 2, battery: 'unknown' },
+    { ...sale(60), lot_size: null, battery: 'unknown' },
+    { ...sale(10), lot_size: null, battery: 'unknown' },
+  ]);
+  assert.deepEqual(mixed.cases.map((c) => c.unit), [10, 25, 30]);
+  assert.equal(mixed.lot_sales, 2);
+  assert.equal(mixed.single_sales, 2);
+  const singles = resaleCases(lot, [{ ...sale(20), lot_size: null, battery: 'unknown' }, { ...sale(40), lot_size: null, battery: 'unknown' }]);
+  assert.deepEqual(singles.cases.map((c) => c.unit), [20, 30, 40]);
+  assert.match(singles.caveats.join(' '), /A lot usually sells for less a unit/);
+});
+
+test('the max bid respects the cost cap, the minimum profit and the low case', () => {
+  // 10 units at $40, no fee or tax surprises: left over $360. Gas $3.60. The cost cap is what binds: $96 + $3.60 = $99.60.
+  const capped = assessLot(confirmedLot({ quantity: 10 }), NOW);
+  assert.equal(capped.max_bid, 96);
+  assert.equal(capped.max_bid_all_in, 99.6);
+  // 3 units at $40: left over $108. The $100 minimum binds: all-in must be $8 or less, so the bid is $4.
+  const thin = assessLot(confirmedLot({ quantity: 3 }), NOW);
+  assert.equal(thin.max_bid, 4);
+  assert.equal(caseOf(thin, 'middle').profit_at_max_bid, 100.4);
+  // 2 units at $40: left over $72. No bid can make $100.
+  const none = assessLot(confirmedLot(), NOW);
+  assert.equal(none.max_bid, null);
+  assert.equal(none.max_bid_text, 'none');
+  assert.match(none.max_bid_note, /No bid works\. Even at a \$1 bid the middle case makes \$67\.40/);
+  // No bid on the lot yet: the max bid does not need one.
+  const noBid = assessLot(confirmedLot({ quantity: 10, current_bid: null }), NOW);
+  assert.equal(noBid.max_bid, 96);
+  assert.equal(caseOf(noBid, 'middle').profit_at_current_bid, null);
+  // Unknown shipping or premium: the max bid stays unknown.
+  assert.equal(assessLot(confirmedLot({ quantity: 10, shipping: null, shipping_basis: 'unknown' }), NOW).max_bid, null);
+  assert.match(assessLot(confirmedLot({ quantity: 10, premium_pct: null }), NOW).max_bid_note, /unknown until the buyer's premium/);
+});
+
+test('a phone lot cannot reach $100 in any case, so it has no max bid', () => {
+  const phone = assessLot(seed.lots.find((l) => l.id === 'ps-4123524'), NOW);
+  assert.equal(phone.cases.length, 3);
+  assert.equal(phone.max_bid, null);
+  assert.match(phone.max_bid_note, /No bid works/);
+  assert.match(phone.status_reason, /Even the high case, \$85\.88 at the current bid, is under the \$100\.00 minimum/);
 });

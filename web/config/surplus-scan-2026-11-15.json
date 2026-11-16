@@ -37,25 +37,35 @@
           "marketplace": "eBay",
           "type": "sold",
           "price": 40,
-          "title": "5 Zebra TC700K-02B24B0-US, parts only (lot of 5 sold for $200)",
+          "title": "5 Zebra TC700K-02B24B0-US, parts only, no batteries (lot of 5 sold for $200)",
           "url": "https://www.ebay.com/itm/128064350319",
-          "note": "Sold Oct 19, 2026. Same model number. $200 for 5 units, so $40 a unit."
+          "note": "Sold Oct 19, 2026. Same model number. The listing says \"Parts only, no batteries, 3rd party software installed.\" $200 for 5 units is $40 a unit. It was listed at $200 or Best Offer. If an offer was accepted the real price was lower, and eBay does not show it.",
+          "lot_size": 5,
+          "lot_price": 200,
+          "battery": "none",
+          "sold_on": "Oct 19, 2026"
         },
         {
           "marketplace": "eBay",
           "type": "sold",
           "price": 44.44,
-          "title": "Zebra TC700K-02B24B0-US, for parts",
+          "title": "Zebra TC700K-02B24B0-US, for parts, needs battery",
           "url": "https://www.ebay.com/itm/178329920997",
-          "note": "Sold Oct 16, 2026. Same model number, single unit."
+          "note": "Sold Oct 16, 2026. Same model number, single unit. The listing says \"Needs battery\" and that the seller did not know if it works. Listed at $44.44 or Best Offer, so the real price may be lower.",
+          "battery": "none",
+          "sold_on": "Oct 16, 2026"
         },
         {
           "marketplace": "eBay",
           "type": "sold",
           "price": 40,
-          "title": "Lot of 2 Zebra TC700K / TC720L, untested, as is (lot sold for $79.99)",
+          "title": "Lot of 2: one Zebra TC700K and one TC720L, untested, no batteries (lot sold for $79.99)",
           "url": "https://www.ebay.com/itm/860090540860",
-          "note": "Sold Oct 27, 2026. $79.99 for 2 units plus $33.15 delivery paid by the buyer."
+          "note": "Sold Oct 27, 2026. $79.99 for 2 units, plus $33.15 delivery paid by the buyer. The listing says batteries are not included, no chargers, and untested because the batteries are missing. One of the two is a TC720L, a different model.",
+          "lot_size": 2,
+          "lot_price": 79.99,
+          "battery": "none",
+          "sold_on": "Oct 27, 2026"
         },
         {
           "marketplace": "eBay",
@@ -63,7 +73,11 @@
           "price": 33.33,
           "title": "Lot of 3 TC70 TC700H / TC700K, parts only (lot sold for $99.99)",
           "url": "https://www.ebay.com/itm/227538358882",
-          "note": "Sold Oct 19, 2026. $99.99 for 3 units."
+          "note": "Sold Oct 19, 2026. $99.99 for 3 units. The whole description is \"Turns on only for parts.\" It does not say whether batteries were included.",
+          "lot_size": 3,
+          "lot_price": 99.99,
+          "battery": "unknown",
+          "sold_on": "Oct 19, 2026"
         },
         {
           "marketplace": "eBay",
@@ -71,7 +85,9 @@
           "price": 29.99,
           "title": "Zebra TC700K-0MB24B0-US, broken screen, parts only",
           "url": "https://www.ebay.com/itm/127998482040",
-          "note": "Sold Oct 29, 2026."
+          "note": "Sold Oct 29, 2026. On Nov 16 the listing link opened a general product page, so the battery state could not be read again.",
+          "battery": "unknown",
+          "sold_on": "Oct 29, 2026"
         },
         {
           "marketplace": "eBay",
@@ -79,7 +95,9 @@
           "price": 17.99,
           "title": "Zebra TC700K with battery and stylus, tested",
           "url": "https://www.ebay.com/itm/407255269302",
-          "note": "Sold Oct 6, 2026 at auction with 1 bid. A working unit with a battery sold this low."
+          "note": "Sold Oct 6, 2026 at auction with 1 bid. Tested, with a battery and stylus. A working unit with a battery sold this low.",
+          "battery": "included",
+          "sold_on": "Oct 6, 2026"
         },
         {
           "marketplace": "eBay",
@@ -101,14 +119,17 @@
         "A city device-management lock is possible.",
         "Schertz is about 16 miles from New Braunfels. The flip rule is 15 miles."
       ],
-      "scan_notes": "Refreshed Nov 15, 2026, 8 PM CT: still $10 with 1 bid. Closes Tue Nov 17, 2026, 8:00 PM CT and may extend. The 8.5% premium has a $1 minimum per auction. Tax rate is shown only at bidding. The $114.98 asking comp is kept for context and is not used as resale.",
+      "scan_notes": "Refreshed Nov 15, 2026, 8 PM CT: still $10 with 1 bid. Closes Tue Nov 17, 2026, 8:00 PM CT and may extend. The 8.5% premium has a $1 minimum per auction. Tax rate is shown only at bidding. The $114.98 asking comp is kept for context and is not used as resale. Nov 16, 2026: the six sold listings were read again for battery state and lot size.",
       "premium_min": 1,
       "fee_rate": 0.136,
       "fee_fixed": 0.4,
       "quantity_note": "Eight units in the photos. Every battery bay is empty.",
       "shipping": 25,
-      "shipping_note": "Assumed: one box of 8 units, about 8 lb, ground. No quote yet.",
-      "resale_note": "Comps are as-is, untested or for-parts units. These 8 have no batteries, so resale may be lower."
+      "shipping_note": "Assumed: one box of 8 units, about 8 lb, ground. No quote yet. Sold as one lot, so one box and one order fee.",
+      "resale_note": "Priced from cited sales of units without batteries. Lot sales set the middle and high cases. The low case is the lowest cited sale of any kind.",
+      "batteries": "none",
+      "battery_cost": null,
+      "battery_cost_note": "No battery price is cited, so the one sale that included a battery is not adjusted. It only sets the low case."
     },
     {
       "id": "ps-4123530",
