@@ -26,6 +26,16 @@ GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node 
 
 If `min_profit`, `max_pickup_miles`, `sites`, or a fee rate for one of those sites is null, deals are stored and left unranked.
 
+## Surplus arbitrage
+
+`/surplus` is a separate board for government-surplus lots. Buy and sell stay on opposite sides of each lot. The page does not place bids.
+
+`GET /api/surplus` is public. With nothing stored, it returns `web/config/surplus-scan-2026-11-15.json`, the Nov 15, 2026 Public Surplus scan. `POST /api/surplus` replaces the stored feed and requires `x-worker-key` (`GST_WORKER_KEY`). The body is `{ scanned_on?, label?, notice?, lots: [...] }`. A client-supplied profit, ROI, or `places_bids: true` is dropped.
+
+With no `BLOB_READ_WRITE_TOKEN`, a POST is written to `web/.data/surplus.json`. The seed file is not overwritten.
+
+Asking comps stay labeled `asking, not sold` and do not become resale. Resale, profit, and ROI stay unknown until cited sold comps and stated costs are all present. Unknown shipping and unknown fees are not treated as zero. Haul is round-trip miles times $0.18. Lots that share a recorded pickup address share one haul. The 8.25% tax line is the labeled assumption "seller says tax added, rate not stated". A lot can be `watch`, `needs preview`, `buy candidate (needs Adam yes)`, or `skip`. It cannot be a buy candidate while profit is unconfirmed.
+
 ## Server profit math
 
 `web/lib/deals.js` scores each cleaned deal through `web/lib/decision.js`:
