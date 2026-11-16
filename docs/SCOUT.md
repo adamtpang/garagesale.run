@@ -15,11 +15,11 @@ The routine and the seed script need:
 
 ## Config
 
-`GET /api/scout/config` is public. `PUT /api/scout/config` replaces the config and requires `x-worker-key`.
+Adam's rule numbers (max per flip, bankroll, minimum profit, pickup radius, categories, gas rate) live in one file, `web/config/rules.js`, and nothing sent to the API can change them. `GET /api/scout/config` is public and returns those rules plus where the scout looks. `PUT /api/scout/config` requires the `x-worker-key` header (`GST_WORKER_KEY`) and stores only `sites`, `areas`, `fees` and `run_hours`. If the body carries a rule field that differs from the rules file, the reply lists it under `ignored`.
 
 Stored as versioned Blob JSON under `scout-config/`. With no `BLOB_READ_WRITE_TOKEN`, the app uses `web/.data/scout-config.json`.
 
-Every field defaults to null. The owner's seed is `web/config/scout-config.seed.json`. Load it with:
+With nothing stored, the config is the rules file with its default sites, areas and fees, so deals can be scored right away. The owner's seed is `web/config/scout-config.seed.json`. Loading it is optional now, and only its sites, areas, fees and run hours are stored:
 
 ```bash
 GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://garagesale.run node scripts/seed-scout-config.mjs

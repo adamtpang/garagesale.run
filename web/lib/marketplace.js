@@ -3,6 +3,11 @@
 // Seller names and profiles are never read or stored.
 import { browse, sleep, jitter } from './helium.js';
 import { parseRequest, rank, soldQuery } from './pricing.js';
+import { DEFAULT_RULES } from './rules.js';
+
+// The search starts at home with the pickup radius from the rules.
+export const HOME_CITY = DEFAULT_RULES.home.split(',')[0];
+export const HOME_RADIUS = DEFAULT_RULES.pickup_miles;
 
 const DETAILS = 6;
 const CACHE_MS = 15 * 60 * 1000;
@@ -97,6 +102,15 @@ export async function searchMarketplace({ query, max_price, city = 'Austin', rad
   } finally { inflight.delete(key); }
 }
 
+// Mark each listing against the max cost per flip. The ask alone is checked here. Gas and fees come on top.
+export function capFlags(deals, rules = DEFAULT_RULES) {
+  return deals.map((d) => ({ ...d, over_cap: typeof d.ask === 'number' && d.ask > rules.max_cost }));
+}
+
 function ranked({ listings, ...meta }) {
-  return { ...meta, deals: rank(listings, meta.sold, { core: meta.core, city: meta.city }) };
+  return {
+    ...meta,
+    rules: { max_cost: DEFAULT_RULES.max_cost, min_profit: DEFAULT_RULES.min_profit, pickup_miles: DEFAULT_RULES.pickup_miles, home: DEFAULT_RULES.home },
+    deals: capFlags(rank(listings, meta.sold, { core: meta.core, city: meta.city })),
+  };
 }

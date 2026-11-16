@@ -129,3 +129,10 @@ test('accessory phrases and bare specs in a listing are not model words', () => 
   ];
   assert.equal(compsFor({ title: 'Nintendo Switch 32GB gray, joy-con included' }, comps, core).length, 4);
 });
+
+test('the buy search flags an ask over the max cost per flip', async () => {
+  const { capFlags, HOME_CITY, HOME_RADIUS } = await import('./marketplace.js');
+  assert.deepEqual(capFlags([{ ask: 100 }, { ask: 100.01 }, { ask: null }]).map((d) => d.over_cap), [false, true, false]);
+  assert.equal(HOME_CITY, 'New Braunfels');
+  assert.equal(HOME_RADIUS, 15);
+});

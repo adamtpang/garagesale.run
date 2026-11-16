@@ -182,3 +182,79 @@ test('scout config PUT and deals POST require the worker key', async () => {
     if (prev === undefined) delete process.env.GST_WORKER_KEY; else process.env.GST_WORKER_KEY = prev;
   }
 });
+
+// One rules file.
+
+test('the scout seed and the rules file agree, so there is one set of rule numbers', async () => {
+  const { RULES_CONFIG } = await import('../config/rules.js');
+  for (const key of ['max_per_flip', 'bankroll', 'min_profit', 'max_pickup_miles', 'gas_per_mile']) assert.equal(seed[key], RULES_CONFIG[key], key);
+  assert.deepEqual(seed.categories, [...RULES_CONFIG.categories]);
+  assert.deepEqual(seed.sites, [...RULES_CONFIG.sites]);
+  assert.deepEqual(seed.areas, RULES_CONFIG.areas.map((a) => ({ ...a })));
+});
+
+test('with nothing stored, the config is the rules file and deals can be ranked', async () => {
+  const { withRules, RULES_SOURCE } = await import('./scoutConfig.js');
+  const cfg = withRules(null);
+  assert.equal(cfg.rules_source, RULES_SOURCE);
+  assert.equal(cfg.max_per_flip, 100);
+  assert.equal(cfg.min_profit, 100);
+  assert.equal(cfg.max_pickup_miles, 15);
+  assert.equal(cfg.gas_per_mile, 0.18);
+  assert.equal(filtersReady(cfg), true);
+  assert.equal(cfg.fees.ebay.rate, 0.136);
+  assert.equal(cfg.fees.ebay.flat, 0.4);
+  assert.equal(buildFeed([], cfg).filters_set, true);
+});
+
+test('a stored config cannot change a rule, only where to look and what sites charge', async () => {
+  const { withRules, ignoredRuleFields } = await import('./scoutConfig.js');
+  const cfg = withRules(cleanConfig({
+    max_per_flip: 5000, bankroll: 5000, min_profit: 1, max_pickup_miles: 500, gas_per_mile: 0,
+    sites: ['ebay'], fees: { ebay: { rate: 0.15 } }, run_hours: 'nights',
+  }));
+  assert.equal(cfg.max_per_flip, 100);
+  assert.equal(cfg.bankroll, 100);
+  assert.equal(cfg.min_profit, 100);
+  assert.equal(cfg.max_pickup_miles, 15);
+  assert.equal(cfg.gas_per_mile, 0.18);
+  assert.deepEqual(cfg.sites, ['ebay']);
+  assert.equal(cfg.fees.ebay.rate, 0.15);
+  assert.equal(cfg.fees.fb.rate, 0);
+  assert.equal(cfg.run_hours, 'nights');
+  assert.deepEqual(ignoredRuleFields({ max_per_flip: 5000, min_profit: 100, max_pickup_miles: 60 }), ['max_per_flip', 'max_pickup_miles']);
+  assert.deepEqual(ignoredRuleFields(seed), []);
+});
+
+test('PUT /api/scout/config stores the look settings and says which rule fields it ignored', async () => {
+  const prevKey = process.env.GST_WORKER_KEY;
+  const prevBlob = process.env.BLOB_READ_WRITE_TOKEN;
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  process.env.GST_WORKER_KEY = 'test-key';
+  const { scoutConfigFile } = await import('./scoutConfig.js');
+  const route = await import('../app/api/scout/config/route.js');
+  fs.rmSync(scoutConfigFile, { force: true });
+  try {
+    const first = await (await route.GET()).json();
+    assert.equal(first.min_profit, 100);
+    assert.equal(first.rules_source, 'web/config/rules.js');
+    const put = await route.PUT(new Request('http://localhost/api/scout/config', {
+      method: 'PUT', headers: { 'content-type': 'application/json', 'x-worker-key': 'test-key' },
+      body: JSON.stringify({ min_profit: 5, sites: ['fb', 'ebay'] }),
+    }));
+    assert.equal(put.status, 200);
+    const body = await put.json();
+    assert.equal(body.min_profit, 100);
+    assert.deepEqual(body.sites, ['fb', 'ebay']);
+    assert.deepEqual(body.ignored, ['min_profit']);
+    assert.match(body.ignored_note, /Adam's rules/);
+    const again = await (await route.GET()).json();
+    assert.deepEqual(again.sites, ['fb', 'ebay']);
+    assert.equal(again.min_profit, 100);
+    assert.equal(JSON.parse(fs.readFileSync(scoutConfigFile, 'utf8')).min_profit, undefined);
+  } finally {
+    fs.rmSync(scoutConfigFile, { force: true });
+    if (prevKey === undefined) delete process.env.GST_WORKER_KEY; else process.env.GST_WORKER_KEY = prevKey;
+    if (prevBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN; else process.env.BLOB_READ_WRITE_TOKEN = prevBlob;
+  }
+});

@@ -16,7 +16,7 @@ The scheduled scout is a Grok Bot routine. It is not code in this repo. Garage S
 
 The contract is [docs/SCOUT.md](docs/SCOUT.md).
 
-`GET /api/scout/config` is public. `PUT /api/scout/config` replaces the config and requires the `x-worker-key` header (`GST_WORKER_KEY`). With no `BLOB_READ_WRITE_TOKEN`, the config file is `web/.data/scout-config.json`. Every field defaults to null until that PUT. The seed file is `web/config/scout-config.seed.json`.
+Adam's rule numbers (max per flip, bankroll, minimum profit, pickup radius, categories, gas rate) live in one file, `web/config/rules.js`, and nothing sent to the API can change them. `GET /api/scout/config` is public and returns those rules plus where the scout looks. `PUT /api/scout/config` requires the `x-worker-key` header (`GST_WORKER_KEY`) and stores only `sites`, `areas`, `fees` and `run_hours`. If the body carries a rule field that differs from the rules file, the reply lists it under `ignored`. With no `BLOB_READ_WRITE_TOKEN`, the stored part is `web/.data/scout-config.json`. `web/config/scout-config.seed.json` is the Nov 3 seed, and a test keeps its rule numbers equal to the rules file.
 
 ```bash
 GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node scripts/seed-scout-config.mjs
