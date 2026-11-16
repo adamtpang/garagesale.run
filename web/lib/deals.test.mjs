@@ -258,3 +258,10 @@ test('PUT /api/scout/config stores the look settings and says which rule fields 
     if (prevBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN; else process.env.BLOB_READ_WRITE_TOKEN = prevBlob;
   }
 });
+
+test('the buy search flags an ask over the max cost per flip', async () => {
+  const { capFlags, HOME_CITY, HOME_RADIUS } = await import('./marketplace.js');
+  assert.deepEqual(capFlags([{ ask: 100 }, { ask: 100.01 }, { ask: null }]).map((d) => d.over_cap), [false, true, false]);
+  assert.equal(HOME_CITY, 'New Braunfels');
+  assert.equal(HOME_RADIUS, 15);
+});
