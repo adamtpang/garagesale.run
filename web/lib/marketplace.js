@@ -51,8 +51,10 @@ function readDetail() {
 const money = (s) => (/free/i.test(s || '') ? 0 : Number(String(s || '').replace(/[$,]/g, '')));
 const slug = (city) => String(city || '').toLowerCase().replace(/[^a-z]+/g, '');
 
-export async function searchMarketplace({ query, max_price, city = 'Austin', radius_mi = 20 }) {
-  const { core, max } = parseRequest(query, max_price);
+export async function searchMarketplace({ query, max_price, city: formCity = 'Austin', radius_mi = 20 }) {
+  const { core, max, place } = parseRequest(query, max_price);
+  // A place typed in the request ("in San Marcos") wins over the city field.
+  const city = place || formCity;
   const key = JSON.stringify([core.toLowerCase(), max, slug(city), Number(radius_mi)]);
   const hit = cache.get(key);
   if (hit && hit.raw && Date.now() - hit.at < CACHE_MS) return { ...ranked(hit.raw), cached: true };

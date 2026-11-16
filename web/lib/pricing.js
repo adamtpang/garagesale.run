@@ -16,20 +16,34 @@ export function soldQuery(core) {
 }
 // Words that say the accessory comes along with the item rather than being the item.
 const BUNDLE = /\b(with|w\/|bundle|includes?|extra|comes with|console|system)\b|\+/i;
+// Words that say the title is the item itself. "with" and "extra" are not here: a game can be sold with extras too.
+const WHOLE_ITEM = /\b(bundle|console|system)\b/i;
 const NOT_FOR_SALE = /\b(iso|wanted|looking for|wtb|trade only|in search of)\b/i;
 const BAD_SHAPE = /\b(for parts|parts only|not working|broken|cracked|as[- ]is|icloud locked|locked)\b/i;
 
 export const tokens = (s) => String(s || '').toLowerCase().replace(/(\d+)\s*(gb|tb)\b/g, '$1$2').split(/[^a-z0-9]+/).filter((t) => t && !STOP.has(t));
 
+// The search areas from docs/HANDOFF.md. A typed "in Austin" names one of these, not the item.
+const PLACES = ['New Braunfels', 'San Marcos', 'Austin'];
+const PLACE = new RegExp(`\\b(?:in|near|around)\\s+(${PLACES.join('|')})(?:\\s*,?\\s*(?:tx|texas))?\\b`, 'i');
+
 // "Nintendo Switch under $200" -> { core: 'Nintendo Switch', max: 200 }
+// "Nintendo Switch under $200 in Austin" -> { core: 'Nintendo Switch', max: 200, place: 'Austin' }
 export function parseRequest(q, max) {
   let core = String(q || '').trim();
-  // A number followed by a unit ("Pro Max 256GB") is a spec, not a price cap.
-  let m = core.match(/\b(?:under|below|less than|max|up to|<)\s*\$?\s*(\d[\d,]*)(?![\d,]|\s*(?:gb|tb|mb|mm|cm|in\b|inch|"))/i);
+  // A number followed by a unit ("Pro Max 256GB", "27 inch") is a spec, not a price cap.
+  // A bare "in" only means inches when it is stuck to the number ("27in"). "$200 in Austin" is a price.
+  let m = core.match(/\b(?:under|below|less than|max|up to|<)\s*\$?\s*(\d[\d,]*)(?![\d,]|in\b|\s*(?:gb|tb|mb|mm|cm|inch(?:es)?)\b|\s*")/i);
   let maxPrice = max !== undefined && max !== null && max !== '' && isFinite(Number(max)) ? Number(max) : null;
   if (m) { if (maxPrice === null) maxPrice = Number(m[1].replace(/,/g, '')); core = core.replace(m[0], ' '); }
+  // Take a typed search area out of the item words, so listings do not have to say "Austin" in the title.
+  const where = core.match(PLACE);
+  const place = where ? PLACES.find((name) => name.toLowerCase() === where[1].toLowerCase()) : null;
+  if (where) core = core.replace(where[0], ' ');
   core = core.replace(/\b(to flip|for flipping|flip|deals?|cheap|used)\b/gi, ' ').replace(/\s+/g, ' ').trim();
-  return { core: core || String(q || '').trim(), max: maxPrice };
+  const out = { core: core || String(q || '').trim(), max: maxPrice };
+  if (place) out.place = place;
+  return out;
 }
 
 // A word that could name a product, as opposed to describing one.
@@ -47,7 +61,9 @@ function madeFor(title, need, strict) {
   // Otherwise, more than two naming words before the item name reads like a game or accessory title
   // ("Donkey Kong Amino Super Mario Series Nintendo Switch"). Colors, sizes and words like
   // "official" or "vintage" do not count, and neither does "... by <brand>".
-  if (BUNDLE.test(t)) return false;
+  // Only words before the item name are counted, so "Nintendo Switch with dock" is still the console,
+  // while "Zelda Tears of the Kingdom Nintendo Switch with case" is still a game.
+  if (WHOLE_ITEM.test(t)) return false;
   const ws = tokens(t);
   const at = ws.indexOf(need[0]);
   if (at < 0 || ws[at - 1] === 'by') return false;

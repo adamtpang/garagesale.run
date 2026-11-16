@@ -129,3 +129,39 @@ test('accessory phrases and bare specs in a listing are not model words', () => 
   ];
   assert.equal(compsFor({ title: 'Nintendo Switch 32GB gray, joy-con included' }, comps, core).length, 4);
 });
+
+test('a typed price cap still counts when a place follows it', () => {
+  assert.deepEqual(parseRequest('Nintendo Switch under $200 in Austin'), { core: 'Nintendo Switch', max: 200, place: 'Austin' });
+  assert.deepEqual(parseRequest('road bike under 300 in San Marcos, TX'), { core: 'road bike', max: 300, place: 'San Marcos' });
+  assert.deepEqual(parseRequest('drill max $80 near new braunfels'), { core: 'drill', max: 80, place: 'New Braunfels' });
+  // The place comes out of the item words even with no price.
+  assert.deepEqual(parseRequest('Herman Miller chair in Austin'), { core: 'Herman Miller chair', max: null, place: 'Austin' });
+  // "in" before anything that is not a search area stays part of the item.
+  assert.deepEqual(parseRequest('Nintendo Switch in box under $200'), { core: 'Nintendo Switch in box', max: 200 });
+  assert.equal(parseRequest('Nintendo Switch under $200').place, undefined);
+});
+
+test('a number with a unit is still a spec, not a price', () => {
+  assert.equal(parseRequest('monitor under 27in').max, null);
+  assert.equal(parseRequest('monitor under 27 inch').max, null);
+  assert.equal(parseRequest('monitor under 27 inches').max, null);
+  assert.equal(parseRequest('monitor under 27"').max, null);
+  assert.equal(parseRequest('iPhone 15 Pro Max 256 GB').max, null);
+  assert.equal(parseRequest('tv under 300 in Austin').max, 300);
+  // A word that only starts like a unit is not a unit.
+  assert.equal(parseRequest('lamp under 40 inchworm').max, 40);
+});
+
+test('a game sold with extras is kept out of console comps', () => {
+  const listing = { title: 'Nintendo Switch', price: 150 };
+  const sold = [
+    { title: 'Nintendo Switch Console with dock and joy-cons', price: 150 },
+    { title: 'Nintendo Switch with extra controller', price: 160 },
+    { title: 'Nintendo Switch 32GB gray includes charger', price: 140 },
+    { title: 'Zelda Tears of the Kingdom Nintendo Switch with case', price: 35 },
+    { title: 'Mario Kart 8 Deluxe Nintendo Switch includes manual', price: 30 },
+    { title: 'Animal Crossing New Horizons Nintendo Switch extra amiibo cards', price: 28 },
+  ];
+  const kept = compsFor(listing, sold, 'Nintendo Switch').map((c) => c.price).sort((a, b) => a - b);
+  assert.deepEqual(kept, [140, 150, 160]);
+});
