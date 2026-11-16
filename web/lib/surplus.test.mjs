@@ -55,6 +55,15 @@ test('a stated minimum premium applies only when it is higher than the percentag
   assert.equal(assessLot({ ...seed.lots[0], current_bid: 100 }).premium_amount, 8.5);
 });
 
+test('the premium minimum stays visible when there is no current bid', () => {
+  const lot = assessLot(seed.lots.find((l) => l.id === 'ps-4123530'));
+  assert.equal(lot.current_bid, null);
+  assert.equal(lot.bid_count, 0);
+  assert.equal(lot.premium_amount, null);
+  assert.equal(lot.premium_text, '8.5%');
+  assert.equal(lot.premium_note, 'Minimum $1.00 per auction.');
+});
+
 test('an estimate needs every input, is labeled, and never makes a lot a buy', () => {
   const lot = assessLot({ ...seed.lots[0], status: BUY_STATUS }, NOW);
   assert.equal(lot.unit_resale, 36.67);

@@ -72,7 +72,7 @@ function lotCard(lot) {
       lot.opening_bid_text ? fact('Opening bid', lot.opening_bid_text, 'Not used as the current bid.') : null,
       fact('Bids', lot.bid_count_text, lot.bid_scan_text ? `Scan range ${lot.bid_scan_text}. ${lot.bid_scan_note || ''}`.trim() : lot.bid_scan_note),
       fact('Closes', lot.close_text, lot.countdown ? `Countdown ${lot.countdown}` : null),
-      fact('Premium', lot.premium_text, lot.premium_amount != null ? `Premium dollars ${lot.premium_amount_text}${lot.premium_min ? `. Minimum $${lot.premium_min} per auction.` : ''}` : null),
+      fact('Premium', lot.premium_text, lot.premium_note),
       fact('Tax', lot.tax_text, `${lot.tax_rate_text}. ${lot.tax_label}`),
       fact('Haul', lot.haul_text, lot.round_trip_miles == null ? 'Round trip unknown.' : `${lot.round_trip_miles} round-trip miles × $0.18. ${lot.miles_note || ''}`.trim()),
       fact('Pickup', lot.pickup_address || 'unknown', [lot.pickup_terms, lot.pickup_deadline].filter(Boolean).join(' '), 'col-span-2'),
