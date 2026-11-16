@@ -85,6 +85,7 @@ export default function DealBoard() {
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{PAUSED_SCOUT}</p>
       </div>
       <div className="flex flex-wrap gap-2">
+        <Button asChild variant="secondary" size="sm"><a href="/surplus">Surplus</a></Button>
         <Button type="button" variant={sample ? 'brand' : 'secondary'} size="sm" onClick={() => setSample((v) => !v)}>{sample ? 'Show stored feed' : 'Show sample layout'}</Button>
         <Button asChild variant="secondary" size="sm"><a href="/buy">Find deals</a></Button>
         <Button asChild variant="secondary" size="sm"><a href="/ledger">Ledger</a></Button>
