@@ -62,7 +62,7 @@ export async function searchMarketplace({ query, max_price, city = 'Austin', rad
   const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(soldQuery(core))}&LH_Sold=1&LH_Complete=1&LH_ItemCondition=3000&_ipg=120`;
 
   // The same search asked twice while it runs shares one browsing session.
-  if (inflight.has(key)) return inflight.get(key);
+  if (inflight.has(key)) return ranked(await inflight.get(key));
   const run = browse(async (page) => {
     const landed = await page.goto(fbUrl, 3500);
     if (/login|checkpoint/.test(landed)) throw new Error('Facebook is asking you to log in. Log in to Facebook in Helium yourself, then search again.');

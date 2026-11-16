@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { parseRequest } from '@/lib/pricing.js';
 
 export const PRESETS = ['Used Mac with Apple silicon under $500', 'Herman Miller chair to flip', 'Nintendo Switch under $200', 'Road bike under $300'];
 const RADII = [5, 10, 20, 40, 60];
@@ -102,19 +103,21 @@ export default function BuySearch() {
   useEffect(() => {
     if (started.current) return; // dev strict mode runs effects twice
     started.current = true;
-    try { const last = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (last) { setRes(last); setQ(last.query || ''); if (last.city) setCity(last.city); if (last.radius_mi) setRadius(last.radius_mi); setMax(last.max && !/under|below|max/i.test(last.query || '') ? String(last.max) : ''); } } catch (e) {}
+    // State set here is not visible to run() until the next render, so keep the restored place in hand.
+    const place = {};
+    try { const last = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (last) { setRes(last); setQ(last.query || ''); if (last.city) { setCity(last.city); place.city = last.city; } if (last.radius_mi) { setRadius(last.radius_mi); place.radius = last.radius_mi; } setMax(last.max && parseRequest(last.query).max === null ? String(last.max) : ''); } } catch (e) {}
     fetch('/api/saved', { cache: 'no-store' }).then((r) => r.json()).then((j) => setSaved(Object.fromEntries((j.deals || []).map((d) => [d.id, d])))).catch(() => {});
     const sp = new URLSearchParams(location.search);
-    if (sp.get('q')) { setQ(sp.get('q')); if (sp.get('max')) setMax(sp.get('max')); run(sp.get('q'), sp.get('max') || ''); }
+    if (sp.get('q')) { setQ(sp.get('q')); if (sp.get('max')) setMax(sp.get('max')); run(sp.get('q'), sp.get('max') || '', place); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function run(query, maxPrice) {
+  async function run(query, maxPrice, place = {}) {
     query = String(query || '').trim();
     if (!query) { setErr({ message: 'Tell us what you are looking for.' }); return; }
     setErr(null); setBusy(true); setSecs(0); setShowOff(false);
     const t0 = Date.now(); timer.current = setInterval(() => setSecs(Math.round((Date.now() - t0) / 1000)), 1000);
     try {
-      const r = await fetch('/api/buy/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query, max_price: maxPrice || undefined, city, radius_mi: radius }) });
+      const r = await fetch('/api/buy/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query, max_price: maxPrice || undefined, city: place.city || city, radius_mi: place.radius || radius }) });
       const j = await r.json();
       if (!r.ok) setErr({ message: j.error || 'Search failed', browser: j.browser === 'unavailable', query, max: maxPrice });
       else { setRes(j); try { sessionStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {} }

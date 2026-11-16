@@ -4,6 +4,8 @@
 const STOP = new Set('a an and the with for of in on to my your our is it this that new used great good excellent condition works working comes set plus only like mint gently lightly barely perfect clean nice cheap obo firm price must go pickup asap'.split(' '));
 // Words that change what the item is. A comp only counts if it agrees with the listing on these.
 const HARD = new Set('lite oled pro max mini air ultra plus xl xs se m1 m2 m3 m4 m5 intel 2 3 4 5 parts broken cracked locked damaged repair'.split(' '));
+// Describing words that never name a model.
+const GENERIC = new Set('authentic genuine original vintage classic retro modern office desk home chair chairs seat ergonomic adjustable fully loaded size large small medium black white gray grey blue red green pink yellow brown silver gold color colour console system edition model version unit one bike bicycle laptop included includes everything complete bundle tested working handheld first gen generation official oem neon navy purple orange teal coral turquoise mint lavender'.split(' '));
 const ACCESSORY = /\b(games?|cartridges?|protectors?|thumb ?caps?|grips?|skins?|covers?|chargers?|charging|docks?|stands?|cables?|adapters?|bags?|sleeves?|keyboards?|mouse|cushions?|headrests?|arms?|casters?|wheels?|tires?|tubes?|pedals?|helmets?|saddles?|manuals?|box only|cases?|replacement|shell|joy[- ]?cons?|controllers?|amiibo|cords?|hdmi)\b/i;
 // Accessory words to leave out of the eBay sold search, unless the request itself uses them.
 // Words a whole item is often listed "with" (dock, charger, case, controllers) stay in.
@@ -22,13 +24,16 @@ export const tokens = (s) => String(s || '').toLowerCase().replace(/(\d+)\s*(gb|
 // "Nintendo Switch under $200" -> { core: 'Nintendo Switch', max: 200 }
 export function parseRequest(q, max) {
   let core = String(q || '').trim();
-  let m = core.match(/\b(?:under|below|less than|max|up to|<)\s*\$?\s*(\d[\d,]*)/i);
+  // A number followed by a unit ("Pro Max 256GB") is a spec, not a price cap.
+  let m = core.match(/\b(?:under|below|less than|max|up to|<)\s*\$?\s*(\d[\d,]*)(?![\d,]|\s*(?:gb|tb|mb|mm|cm|in\b|inch|"))/i);
   let maxPrice = max !== undefined && max !== null && max !== '' && isFinite(Number(max)) ? Number(max) : null;
   if (m) { if (maxPrice === null) maxPrice = Number(m[1].replace(/,/g, '')); core = core.replace(m[0], ' '); }
   core = core.replace(/\b(to flip|for flipping|flip|deals?|cheap|used)\b/gi, ' ').replace(/\s+/g, ' ').trim();
   return { core: core || String(q || '').trim(), max: maxPrice };
 }
 
+// A word that could name a product, as opposed to describing one.
+function namingWord(w) { return !GENERIC.has(w) && !HARD.has(w) && !/^\d/.test(w); }
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // "Super Mario Party (Nintendo Switch, 2018)", "Paper Mario - Nintendo Switch", "Grips for Nintendo Switch":
 // the item name comes after the product's own name, so the product is made for the item.
@@ -38,10 +43,15 @@ function madeFor(title, need, strict) {
   const name = need.map(esc).join('[^a-z0-9]+');
   if (new RegExp(`(\\(|\\s[-–|:]\\s*|\\bfor (the |a |your )?)${name}`).test(t)) return true;
   if (!strict) return false;
-  // Comps only: more than two real words before the item name, unless it reads "... by <brand>".
+  // Comps only, and only a guess: a title that says console, system or bundle is the item itself.
+  // Otherwise, more than two naming words before the item name reads like a game or accessory title
+  // ("Donkey Kong Amino Super Mario Series Nintendo Switch"). Colors, sizes and words like
+  // "official" or "vintage" do not count, and neither does "... by <brand>".
+  if (BUNDLE.test(t)) return false;
   const ws = tokens(t);
   const at = ws.indexOf(need[0]);
-  return at > 2 && ws[at - 1] !== 'by';
+  if (at < 0 || ws[at - 1] === 'by') return false;
+  return ws.slice(0, at).filter(namingWord).length > 2;
 }
 
 // Accessory or wanted-ad check against the core request words.
@@ -64,17 +74,15 @@ export function relevance(title, core) {
 function hardSet(title) { return new Set(tokens(String(title || '').split(BUNDLE)[0]).filter((w) => HARD.has(w))); }
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
 
-// Describing words that never name a model.
-const GENERIC = new Set('authentic genuine original vintage classic retro modern office desk home chair chairs seat ergonomic adjustable fully loaded size large small medium black white gray grey blue red green pink yellow brown silver gold color colour console system edition model version unit one bike bicycle laptop included includes everything complete bundle tested working handheld first gen generation'.split(' '));
-
 // Model words: listing words (before any "with ...") that comps also use, like "aeron" or
 // "sayl" in a "Herman Miller chair" search. A comp must share all of them.
 // A word no comp uses tells us nothing, so it is not required.
 function modelWords(title, comps, need) {
-  const head = String(title || '').split(BUNDLE)[0];
+  // Take accessory phrases out whole. Split into tokens, "joy-con" would leave "joy" and "con" behind.
+  const head = String(title || '').split(BUNDLE)[0].replace(new RegExp(ACCESSORY.source, 'gi'), ' ');
   const df = new Map();
   for (const c of comps) for (const w of new Set(tokens(c.title))) df.set(w, (df.get(w) || 0) + 1);
-  return tokens(head).filter((w) => w.length > 1 && !need.includes(w) && !GENERIC.has(w) && !HARD.has(w) && !ACCESSORY.test(w) && (df.get(w) || 0) >= 1);
+  return tokens(head).filter((w) => w.length > 1 && !need.includes(w) && namingWord(w) && (df.get(w) || 0) >= 1);
 }
 
 // A comp matches a listing when it has the core words, the listing's model words,
@@ -84,7 +92,7 @@ export function compsFor(listing, comps, core) {
   const lh = hardSet(listing.title);
   const model = modelWords(listing.title, comps, need);
   const listingAcc = ACCESSORY.test(listing.title) && !BUNDLE.test(listing.title);
-  const listingFor = madeFor(listing.title, need, true);
+  const listingFor = madeFor(listing.title, need, false);
   return comps.filter((c) => {
     const ct = new Set(tokens(c.title));
     if (!need.every((w) => ct.has(w))) return false;

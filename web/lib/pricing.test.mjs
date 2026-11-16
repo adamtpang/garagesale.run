@@ -98,3 +98,34 @@ test('reads listing age', () => {
   assert.equal(ageWeeks('Listed a week ago in Austin, TX'), 1);
   assert.equal(ageWeeks(null), null);
 });
+
+test('a spec after "max" is not a price cap', () => {
+  assert.deepEqual(parseRequest('iPhone 15 Pro Max 256GB'), { core: 'iPhone 15 Pro Max 256GB', max: null });
+  assert.equal(parseRequest('underwater camera').max, null);
+  assert.equal(parseRequest('Road bike under $300').max, 300);
+  assert.equal(parseRequest('laptop under 1,200').max, 1200);
+  assert.equal(parseRequest('switch max 200').max, 200);
+});
+
+test('describing words before the name do not turn a console sale into a game', () => {
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Official Black Neon Red Nintendo Switch Console', 120),
+    sold('Refurbished Gray 32GB Nintendo Switch', 130),
+    sold('Nintendo Switch V2 Console', 140),
+    sold('Super Mario Party (Nintendo Switch, 2018)', 22),
+    sold('Donkey Kong Amino Super Mario Series Nintendo Switch EUC', 16),
+  ];
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch' }, comps, core).map((c) => c.price), [120, 130, 140]);
+  // A listing with several words before the name still keeps games out of its comps.
+  assert.deepEqual(compsFor({ title: 'Modded Hacked Unpatched Nintendo Switch' }, comps, core).map((c) => c.price), [120, 130, 140]);
+});
+
+test('accessory phrases and bare specs in a listing are not model words', () => {
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Nintendo Switch Console Gray Joy-Con', 120), sold('Nintendo Switch Console Neon Joy-Con', 130),
+    sold('Nintendo Switch V2 Console 32GB', 140), sold('Nintendo Switch Console', 150),
+  ];
+  assert.equal(compsFor({ title: 'Nintendo Switch 32GB gray, joy-con included' }, comps, core).length, 4);
+});
