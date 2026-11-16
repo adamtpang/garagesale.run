@@ -503,3 +503,17 @@ body{font-family:var(--font)}
 .dimg{position:relative}.dimg>.phx,.dc2 .dimg>.phx{position:absolute;inset:0;width:auto;height:auto}
 /* Pickup fields were capped at 170px, which cut their hints off. */
 .approve .prow .field{max-width:none;font-size:15px;font-weight:400}
+
+/* Phone nav: every link stays reachable. The links sit on their own row under the logo. */
+@media(max-width:600px){
+  .navin{height:auto;flex-direction:column;align-items:stretch;gap:2px;padding:8px 0 6px}
+  .navlinks{justify-content:space-between;overflow:visible}
+  .navlinks>a{display:inline-flex!important}
+}
+/* Agent log folds away once a job is done. */
+.logfold>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.logfold>summary::-webkit-details-marker{display:none}
+.logfold>summary::after{content:"Show";font-size:12px;letter-spacing:0;text-transform:none;color:var(--blue2);text-decoration:underline;text-underline-offset:3px}
+.logfold[open]>summary{margin-bottom:14px}.logfold[open]>summary::after{content:"Hide"}
+.logfold>summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+@media(max-width:600px){.navlinks>a{min-height:40px;align-items:center}}

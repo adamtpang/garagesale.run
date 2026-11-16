@@ -235,7 +235,7 @@ export default function JobPage({ params }) {
           {['name', 'brand', 'model', 'condition'].map((k) => idf[k] ? [<dt key={k + 't'}>{k[0].toUpperCase() + k.slice(1)}</dt>, <dd key={k}>{String(idf[k])}</dd>] : null)}
           {idf.details && <><dt>Details</dt><dd>{typeof idf.details === 'string' ? idf.details : Array.isArray(idf.details) ? idf.details.join(', ') : JSON.stringify(idf.details)}</dd></>}
         </dl></div>}
-        <div className="panel o9"><h3>Agent activity <span className="small">{logs.length}</span></h3><Log logs={logs} active={!doneAll} /></div>
+        <details className="panel o9 logfold" open={!doneAll}><summary><span>Agent activity <span className="small">{logs.length} step{logs.length === 1 ? '' : 's'}</span></span></summary><Log logs={logs} active={!doneAll} /></details>
       </div>
     </div>
   </main>;

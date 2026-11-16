@@ -91,11 +91,11 @@ Fixed:
 - The dashboard opened with five "not stored" tiles and a repeated warning. It is one notice now when no rule is stored.
 - Dashboard rows repeated up to six sentences of explanation. Each row shows the first one, and the others open from an "N more" toggle.
 
-Found, not changed:
+Fixed in a follow-up the same day:
 
-- The About link drops off the nav on phones. Fixing it needs a menu.
-- The agent log on a job page is long and technical. It could collapse by default.
-- Old scout-feed photos are dead links, because Facebook image links expire. Storing a copy at scout time would fix it.
+- The About link dropped off the nav on phones. Under 600px the six links now sit on their own row under the logo.
+- The agent log on a job page was long and technical. It is a fold that starts closed once the job is done.
+- Old scout-feed photos were dead links, because Facebook image links expire. A feed write now keeps one copy of each photo in Blob storage (`web/lib/dealPhotos.js`). Photos on deals stored before this cannot be recovered.
 
 ## Checked
 
