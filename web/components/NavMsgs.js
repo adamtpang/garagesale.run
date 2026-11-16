@@ -26,5 +26,5 @@ export default function NavMsgs() {
     return () => { alive = false; clearInterval(t); };
   }, []);
   return <><a href="/conversations" className="msglink relative inline-flex items-center sm:gap-1.5">Messages{unread > 0 && <Badge variant="destructive" className="absolute -right-1 -top-1.5 h-4 min-w-4 justify-center px-1 text-[10px] leading-none not-italic sm:static sm:h-5 sm:min-w-5 sm:px-1.5 sm:text-xs">{unread}</Badge>}</a>
-    {toast && <a href="/conversations" className="fixed left-1/2 top-20 z-[60] -translate-x-1/2 rounded-full border border-border bg-card/95 px-5 py-3 text-sm font-medium text-foreground shadow-2xl backdrop-blur animate-in fade-in slide-in-from-top-2">{toast}</a>}</>;
+    {toast && <a href="/conversations" className="fixed left-1/2 top-20 z-[60] -translate-x-1/2 rounded-full border border-border bg-card px-5 py-3 text-sm font-medium text-foreground shadow-2xl backdrop-blur animate-in fade-in slide-in-from-top-2">{toast}</a>}</>;
 }

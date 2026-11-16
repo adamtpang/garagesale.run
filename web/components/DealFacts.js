@@ -3,9 +3,9 @@ import { netLine, shippingLine, verdictLabel } from '../lib/dealPresenter.js';
 
 const e = React.createElement;
 const TONE = {
-  buy: 'bg-success/15 text-success',
-  skip: 'bg-destructive/15 text-red-300',
-  incomplete: 'bg-amber-500/15 text-amber-300',
+  buy: 'bg-[#9be8b8] text-foreground',
+  skip: 'bg-red-200 text-red-800',
+  incomplete: 'bg-amber-200 text-amber-950',
 };
 
 function pill(view, sample) {
@@ -24,12 +24,28 @@ function fact(label, value, extra) {
 
 function link(href, text) {
   if (!href) return e('span', { className: 'text-muted-foreground' }, 'no link');
-  return e('a', { href, target: '_blank', rel: 'noopener', className: 'text-[#8eb7ff] underline-offset-4 hover:underline' }, text);
+  return e('a', { href, target: '_blank', rel: 'noopener', className: 'text-link underline-offset-4 hover:underline' }, text);
+}
+
+// A long reason repeats on every row when rules are missing. Show the first sentence and fold the rest,
+// so nothing is hidden for good and the table stays scannable.
+export function splitReason(text) {
+  const parts = String(text || '').split(/(?<=\.)\s+(?=[A-Z0-9$])/).map((t) => t.trim()).filter(Boolean);
+  return { first: parts[0] || '', rest: parts.slice(1) };
+}
+
+function reason(text, className) {
+  const { first, rest } = splitReason(text || 'Passes the stored rules.');
+  return e('div', { className, 'data-region': 'reason' },
+    e('p', null, first),
+    rest.length ? e('details', { className: 'mt-1' },
+      e('summary', { className: 'cursor-pointer font-medium text-link' }, `${rest.length} more`),
+      e('ul', { className: 'mt-1 list-disc pl-4' }, rest.map((t, i) => e('li', { key: i }, t)))) : null);
 }
 
 function compList(view) {
   const rows = [
-    ...(view.comps || []).map((c, i) => e('li', { key: `c${i}`, className: 'border-t border-white/10 py-2' },
+    ...(view.comps || []).map((c, i) => e('li', { key: `c${i}`, className: 'border-t border-border py-2' },
       e('div', { className: 'flex items-start justify-between gap-3' },
         e('span', { className: 'min-w-0' },
           e('span', { className: 'block font-medium' }, c.title || 'Sold comp'),
@@ -39,23 +55,23 @@ function compList(view) {
           e('span', { className: 'block font-semibold tabular-nums' }, c.priceText),
           e('span', { className: 'block text-xs' }, link(c.url, 'Open comp')))),
     )),
-    ...(view.rejected || []).map((r, i) => e('li', { key: `r${i}`, className: 'border-t border-white/10 py-2 text-xs text-muted-foreground' },
+    ...(view.rejected || []).map((r, i) => e('li', { key: `r${i}`, className: 'border-t border-border py-2 text-xs text-muted-foreground' },
       e('div', null, 'Not used as a sold comp. ', r.reason),
       e('div', { className: 'mt-1' }, link(r.url, 'Open link')))),
   ];
   if (!rows.length) return e('p', { className: 'text-xs text-muted-foreground' }, 'No comp links on this deal.');
   return e('details', { className: 'mt-3' },
-    e('summary', { className: 'cursor-pointer text-xs font-medium text-[#8eb7ff]' }, `${(view.comps || []).length} comp row${(view.comps || []).length === 1 ? '' : 's'} · ${(view.rejected || []).length} unused link${(view.rejected || []).length === 1 ? '' : 's'}`),
+    e('summary', { className: 'cursor-pointer text-xs font-medium text-link' }, `${(view.comps || []).length} comp row${(view.comps || []).length === 1 ? '' : 's'} · ${(view.rejected || []).length} unused link${(view.rejected || []).length === 1 ? '' : 's'}`),
     e('ul', { className: 'mt-1' }, rows));
 }
 
 function moneyBlock(view) {
   const net = netLine(view);
-  const tone = net.tone === 'buy' ? 'text-success' : net.tone === 'unknown' ? 'text-amber-200' : 'text-foreground';
-  return e('div', { className: 'rounded-xl bg-black/40 p-3' },
+  const tone = net.tone === 'buy' ? 'text-success' : net.tone === 'unknown' ? 'text-amber-950' : 'text-foreground';
+  return e('div', { className: 'rounded-xl bg-white p-3' },
     e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, net.label),
     e('div', { className: `mt-1 text-2xl font-semibold tabular-nums ${tone}`, 'data-net': net.value }, net.value),
-    e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, view.reasonText || 'Passes the stored rules.'),
+    reason(view.reasonText, 'mt-2 text-xs leading-5 text-muted-foreground'),
     view.riskNote ? e('p', { className: 'mt-1 text-xs text-muted-foreground' }, view.riskNote) : null);
 }
 
@@ -63,8 +79,8 @@ export function DealCard({ view, sample, stacked }) {
   const ship = shippingLine(view);
   return e('article', {
     className: stacked
-      ? 'rounded-2xl border border-white/10 bg-[#141416] p-4'
-      : 'rounded-2xl border border-white/10 bg-[#141416] p-4 md:hidden',
+      ? 'rounded-2xl border border-border bg-card p-4 shadow-tag'
+      : 'rounded-2xl border border-border bg-card p-4 shadow-tag md:hidden',
     'data-region': 'card',
     'data-sample': sample ? 'true' : 'false',
   },
@@ -87,7 +103,7 @@ export function DealCard({ view, sample, stacked }) {
 export function DealTableRow({ view, sample }) {
   const net = netLine(view);
   const ship = shippingLine(view);
-  return e('tr', { className: 'hidden border-t border-white/10 align-top md:table-row', 'data-region': 'row', 'data-verdict': view.verdict },
+  return e('tr', { className: 'hidden border-t border-border align-top md:table-row', 'data-region': 'row', 'data-verdict': view.verdict },
     e('td', { className: 'px-3 py-3' }, pill(view, sample)),
     e('td', { className: 'px-3 py-3' },
       e('div', { className: 'font-medium' }, view.href ? e('a', { href: view.href, className: 'hover:underline' }, view.title) : view.title),
@@ -106,11 +122,11 @@ export function DealTableRow({ view, sample }) {
       e('div', null, `Fee ${view.feeText}`),
       e('div', null, `Shipping ${ship}`),
       e('div', null, `Gas ${view.gasText}`),
-      view.feeNote ? e('div', { className: 'mt-1 text-muted-foreground' }, view.feeNote) : null),
+      view.feeNote ? reason(view.feeNote, 'mt-1 text-muted-foreground') : null),
     e('td', { className: 'px-3 py-3' },
       e('div', { className: 'text-[11px] uppercase tracking-wide text-muted-foreground' }, net.label),
       e('div', { className: 'text-lg font-semibold tabular-nums', 'data-net': net.value }, net.value),
-      e('p', { className: 'mt-1 max-w-xs text-xs leading-5 text-muted-foreground' }, view.reasonText || 'Passes the stored rules.')));
+      reason(view.reasonText, 'mt-1 max-w-xs text-xs leading-5 text-muted-foreground')));
 }
 
 export const TABLE_HEAD = ['Decision', 'Item', 'Buy', 'Pickup', 'Resale', 'Costs', 'Net'];

@@ -44,13 +44,13 @@ function Deal({ d, rank, query, saved, onSaved }) {
     setBusy(false);
   }
   async function copy() { try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch (err) {} }
-  return <Card className="overflow-hidden border-border/60" data-deal={d.id}>
+  return <Card className="overflow-hidden border-border" data-deal={d.id}>
     <div className="flex gap-4 p-4">
       <a href={d.fb_url} target="_blank" rel="noopener" className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>.phx]:h-full [&>.phx]:w-full"><Photo src={d.photo_url} title={d.title} /></a>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0"><div className="text-xs text-muted-foreground">#{rank}</div><a href={d.fb_url} target="_blank" rel="noopener" className="block truncate font-medium hover:underline">{d.title}</a></div>
-          <div className="shrink-0 text-right"><div className="text-xl font-semibold tabular-nums">{$(d.ask)}</div>{d.was ? <div className="text-xs text-muted-foreground line-through">{$(d.was)}</div> : null}</div>
+          <div className="shrink-0 text-right"><div className="font-marker text-2xl text-price">{$(d.ask)}</div>{d.was ? <div className="text-xs text-muted-foreground line-through">{$(d.was)}</div> : null}</div>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span>{d.location || 'Location not shown'}</span><span>{d.listed ? d.listed.replace(/ in .*/, '') : 'Age not checked'}</span>{d.condition && <span>{d.condition}</span>}
@@ -63,20 +63,20 @@ function Deal({ d, rank, query, saved, onSaved }) {
         <p className="mt-2 text-sm text-muted-foreground">{d.reason}</p>
       </div>
     </div>
-    <div className="flex flex-wrap gap-2 border-t border-border/60 px-4 py-3">
+    <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
       <Button size="sm" variant={open === 'evidence' ? 'secondary' : 'outline'} onClick={() => setOpen(open === 'evidence' ? '' : 'evidence')}>Price evidence ({e.n || 0})</Button>
       <Button size="sm" variant={open === 'opener' ? 'secondary' : 'outline'} onClick={() => setOpen(open === 'opener' ? '' : 'opener')}>Draft opener</Button>
       <Button size="sm" variant="brand" onClick={save} disabled={busy}>{busy ? 'Saving...' : saved ? 'Update saved deal' : 'Save deal'}</Button>
       <Button size="sm" variant="ghost" asChild><a href={d.fb_url} target="_blank" rel="noopener">Open on Facebook</a></Button>
     </div>
-    {open === 'evidence' && <div className="border-t border-border/60 px-4 py-3 text-sm">
+    {open === 'evidence' && <div className="border-t border-border px-4 py-3 text-sm">
       {e.value ? <p className="text-muted-foreground">Median of {e.n} matching eBay sold listings is <b className="text-foreground">{$(e.value)}</b>. The middle half sold between {$(e.low)} and {$(e.high)}. eBay prices are before shipping and fees; this listing is local pickup.</p>
         : <p className="text-muted-foreground">Only {e.n || 0} eBay sold listings matched this exact item, so there is no honest market value. Check sold listings yourself before you offer.</p>}
       {d.comps && d.comps.length > 0 && <ul className="mt-3 grid gap-1.5">{d.comps.map((c) => <li key={c.id || c.url} className="flex items-center justify-between gap-3 rounded-lg bg-secondary/60 px-3 py-2">
         <a href={c.url} target="_blank" rel="noopener" className="min-w-0 truncate hover:underline">{c.title}</a>
         <span className="shrink-0 text-xs text-muted-foreground">{c.condition ? c.condition + ' · ' : ''}sold {c.sold_on}</span><b className="shrink-0 tabular-nums">{$(c.price)}</b></li>)}</ul>}
     </div>}
-    {open === 'opener' && <div className="grid gap-3 border-t border-border/60 px-4 py-3">
+    {open === 'opener' && <div className="grid gap-3 border-t border-border px-4 py-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Button size="sm" variant={kind === 'availability' ? 'secondary' : 'outline'} onClick={() => { setEdited(false); setKind('availability'); }}>Ask if available</Button>
         <Button size="sm" variant={kind === 'offer' ? 'secondary' : 'outline'} onClick={() => { setEdited(false); setKind('offer'); }}>Make an offer</Button>
@@ -136,24 +136,24 @@ export default function BuySearch() {
   const step = [...STEPS].reverse().find(([s]) => secs >= s)[1];
 
   return <div className="grid gap-6">
-    <Card className="border-border/70 bg-card/80 p-5 backdrop-blur md:p-6">
+    <Card className="border-border bg-card p-5 backdrop-blur md:p-6">
       <form onSubmit={(e) => { e.preventDefault(); run(q, max); }} className="grid gap-4">
         <Input className="h-14 rounded-2xl px-5 text-lg" placeholder="What do you want? e.g. Herman Miller chair" value={q} onChange={(e) => setQ(e.target.value)} aria-label="What are you looking for?" disabled={busy} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-[8rem_1fr_8rem_auto]">
           <Input className="h-12" placeholder="Max $" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Max price" disabled={busy} />
           <Input className="h-12" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} aria-label="City" disabled={busy} />
-          <select className="h-12 rounded-md border border-input bg-background px-3 text-sm text-foreground [color-scheme:dark]" value={radius} onChange={(e) => setRadius(Number(e.target.value))} aria-label="Radius" disabled={busy}>{RADII.map((r) => <option key={r} value={r}>Within {r} mi</option>)}</select>
+          <select className="h-12 rounded-md border border-foreground bg-white px-3 text-sm text-foreground" value={radius} onChange={(e) => setRadius(Number(e.target.value))} aria-label="Radius" disabled={busy}>{RADII.map((r) => <option key={r} value={r}>Within {r} mi</option>)}</select>
           <Button size="lg" variant="brand" className="h-12" disabled={busy}>{busy ? 'Searching...' : 'Find deals'}</Button>
         </div>
-        <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" disabled={busy} className="h-8 border-border/70 px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); run(t, max); }}>{t}</Button>)}</div>
+        <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" disabled={busy} className="h-8 border-border px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); run(t, max); }}>{t}</Button>)}</div>
       </form>
     </Card>
 
-    {busy && <Card className="border-border/60 p-5" aria-live="polite"><div className="flex items-center justify-between text-sm"><span className="font-medium">{step}...</span><span className="tabular-nums text-muted-foreground">{secs}s</span></div>
+    {busy && <Card className="border-border p-5" aria-live="polite"><div className="flex items-center justify-between text-sm"><span className="font-medium">{step}...</span><span className="tabular-nums text-muted-foreground">{secs}s</span></div>
       <div className="mt-3 h-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-brand transition-all duration-1000" style={{ width: `${Math.min(95, secs * 1.2)}%` }} /></div>
       <p className="mt-3 text-xs text-muted-foreground">Read-only, in your own browser, at a human pace. Usually one to two minutes. If Helium asks, click Allow.</p></Card>}
 
-    {err && <Card className="border-destructive/40 bg-destructive/10 p-5 text-sm"><p>{err.message}</p>
+    {err && <Card className="border-destructive bg-red-200 p-5 text-sm"><p>{err.message}</p>
       {err.browser && <div className="mt-3 grid gap-2 text-muted-foreground"><p>Live search reads Marketplace through your own Helium browser, so it only works when this app runs on your computer with Helium open.</p>
         <div><Button size="sm" variant="secondary" onClick={queueWorker}>Send it to the Grok Bot worker instead</Button></div></div>}</Card>}
 
@@ -161,7 +161,7 @@ export default function BuySearch() {
       <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 className="!text-2xl !font-semibold !tracking-tight">{good.length} match{good.length === 1 ? '' : 'es'} for &quot;{res.core}&quot;{res.max ? ` under ${$(res.max)}` : ''}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{res.area || res.city}. Priced against {res.sold_seen} eBay sold listings. Checked age and condition on the top {res.details_checked}{res.gone_removed ? `, dropped ${res.gone_removed} already sold` : ''}. Searched {new Date(res.searched_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}{res.cached ? ' (cached)' : ''}.</p></div>
         <div className="flex gap-3 text-xs"><a className="text-muted-foreground underline-offset-4 hover:underline" href={res.fb_search_url} target="_blank" rel="noopener">Marketplace search</a><a className="text-muted-foreground underline-offset-4 hover:underline" href={res.ebay_search_url} target="_blank" rel="noopener">eBay sold search</a></div></div>
-      {good.length === 0 && <Card className="border-border/60 p-8 text-center text-muted-foreground">No listings matched. Try a wider radius or a simpler search.</Card>}
+      {good.length === 0 && <Card className="border-border p-8 text-center text-muted-foreground">No listings matched. Try a wider radius or a simpler search.</Card>}
       {good.map((d, i) => <Deal key={d.id} d={d} rank={i + 1} query={res.query} saved={saved[d.id]} onSaved={(s) => setSaved((m) => ({ ...m, [s.id]: s }))} />)}
       {off.length > 0 && <div><Button variant="ghost" size="sm" onClick={() => setShowOff(!showOff)}>{showOff ? 'Hide' : 'Show'} {off.length} listing{off.length === 1 ? '' : 's'} that are not a match</Button>
         {showOff && <ul className="mt-2 grid gap-1 text-sm">{off.map((d) => <li key={d.id} className="flex justify-between gap-3 rounded-lg px-3 py-2 hover:bg-accent/30"><a href={d.fb_url} target="_blank" rel="noopener" className="min-w-0 truncate">{d.title}</a><span className="shrink-0 text-muted-foreground">{$(d.ask)} · {d.reason}</span></li>)}</ul>}</div>}

@@ -52,3 +52,15 @@ test('unknown shipping and a skip reason stay visible on both layouts', () => {
   assert.equal(skip.includes('Expected net'), true);
   assert.match(skip, /data-net="unknown"/);
 });
+
+test('a long reason shows its first sentence and folds the rest without dropping any', async () => {
+  const { splitReason } = await import('./DealFacts.js');
+  const long = 'No sold comps with a price. Buy source is missing. Gas rate is not stored, so gas is not counted as $0. Category is missing.';
+  const { first, rest } = splitReason(long);
+  assert.equal(first, 'No sold comps with a price.');
+  assert.equal(rest.length, 3);
+  assert.equal([first, ...rest].join(' '), long);
+  // A dollar amount with cents is not a sentence break.
+  assert.deepEqual(splitReason('Calculated net $2.65 is under the $100.00 minimum.'), { first: 'Calculated net $2.65 is under the $100.00 minimum.', rest: [] });
+  assert.deepEqual(splitReason(''), { first: '', rest: [] });
+});

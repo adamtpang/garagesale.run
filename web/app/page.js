@@ -20,6 +20,9 @@ const TILES = [
 const FEED = ['Scanning new Austin listings', 'Comparing with eBay sold', 'Checking Amazon price', 'Found 3 local comps', 'Flagged under-market listing', 'Drafting listing copy'];
 
 const EXAMPLES = TILES.map(([ic, nm, ask, mkt]) => ({ photo: `/items/${ic}.jpg`, name: nm, ask, mkt }));
+// A deal older than this is not shown as a real, current find on the home page.
+const FRESH_MS = 7 * 24 * 60 * 60 * 1000;
+const fresh = (iso) => !!iso && Date.now() - new Date(iso).getTime() < FRESH_MS;
 const r0 = (v) => (v === undefined || v === null || isNaN(Number(v)) ? undefined : Math.round(Number(v)));
 function toTile(d, href) {
   return { href, photo: d.photo_url || d.image_url || d.image || null, name: d.title || d.area || 'Deal', ask: r0(d.ask ?? d.ask_price ?? d.buy_price ?? d.price), mkt: r0(d.resale ?? d.resale_price ?? d.resell_price ?? d.est_market_price), link: d.fb_url || d.source_url || d.link || d.url || null };
@@ -30,8 +33,8 @@ function useRealTiles() {
     let stop = false;
     (async () => {
       const out = [];
-      try { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); if (f && !f.test) (f.deals || []).forEach((d, i) => { if (!d.example) out.push(toTile(d, `/deal/feed/${i}`)); }); } catch (e) {}
-      try { const r = await (await fetch('/api/jobs?recent=1', { cache: 'no-store' })).json(); (r.jobs || []).filter((j) => j.kind === 'buy' && j.stage === 'done').forEach((j) => (j.deals || []).forEach((d, i) => out.push(toTile(d, `/deal/${j.id}/${i}`)))); } catch (e) {}
+      try { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); if (f && !f.test && fresh(f.updated_at)) (f.deals || []).forEach((d, i) => { if (!d.example) out.push(toTile(d, `/deal/feed/${i}`)); }); } catch (e) {}
+      try { const r = await (await fetch('/api/jobs?recent=1', { cache: 'no-store' })).json(); (r.jobs || []).filter((j) => j.kind === 'buy' && j.stage === 'done' && fresh(j.updated_at || j.created_at)).forEach((j) => (j.deals || []).forEach((d, i) => out.push(toTile(d, `/deal/${j.id}/${i}`)))); } catch (e) {}
       if (!stop) setTiles(out.filter((x, i, a) => x.name && x.photo && a.findIndex((y) => y.photo === x.photo) === i).slice(0, 6));
     })();
     return () => { stop = true; };
@@ -95,7 +98,7 @@ async function shrink(file) {
   } catch (e) { return file; }
 }
 
-function Drop({ children, className, over, busy }) { return <label className={cn('relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border bg-background/40 px-6 py-12 text-center transition-colors hover:border-muted-foreground/50 hover:bg-accent/30', over && 'border-brand bg-brand/10', busy && 'pointer-events-none opacity-70', className)}>{children}</label>; }
+function Drop({ children, className, over, busy }) { return <label className={cn('relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border bg-background/40 px-6 py-12 text-center transition-colors hover:border-muted-foreground/50 hover:bg-accent/30', over && 'border-brand bg-accent', busy && 'pointer-events-none opacity-70', className)}>{children}</label>; }
 
 export default function Home({ mode: initMode }) {
   const [mode, setMode] = useState(initMode === 'buy' ? 'buy' : 'sell');
@@ -150,10 +153,10 @@ export default function Home({ mode: initMode }) {
           {initMode ? <><h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">{initMode === 'sell' ? 'Sell anything.' : 'Find flips.'}</h1>
           <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground md:text-xl">{initMode === 'sell' ? 'One photo. Grok Bot writes and posts the listing.' : 'Say what you want. Grok Bot finds it under market.'}</p></> : <>
           <Badge variant="secondary" className="desk-only mb-6 px-3 py-1 text-[12px] font-normal text-muted-foreground">Garage Sale · Grok Bot Hackathon · Austin</Badge>
-          <h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">Snap it.<br /><span className="text-muted-foreground">Grok Bot sells it.</span></h1>
+          <h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">Snap it.<br /><span className="text-price">Grok Bot sells it.</span></h1>
           <p className="mt-5 max-w-md text-lg text-muted-foreground md:text-xl">Photo in, Facebook Marketplace listing out. You approve every step.</p></>}
           <div className="mt-10 grid gap-4 text-left">
-            <Card id={mode} className={cn('min-w-0 border-border/70 bg-card/80 p-5 backdrop-blur md:p-6', mode === 'sell' && over && 'border-brand')}
+            <Card id={mode} className={cn('min-w-0 border-border bg-card p-5 backdrop-blur md:p-6', mode === 'sell' && over && 'border-brand')}
               onDragOver={(e) => { if (mode !== 'sell') return; e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
               onDrop={(e) => { if (mode !== 'sell') return; e.preventDefault(); setOver(false); sell(e.dataTransfer.files); }}>
               <Tabs value={mode} onValueChange={(v) => setMode(v)}>
@@ -170,18 +173,18 @@ export default function Home({ mode: initMode }) {
                   <Button asChild size="lg" variant="brand" className={cn('w-full', busy && 'pointer-events-none opacity-50')}><label><input className="sr-only" type="file" accept="image/*" capture="environment" onChange={pick} disabled={!!busy} />{busy === 'sell' ? (prog || 'Uploading...') : 'Take photo'}</label></Button>
                   <Button asChild size="lg" variant="secondary" className={cn('w-full', busy && 'pointer-events-none opacity-50')}><label><input className="sr-only" type="file" accept="image/*" multiple onChange={pick} disabled={!!busy} />Attach photos</label></Button>
                 </div>
-                <div className="flex flex-wrap gap-2">{['Headphones', 'Game console', 'Office chair', 'Old iPhone'].map((t) => <Badge key={t} variant="outline" className="border-border/70 px-3 py-1 font-normal text-muted-foreground">{t}</Badge>)}</div>
+                <div className="flex flex-wrap gap-2">{['Headphones', 'Game console', 'Office chair', 'Old iPhone'].map((t) => <Badge key={t} variant="outline" className="border-border px-3 py-1 font-normal text-muted-foreground">{t}</Badge>)}</div>
               </div> : <form onSubmit={buy} className="mt-5 grid gap-4">
                 <Input className="h-14 rounded-2xl px-5 text-lg" placeholder="What do you want? e.g. Herman Miller chair" value={q} onChange={(e) => setQ(e.target.value)} aria-label="What are you looking for?" />
                 <div className="flex gap-3">
                   <Input className="h-12 w-32 shrink-0" placeholder="Max $" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Max price" />
                   <Button size="lg" variant="brand" className="flex-1" disabled={!!busy}>{busy === 'buy' ? 'Opening...' : 'Find deals'}</Button>
                 </div>
-                <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" className="h-8 border-border/70 px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); buy(null, t); }}>{t}</Button>)}</div>
+                <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" className="h-8 border-border px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); buy(null, t); }}>{t}</Button>)}</div>
               </form>}
             </Card>
-            {err && <p className="text-sm text-red-400">{err}</p>}
-            <a href="/dashboard" className="group flex items-center justify-between rounded-2xl border border-border/70 px-5 py-4 transition-colors hover:bg-accent/40">
+            {err && <p className="text-sm text-red-800">{err}</p>}
+            <a href="/dashboard" className="group flex items-center justify-between rounded-2xl border border-border px-5 py-4 transition-colors hover:bg-accent/40">
               <span className="flex flex-col"><span className="font-medium">Dashboard</span><span className="text-sm text-muted-foreground">Your money, live</span></span>
               <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></a>
           </div>
@@ -195,11 +198,11 @@ export default function Home({ mode: initMode }) {
           <h2 className="!text-4xl !font-semibold !tracking-tight md:!text-6xl">How it works</h2>
         </div>
         <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-5">
-          {howSteps.map(([n, t, p]) => <Card key={n} className="border-border/60 p-6">
+          {howSteps.map(([n, t, p]) => <Card key={n} className="border-border p-6">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium">{n}</div>
             <div className="mt-6 text-lg font-semibold">{t}</div><p className="mt-1 text-sm text-muted-foreground">{p}</p></Card>)}
         </div>
-        <Card className="mt-4 flex items-center gap-4 border-border/60 p-6">
+        <Card className="mt-4 flex items-center gap-4 border-border p-6">
           <Badge variant="brand">Buy</Badge><div><div className="text-lg font-semibold">Scouts find deals</div><p className="text-sm text-muted-foreground">Cheap finds near you.</p></div>
         </Card>
         <div className="mt-28">

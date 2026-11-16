@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 const EMPTY_FILTERS = { verdict: 'all', source: 'all', category: 'all', pickup: 'all' };
 
 function Chip({ on, children, onClick }) {
-  return <button type="button" onClick={onClick} aria-pressed={on} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-[#0866FF] bg-[#0866FF] text-white' : 'border-white/10 bg-white/5 text-muted-foreground hover:text-foreground'}`}>{children}</button>;
+  return <button type="button" onClick={onClick} aria-pressed={on} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${on ? 'border-border bg-brand text-white' : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}`}>{children}</button>;
 }
 
 export default function DealBoard() {
@@ -52,6 +52,8 @@ export default function DealBoard() {
   const activeConfig = sample ? SAMPLE_CONFIG : (config || {});
   const rules = rulesFrom(activeConfig);
   const summary = ruleSummary(rules);
+  // True when not one flip rule is stored, which is the state until the worker key is fixed.
+  const rulesMissing = !sample && !loading && [summary.bankroll, summary.maxPerFlip, summary.minProfit, summary.maxMiles, summary.gas].every((v) => /not stored/.test(String(v)));
   const fresh = scoutFreshness(sample ? null : feed && feed.updated_at);
   const views = useMemo(() => {
     if (sample) {
@@ -92,31 +94,31 @@ export default function DealBoard() {
       </div>
     </div>
 
-    <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       {[
         ['Bankroll', summary.bankroll],
         ['Max per item', summary.maxPerFlip],
         ['Minimum net', summary.minProfit],
         ['Pickup', summary.maxMiles],
         ['Gas', summary.gas],
-      ].map(([k, v]) => <div key={k} className="rounded-2xl border border-white/10 bg-[#141416] px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-1 text-sm font-medium">{v}</div></div>)}
-    </div>
+      ].map(([k, v]) => <div key={k} className="rounded-2xl border border-border bg-card px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-1 text-sm font-medium">{v}</div></div>)}
+    </div>}
     <p className="mb-4 text-sm text-muted-foreground">{HOME_LINE} {summary.gasNote || ''} Cash already spent stays in the encrypted ledger and is not loaded here.</p>
     {!sample && config && Array.isArray(config.areas) && config.areas.length > 0 && <p className="mb-4 text-sm text-muted-foreground">Stored search areas: {config.areas.map((a) => a.name).filter(Boolean).join(', ')}. Those names are not pickup origins.</p>}
-    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
-    {!sample && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
+    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p className="mb-4 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
+    {!sample && !rulesMissing && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
 
     <div className="mb-4 text-sm text-muted-foreground">
       {sample ? 'Sample clock is off. These rows are not from the stored feed.' : fresh.label ? `Stored feed updated ${fresh.label}${feed && feed.updated_at ? ` (${new Date(feed.updated_at).toLocaleString()})` : ''}.` : 'No stored scout feed yet.'}
-      {!sample && fresh.stale && <div role="status" className="mt-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-foreground">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
+      {!sample && fresh.stale && <div role="status" className="mt-2 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-foreground">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
     </div>
 
-    {status.kind !== 'ready' && status.kind !== 'sample' && <div role="status" className="mb-4 rounded-2xl border border-white/10 bg-[#141416] p-6 text-sm"><p className="font-medium text-foreground">{status.title}</p><p className="mt-1 text-muted-foreground">{status.detail}</p>{failed && <button type="button" className="mt-3 underline" onClick={() => window.location.reload()}>Retry</button>}</div>}
-    {sample && <div role="status" className="mb-4 rounded-2xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm font-medium">{SAMPLE_BANNER} Sample fee rates are marked confirmed inside this fixture only.</div>}
+    {status.kind !== 'ready' && status.kind !== 'sample' && <div role="status" className="mb-4 rounded-2xl border border-border bg-card p-6 text-sm"><p className="font-medium text-foreground">{status.title}</p><p className="mt-1 text-muted-foreground">{status.detail}</p>{failed && <button type="button" className="mt-3 underline" onClick={() => window.location.reload()}>Retry</button>}</div>}
+    {sample && <div role="status" className="mb-4 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm font-medium">{SAMPLE_BANNER} Sample fee rates are marked confirmed inside this fixture only.</div>}
 
     <div className="mb-3 flex flex-wrap gap-2" aria-label="Filters">
       {[['all', 'All'], ['buy', 'Buy'], ['skip', 'Skip'], ['incomplete', 'Incomplete']].map(([id, label]) => <Chip key={id} on={filters.verdict === id} onClick={() => setFilter('verdict', id)}>{label}{id === 'all' ? ` ${counts.all}` : id === 'buy' ? ` ${counts.buy}` : id === 'skip' ? ` ${counts.skip}` : ` ${counts.incomplete}`}</Chip>)}
-      <span className="mx-1 hidden h-6 w-px bg-white/10 sm:inline-block" />
+      <span className="mx-1 hidden h-6 w-px bg-secondary sm:inline-block" />
       {[['all', 'Any source'], ...Object.entries(SOURCE_LABEL).map(([id, label]) => [id, label])].map(([id, label]) => <Chip key={id} on={filters.source === id} onClick={() => setFilter('source', id)}>{label}</Chip>)}
     </div>
     <div className="mb-5 flex flex-wrap gap-2">
@@ -131,9 +133,9 @@ export default function DealBoard() {
     {!loading && shown.length === 0 && views.length > 0 && <p className="mb-4 text-sm text-muted-foreground">No deals match these filters.</p>}
 
     {shown.length > 0 && <div className={`${BOARD_REGIONS.cards} grid gap-3 md:hidden`}>
-      {shown.map((view, i) => <div key={view.href || view.title + i}>{view.href ? <a href={view.href} className="mb-1 block text-xs text-[#8eb7ff] underline-offset-4 hover:underline">Open decision</a> : null}<DealCard view={view} sample={sample} /></div>)}
+      {shown.map((view, i) => <div key={view.href || view.title + i}>{view.href ? <a href={view.href} className="mb-1 block text-xs text-link underline-offset-4 hover:underline">Open decision</a> : null}<DealCard view={view} sample={sample} /></div>)}
     </div>}
-    {shown.length > 0 && <div className={`${BOARD_REGIONS.table} hidden overflow-x-auto rounded-2xl border border-white/10 md:block`}>
+    {shown.length > 0 && <div className={`${BOARD_REGIONS.table} hidden overflow-x-auto rounded-2xl border border-border bg-card shadow-tag md:block`}>
       <table className="w-full min-w-[980px] border-collapse text-left text-sm">
         <thead className="text-[11px] uppercase tracking-wide text-muted-foreground"><tr>{TABLE_HEAD.map((h) => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}</tr></thead>
         <tbody>{shown.map((view, i) => <DealTableRow key={view.href || view.title + i} view={view} sample={sample} />)}</tbody>

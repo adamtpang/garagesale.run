@@ -3,30 +3,33 @@
 @tailwind utilities;
 
 @layer base {
-  :root, .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --card: 240 4% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 4% 7%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 6% 10%;
-    --secondary: 240 4% 14%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 14%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
+  /* Price Tag: white paper, black marker ink, one sticker red. One theme, no dark mode. */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 0 0% 8%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 60 5% 96%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 60 5% 96%;
+    --muted-foreground: 0 0% 33%;
+    --accent: 0 93% 94%;
+    --accent-foreground: 0 0% 8%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 18%;
-    --ring: 240 5% 84%;
-    --brand: 217 100% 52%;
-    --success: 135 64% 50%;
-    --radius: 0.9rem;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 8%;
+    --input: 0 0% 8%;
+    --ring: 0 72% 51%;
+    --brand: 0 72% 51%;
+    --success: 146 83% 26%;
+    --radius: 0.5rem;
   }
+
+
   /* Preflight is off, so give Tailwind border utilities a solid style. */
   *, ::before, ::after { border-width: 0; border-style: solid; border-color: hsl(var(--border)); }
 }

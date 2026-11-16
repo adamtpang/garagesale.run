@@ -197,7 +197,8 @@ export default function JobPage({ params }) {
             <input className="field" value={times} onChange={(e) => setTimes(e.target.value)} placeholder="Available times, e.g. weekdays after 6" aria-label="Available times" />
           </div>
           <div className="arow">
-            <input className="field pricef" inputMode="decimal" value={price} onChange={(e) => { priceTouched.current = true; setPrice(e.target.value.replace(/[^0-9.]/g, '')); }} aria-label="Price" placeholder="$" />
+            <label className="pricelabel" htmlFor="post-price">Price $</label>
+            <input id="post-price" className="field pricef" inputMode="decimal" value={price} onChange={(e) => { priceTouched.current = true; setPrice(e.target.value.replace(/[^0-9.]/g, '')); }} aria-label="Price" placeholder="$" />
             <button className="pill blue big" onClick={approve} disabled={approving}>{approving ? 'Approving...' : 'Approve & post'}</button>
           </div>
         </div>}
