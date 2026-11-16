@@ -313,9 +313,20 @@ test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and every
   assert.equal(byId['ps-4123532'].unit_resale, null);
   assert.equal(byId['ps-4123508'].bid_count, 0);
   assert.equal(byId['ps-4123506'].bid_count, 0);
-  // The Zebra lot, six S20 FE phones, and the S10e share the Schertz pickup address.
+  // All ten Schertz lots share one pickup address: the Zebra lot, six S20 FE phones, the S10e and two cash registers.
   assert.equal(view.trips.length, 1);
-  assert.equal(view.trips[0].lot_ids.length, 8);
+  assert.equal(view.trips[0].lot_ids.length, 10);
+  // The registers have no bids. $10 is the opening price, so there is no current bid and no all-in cost yet.
+  for (const id of ['ps-4123508', 'ps-4123506']) {
+    assert.equal(byId[id].current_bid, null, id);
+    assert.equal(byId[id].opening_bid, 10, id);
+    assert.equal(byId[id].all_in, null, id);
+    assert.equal(byId[id].close_text, 'Tue, Nov 17, 2026, 8:00 PM CT', id);
+    assert.equal(byId[id].premium_text, '8.5%', id);
+    assert.equal(byId[id].premium_note, 'Minimum $1.00 per auction.', id);
+    assert.equal(byId[id].pickup_address, '1400 Schertz Pkwy Bldg 9, Schertz, TX', id);
+    assert.equal(byId[id].unit_resale, null, id);
+  }
   assert.equal(view.trips[0].shared_haul, 5.76);
 });
 

@@ -89,8 +89,8 @@ Pickup the scan recorded for this seller: appointment only, weekdays 9:00 AM–4
 | 8 Zebra TC700K-02B24B0-US handhelds | 4123518 | $10, 1 bid | All-in on the board about $17.51 with assumed 8.25% tax and the $0.18 haul. Lowest all-in in the scan. Not a buy. |
 | Samsung Galaxy S20 FE, six auctions | 4123530, 4123522, 4123523, 4123524, 4123526, 4123528 | $5–$5.50 as a group. 4123530 had no bids. Per-auction bids were not recorded | FRP / carrier lock risk. One photo was an SM-G781V (Verizon). The scan did not say which auction. |
 | Samsung Galaxy S10e | 4123532 | $1, 2 bids | Resale unknown |
-| SAM4S ER-180TB cash register | 4123508 | $10, no bids | Resale unknown |
-| Nadex CR360 cash register | 4123506 | $10, no bids | Resale unknown |
+| SAM4S ER-180TB cash register | 4123508 | No bids. $10 is the opening price | Resale unknown |
+| Nadex CR360 cash register | 4123506 | No bids. $10 is the opening price | Resale unknown |
 
 Tax on these lots: seller says tax is added. The rate was not stated. The board labels 8.25% as that assumption.
 
@@ -125,6 +125,23 @@ Skip TFC Lots 1–12. A coin-op license is required.
 | 70 inch Vizio, listed working, no stand, remote, or cord | 4128202 | $50 opening. Current bid not recorded. Premium not restated | Close time was not in the scan |
 
 Resale unknown on both.
+
+#### Cash registers, read Nov 16, 2026 (Claude Code)
+
+Read from the two auction pages. No bids, no seller messages.
+
+- Auctions 4123508 and 4123506 end Nov 17, 2026, 7:00 PM MST, which is 8:00 PM CT, and may extend.
+- No bids on either. The opening price is $10 and the increment is $0.50. The board used to show $10 as a current bid. It was never a bid.
+- Buyer's premium 8.5% with a $1 minimum, the same pickup address as the other Schertz lots, and tax shown only at bidding.
+- Resale is still unknown. No sold comp has been looked up for either model.
+
+## How work lands (from Nov 16, 2026)
+
+- One small PR per fix. Open it, wait for Bugbot, and fix or answer every finding.
+- Adam merges. No agent merges.
+- Every merge to `main` that touches `web/` deploys to production. A PR body says so. It never says "not deployed."
+- Every page a PR changes gets a desktop and a phone screenshot in the PR.
+- Screenshots live in `docs/screens/`.
 
 ## Vercel builds
 

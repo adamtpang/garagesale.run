@@ -37,7 +37,7 @@ Expect one to two minutes.
 - [ ] Each card says "Worth about $X", a confidence badge (high, medium, low) and the % under or over.
 - [ ] Click **Price evidence** on #1. You see the median, the middle-half price range, and the actual eBay sold listings with condition, sold date and price. Compare `3-evidence.jpg`.
 - [ ] Click one comp. It opens that sold listing on eBay.
-- [ ] Click the preset **Herman Miller chair to flip**. Each model is priced only against sales of that model: Aerons against Aeron sales. Models with fewer than 3 matching sales (Setu, Sayl, Mirra, a vintage Eames set) say **Not enough comps** instead of a value. Verified Nov 8: Aeron about $639 from 6 comps.
+- [ ] Click the preset **Herman Miller chair to flip**. Each model is priced only against sales of that model: Aerons against Aeron sales. Models with fewer than 3 matching sales (Setu, Sayl, Mirra, a vintage Eames set) say **Not enough comps** instead of a value. Last run live on Nov 8, 2026, on the first version of this matching: Aeron about $639 from 6 comps. The matching rules changed on Nov 15 and 16, 2026 (PR 12), and this search has not been run again since. Unit tests cover it. Treat the $639 as a Nov 8 number, not a current one.
 
 ## 4. Rank (1 min)
 
