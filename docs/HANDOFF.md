@@ -159,5 +159,5 @@ To check, open the deployment in Vercel. A skipped one shows "Canceled by Ignore
 2. Ask Adam for a yes and a max bid on any specific lot. Do not bid without that.
 3. Set alert categories on Public Surplus.
 4. Scan GovDeals, Purple Wave, and Rene Bates for New Braunfels city surplus.
-5. Fix `GST_WORKER_KEY` so it matches the Vercel project `grokbothackathon`. Then the Nov 3 seed can be stored. Do not invent a key.
+5. Adam sets a new `GST_WORKER_KEY` in the Vercel project `grokbothackathon` and redeploys. Steps and the key test are in `docs/SCOUT.md` under "Worker key". No agent invents, reads or stores the key.
 6. Merge PR #6 only when Adam says so.

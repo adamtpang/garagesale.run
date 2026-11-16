@@ -8,10 +8,44 @@ The scout reads listings and sold comps. It does not contact sellers, make offer
 
 The routine and the seed script need:
 
-- `GST_WORKER_KEY` — sent as the `x-worker-key` header. Same check as `workerOk` in `web/lib/store.js`.
-- `GARAGESALE_BASE_URL` — site origin, no trailing path. Example: `https://garagesale.run`.
+- `GST_WORKER_KEY`: the worker key. Send it as the `x-worker-key` header, or as `Authorization: Bearer <key>`.
+- `GARAGESALE_BASE_URL`: site origin, no trailing path. Example: `https://garagesale.run`.
 
 `GS_LEDGER_KEY` is for the ledger API, not the scout.
+
+## Worker key
+
+The key is a secret. It lives in the Vercel project `grokbothackathon` and in the worker's own secret store. It is never written in this repo, a PR, a log or a chat.
+
+**Test a key without writing anything:**
+
+```bash
+curl -s -H "x-worker-key: $GST_WORKER_KEY" "$GARAGESALE_BASE_URL/api/worker/check"
+```
+
+- `200 {"ok": true}`: the key is accepted. `POST /api/deals`, `POST /api/surplus` and `PUT /api/scout/config` will accept it too.
+- `401` with a `reason`:
+
+| `reason` | What it means | Fix |
+| --- | --- | --- |
+| `server-has-no-key` | `GST_WORKER_KEY` is not set on the live deployment | Set it in Vercel, then redeploy |
+| `no-key-sent` | The request carried no key | Send the header |
+| `key-does-not-match` | The key sent is not the one on the live deployment | Use the current key. A key changed in Vercel only applies after a redeploy |
+
+A write endpoint that refuses a key gives the same `reason`.
+
+The check ignores spaces, a trailing newline or wrapping quotes around the stored key. Those get added when a key is pasted or piped, and they used to turn a correct key into a 401.
+
+**Set or rotate the key (Adam does this):**
+
+1. Make a new random key, 32 characters or more. Do not reuse an old one.
+2. In the Vercel project, add it as `GST_WORKER_KEY_NEXT` for Production. Redeploy. Now both the old and the new key work.
+3. Give the new key to the worker as a secret. Run the check above with it.
+4. In Vercel, put the new key in `GST_WORKER_KEY` and delete `GST_WORKER_KEY_NEXT`. Redeploy. Now only the new key works.
+
+If there is no working key at all, skip step 2: set `GST_WORKER_KEY` directly and redeploy.
+
+An environment variable change does nothing until the next deployment. A docs-only merge does not deploy, so use Redeploy in Vercel.
 
 ## Config
 
@@ -116,3 +150,83 @@ These are dropped even if someone marks them sold:
 With no comps left, `resale` is null, the net is null, and the deal is not a buy. The UI shows resale as `unknown`.
 
 One or two priced comps still set a provisional resale (their median) and stay off the buy list. Three or more use the sold-comp estimate in `web/lib/pricing.js`, which drops outliers and will not invent a price when the remaining set is too thin.
+
+## POST /api/surplus
+
+Replaces the surplus board's feed with one scan. `GET /api/surplus` is public and returns the same lots with the math and the rule checks filled in.
+
+```http
+POST /api/surplus
+x-worker-key: <GST_WORKER_KEY>
+content-type: application/json
+```
+
+```json
+{
+  "scanned_on": "2026-11-16",
+  "label": "Nov 16, 2026 scan. Public Surplus and GovDeals.",
+  "notice": "Numbers that were not in the scan are null and show as unknown.",
+  "comp_sets": {
+    "sm-g781v-128gb": [
+      { "type": "sold", "marketplace": "eBay", "price": 69.99, "title": "Galaxy S20 FE 5G SM-G781V 128GB, for parts", "url": "https://www.ebay.com/itm/840100700591", "condition": "parts", "sold_on": "Nov 14, 2026" }
+    ]
+  },
+  "lots": [
+    {
+      "id": "ps-4123518",
+      "auction_id": "4123518",
+      "source_site": "Public Surplus",
+      "title": "8 Zebra TC700K-02B24B0-US handhelds",
+      "seller": "City of Schertz",
+      "city": "Schertz, TX",
+      "url": "https://www.publicsurplus.com/sms/all,tx/auction/view?auc=4123518",
+      "photo_url": "https://example.com/photo.jpg",
+      "miles_from_home": 16,
+      "miles_approximate": true,
+      "current_bid": 10,
+      "bid_count": 1,
+      "closes_at": "2026-11-18T02:00:00.000Z",
+      "premium_pct": 8.5,
+      "premium_min": 1,
+      "tax_basis": "assumption",
+      "tax_rate": 0.0825,
+      "pickup_address": "1400 Schertz Pkwy Bldg 9, Schertz, TX",
+      "quantity": 8,
+      "batteries": "none",
+      "fleet_device": true,
+      "marketplaces": ["eBay"],
+      "fee_basis": "stated",
+      "fee_rate": 0.136,
+      "fee_fixed": 0.4,
+      "shipping_basis": "assumption",
+      "shipping": 25,
+      "status": "watch",
+      "risks": ["No batteries."],
+      "comps": [
+        { "type": "sold", "marketplace": "eBay", "price": 40, "title": "5 Zebra TC700K, parts only, no batteries", "url": "https://www.ebay.com/itm/128064350319", "lot_size": 5, "lot_price": 200, "battery": "none", "sold_on": "Oct 19, 2026" }
+      ]
+    }
+  ]
+}
+```
+
+Rules for the body:
+
+- `lots` is required, 100 at most. Each lot needs an `id` of letters, digits and hyphens. Ids must be unique.
+- **Leave out what you do not know.** A missing number shows as "unknown." Never send 0 for an unknown cost, and never send a guess as a fact.
+- `current_bid` is a real bid. If nobody has bid, leave it out and send `opening_bid`.
+- `miles_from_home` is measured from New Braunfels. Send `miles_approximate: false` only for a measured distance.
+- `*_basis` fields say where a number came from: `stated` (on the page), `assumption` (a labeled guess) or leave it out for unknown. Profit is only "confirmed" when every input is `stated`.
+- `premium_pct` is a percent (8.5). `tax_rate` and `fee_rate` are fractions (0.0825).
+- A comp is `type: "sold"` or `"asking"`. Asking comps are shown but never used for resale. **A sold comp must carry its `url`.** One sold comp without a URL blocks resale for the whole lot.
+- `price` on a comp is always per unit. For a lot sale also send `lot_size` and `lot_price`.
+- `battery` on a comp is `none`, `included` or left out. `condition` is `working`, `parts` or left out. `sold_on` is the sale date as text.
+- `batteries` on a lot is `none`, `included` or left out. `condition` on a lot is `working`, `parts` or left out. `fleet_device: true` flags a likely lock.
+- Lots that share comps can name a set with `comp_set` instead of repeating the rows. A lot keeps 80 comps at most, and the reply says how many were left out.
+- `status` is `watch`, `needs preview`, `buy candidate (needs Adam yes)` or `skip`. It is only a starting point. Adam's rules are applied on top, and a lot that breaks one becomes `skip` with the reason. A `buy candidate` mark does not stick unless profit is confirmed and every rule passes.
+- Nothing in the body can place a bid, and `places_bids` is always false in the reply.
+
+The reply is the stored scan as the board shows it: each lot with `all_in`, `cases`, `max_bid`, `rule_checks`, `status` and `status_reason`.
+
+- `400` with an `error` message when the body is not usable.
+- `401` with a `reason` when the key is refused.
