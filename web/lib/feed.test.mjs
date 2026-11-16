@@ -153,4 +153,26 @@ test('a listing is never a buy while its ask is above its own max offer', () => 
     const it = fromDeal(camera({ ask, comps }), confirmed());
     if (it.decision.value === 'buy') assert.ok(it.max_bid != null && ask <= it.max_bid, `ask ${ask}`);
   }
+  // The same holds to the cent. The max offer is whole dollars, but an ask that fits is never above it.
+  // $97.05 plus $2.88 gas is $99.93, inside the cap, while the whole-dollar ceiling is $97.
+  const cents = fromDeal(camera({ ask: 97.05, comps }), confirmed());
+  assert.equal(cents.decision.value, 'buy');
+  assert.equal(cents.max_bid, 97.05);
+  // $97.13 plus gas is $100.01, over the cap: a skip, and the ceiling stays at whole dollars.
+  const over = fromDeal(camera({ ask: 97.13, comps }), confirmed());
+  assert.equal(over.decision.value, 'skip');
+  assert.equal(over.max_bid, 97);
+  let buys = 0;
+  for (let c = 9000; c <= 10100; c += 1) {
+    const it = fromDeal(camera({ ask: c / 100, comps }), confirmed());
+    if (it.decision.value === 'buy') { buys += 1; assert.ok(it.max_bid != null && c / 100 <= it.max_bid, `ask ${c / 100}`); }
+  }
+  assert.ok(buys > 100);
+  // The minimum-profit side, to the cent: with $225 resale the exact ceiling is $81.12.
+  let thin = 0;
+  for (let c = 7900; c <= 8300; c += 1) {
+    const it = fromDeal(camera({ ask: c / 100 }), confirmed());
+    if (it.decision.value === 'buy') { thin += 1; assert.ok(c / 100 <= it.max_bid, `ask ${c / 100}`); }
+  }
+  assert.ok(thin > 100);
 });

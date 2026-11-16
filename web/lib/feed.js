@@ -107,7 +107,11 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
   if (v.resale != null && v.fee != null && v.shipping != null && v.gas != null) {
     const byProfit = v.resale - v.fee - v.shipping - v.gas - rules.min_profit;
     const byCost = rules.max_cost - v.gas;
-    const most = Math.floor(Math.min(byProfit, byCost));
+    // Whole dollars, rounded down. The one exception is the ask itself: an ask of $97.05 that fits the
+    // rules to the cent is a price Adam can pay, so the max offer is never shown below an ask that fits.
+    const exact = round2(Math.min(byProfit, byCost));
+    const whole = Math.floor(exact);
+    const most = v.ask != null && v.ask <= exact ? Math.max(whole, v.ask) : whole;
     maxOffer = most >= 1 ? most : null;
   }
   let decision = v.verdict === 'buy' ? 'buy' : (v.verdict === 'skip' ? 'skip' : 'watch');
