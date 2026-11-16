@@ -37,7 +37,7 @@ Expect one to two minutes.
 - [ ] Each card says "Worth about $X", a confidence badge (high, medium, low) and the % under or over.
 - [ ] Click **Price evidence** on #1. You see the median, the middle-half price range, and the actual eBay sold listings with condition, sold date and price. Compare `3-evidence.jpg`.
 - [ ] Click one comp. It opens that sold listing on eBay.
-- [ ] Try a search with few comps (for example `Herman Miller Sayl chair`). Some cards should say **Not enough comps** instead of a value.
+- [ ] Click the preset **Herman Miller chair to flip**. Each model is priced only against sales of that model: Aerons against Aeron sales. Models with fewer than 3 matching sales (Setu, Sayl, Mirra, a vintage Eames set) say **Not enough comps** instead of a value. Verified Nov 8: Aeron about $639 from 6 comps.
 
 ## 4. Rank (1 min)
 
@@ -71,8 +71,11 @@ Send me (in chat):
 
 Common causes:
 
+- **Nothing happens on the very first page load after starting the server** (no progress bar, "Top flips" says "Loading..."): the dev server is still compiling. Reload the page once.
+
 - **"Could not reach Helium" or "did not allow the connection":** remote debugging is off, or the Allow popup was missed. Turn it on, restart the dev server, search again, and click Allow.
 - **"Facebook is asking you to log in":** log in to Facebook in Helium yourself, then search again. The app never logs in for you.
-- **The same results come back instantly with "(cached)":** a search is cached for 15 minutes to keep page loads low. Change the radius or max price to force a fresh one.
+- **The same results come back instantly with "(cached)":** what was read is cached for 15 minutes to keep page loads low (prices are recalculated on every request). Change the radius or max price to force a fresh read.
+- **Values look off for a whole search:** open "eBay sold search" from the results header. If eBay's sold page is mostly accessories or games, comps get thin and confidence drops. That is expected; the search excludes words like "game" and "cartridge" to keep it down.
 
 Saved deals are stored in `web/.data/saved-deals.json` on your computer (gitignored).

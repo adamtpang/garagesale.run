@@ -29,6 +29,43 @@ test('comps must agree on variant words', () => {
   assert.deepEqual(compsFor({ title: 'Nintendo switch' }, comps, 'Nintendo Switch').map((c) => c.price), [150]);
 });
 
+test('a brand search prices each model only against that model', () => {
+  const core = 'Herman Miller chair';
+  const comps = [
+    // Aeron dominates the pool, so it must still count as a model word.
+    ...[700, 750, 800, 820].map((p) => sold('Herman Miller Aeron Chair Size B Fully Loaded', p)),
+    ...[650, 900, 950, 980].map((p) => sold('Herman Miller Aeron Remastered Chair', p)),
+    ...[300, 320, 350].map((p) => sold('Herman Miller Sayl Office Chair Black', p)),
+    ...[200, 220].map((p) => sold('Herman Miller Mirra 2 Chair', p)),
+    sold('Herman Miller Eames Lounge Chair', 4000),
+  ];
+  assert.deepEqual(compsFor({ title: 'Herman Miller Aeron Chair size B' }, comps, core).map((c) => c.price), [700, 750, 800, 820, 650, 900, 950, 980]);
+  // A bare "Herman Miller chair" has no model words, so it keeps every comp except the "Mirra 2" version.
+  assert.equal(compsFor({ title: 'Herman Miller chair' }, comps, core).length, comps.length - 2);
+  assert.deepEqual(compsFor({ title: 'Herman Miller Sayl Office Chair' }, comps, core).map((c) => c.price), [300, 320, 350]);
+  assert.equal(estimate(compsFor({ title: 'Authentic Vintage Herman Miller Eames Chairs' }, comps, core)).note, 'not enough comps');
+  // Bundle extras after "with" do not narrow the comps.
+  const sw = [140, 150, 160].map((p) => sold('Nintendo Switch Console', p)).concat([sold('Nintendo Switch Minecraft', 170), sold('Nintendo Switch Minecraft edition', 175)]);
+  assert.equal(compsFor({ title: 'Nintendo switch one(With Minecraft!!!)' }, sw, 'Nintendo Switch').length, 5);
+});
+
+test('games and accessories sold for the item are not comps for the item', () => {
+  // Real eBay sold titles from the Nov 8 "Nintendo Switch" search.
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Super Mario Party (Nintendo Switch, 2018)', 22), sold('Nintendo Switch Sports (Nintendo Switch, 2022) - Complete - Tested', 23.99),
+    sold('Paper Mario: the Origami King - Nintendo Switch', 28.49), sold('Nintendo Super Mario RPG for Nintendo Switch, Super Mario Series, E, N', 20),
+    sold('Donkey Kong Amino Super Mario Series Nintendo Switch EUC', 15.99), sold('Nintendo Tokyo Mirage Sessions #FE Encore Switch', 99),
+    sold('Nintendo Switch 32GB Handheld System - Gray', 114.99), sold('Nintendo Switch Console Gray Joy-Con HAC-001', 140), sold('Nintendo Switch V2 Console Neon', 160),
+  ];
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch' }, comps, core).map((c) => c.price), [114.99, 140, 160]);
+  // "Pro Controller" in the extras does not make it a "Switch Pro".
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch Bundle - 5 Joy-Cons, Pro Controller, Dock' }, comps, core).map((c) => c.price), [114.99, 140, 160]);
+  assert.equal(relevance('Nintendo Switch Power Cord', core).ok, false);
+  assert.equal(relevance('Bramble: The Mountain King (Nintendo Switch)', core).ok, false);
+  assert.equal(relevance('Authentic Eames Aluminum Management Chair by Herman Miller', 'Herman Miller chair').ok, true);
+});
+
 test('says not enough comps instead of guessing', () => {
   assert.equal(estimate([sold('a', 100), sold('b', 120)]).value, null);
   assert.equal(estimate([sold('a', 100), sold('b', 120)]).note, 'not enough comps');
@@ -60,4 +97,35 @@ test('reads listing age', () => {
   assert.equal(ageWeeks('Listed 13 weeks ago in Austin, TX'), 13);
   assert.equal(ageWeeks('Listed a week ago in Austin, TX'), 1);
   assert.equal(ageWeeks(null), null);
+});
+
+test('a spec after "max" is not a price cap', () => {
+  assert.deepEqual(parseRequest('iPhone 15 Pro Max 256GB'), { core: 'iPhone 15 Pro Max 256GB', max: null });
+  assert.equal(parseRequest('underwater camera').max, null);
+  assert.equal(parseRequest('Road bike under $300').max, 300);
+  assert.equal(parseRequest('laptop under 1,200').max, 1200);
+  assert.equal(parseRequest('switch max 200').max, 200);
+});
+
+test('describing words before the name do not turn a console sale into a game', () => {
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Official Black Neon Red Nintendo Switch Console', 120),
+    sold('Refurbished Gray 32GB Nintendo Switch', 130),
+    sold('Nintendo Switch V2 Console', 140),
+    sold('Super Mario Party (Nintendo Switch, 2018)', 22),
+    sold('Donkey Kong Amino Super Mario Series Nintendo Switch EUC', 16),
+  ];
+  assert.deepEqual(compsFor({ title: 'Nintendo Switch' }, comps, core).map((c) => c.price), [120, 130, 140]);
+  // A listing with several words before the name still keeps games out of its comps.
+  assert.deepEqual(compsFor({ title: 'Modded Hacked Unpatched Nintendo Switch' }, comps, core).map((c) => c.price), [120, 130, 140]);
+});
+
+test('accessory phrases and bare specs in a listing are not model words', () => {
+  const core = 'Nintendo Switch';
+  const comps = [
+    sold('Nintendo Switch Console Gray Joy-Con', 120), sold('Nintendo Switch Console Neon Joy-Con', 130),
+    sold('Nintendo Switch V2 Console 32GB', 140), sold('Nintendo Switch Console', 150),
+  ];
+  assert.equal(compsFor({ title: 'Nintendo Switch 32GB gray, joy-con included' }, comps, core).length, 4);
 });
