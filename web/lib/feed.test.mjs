@@ -110,6 +110,10 @@ test('the feed puts buys first, counts each decision, and says when its data is 
   const none = buildDailyFeed({ surplus: surplus(), deals: null, config: confirmed(), nowMs: NOW });
   assert.equal(none.sources.listings.deals, 0);
   assert.equal(none.items.length, 13);
+  // A missing listings feed is said out loud, whether it was never posted or could not be read.
+  assert.match(none.stale.join(' '), /No listings feed was found/);
+  assert.match(buildDailyFeed({ surplus: surplus(), deals: { deals: [] }, config: confirmed(), nowMs: NOW }).stale.join(' '), /No listings feed was found/);
+  assert.equal(/No listings feed/.test(feed().stale.join(' ')), false);
 });
 
 test('GET /api/feed is public, read-only and returns the feed', async () => {
@@ -128,5 +132,25 @@ test('GET /api/feed is public, read-only and returns the feed', async () => {
     assert.equal(body.places_bids, false);
   } finally {
     if (prevBlob !== undefined) process.env.BLOB_READ_WRITE_TOKEN = prevBlob;
+  }
+});
+
+test('a listing is never a buy while its ask is above its own max offer', () => {
+  // Ask $99 fits the $100 cap alone. With 8 miles of gas ($2.88) the cost is $101.88, which does not.
+  const comps = [410, 420, 430, 440].map((price, i) => sold(price, i));
+  const near = fromDeal(camera({ ask: 99, comps }), confirmed());
+  assert.equal(near.costs.all_in, 101.88);
+  assert.equal(near.decision.value, 'skip');
+  assert.match(near.decision.reasons.join(' '), /Ask plus gas is \$101\.88, over the \$100\.00 max per flip/);
+  assert.equal(near.max_bid, 97);
+  // One that fits with gas stays a buy, and its ask is inside its max offer.
+  const fits = fromDeal(camera({ ask: 97, comps }), confirmed());
+  assert.equal(fits.costs.all_in, 99.88);
+  assert.equal(fits.decision.value, 'buy');
+  assert.ok(fits.price.current <= fits.max_bid);
+  // Across a spread of asks, a buy never sits above its max offer.
+  for (let ask = 1; ask <= 120; ask += 1) {
+    const it = fromDeal(camera({ ask, comps }), confirmed());
+    if (it.decision.value === 'buy') assert.ok(it.max_bid != null && ask <= it.max_bid, `ask ${ask}`);
   }
 });
