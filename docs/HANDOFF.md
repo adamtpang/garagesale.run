@@ -126,6 +126,16 @@ Skip TFC Lots 1–12. A coin-op license is required.
 
 Resale unknown on both.
 
+## Vercel builds
+
+Set Nov 15, 2026. Builds cost money, so `web/vercel.json` holds an ignore command. It overrides the Ignored Build Step in the Vercel project settings.
+
+- Preview branches never build.
+- A production build is skipped when nothing under `web/` changed since the last deployed commit. A docs-only merge to `main` is free.
+- If the comparison cannot run, it builds.
+
+To check, open the deployment in Vercel. A skipped one shows "Canceled by Ignored Build Step".
+
 ## Next
 
 1. Get sold comps (eBay sold, Terapeak) for the Schertz lots before the Tue Nov 17 close.
