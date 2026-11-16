@@ -265,3 +265,24 @@ test('the buy search flags an ask over the max cost per flip', async () => {
   assert.equal(HOME_CITY, 'New Braunfels');
   assert.equal(HOME_RADIUS, 15);
 });
+
+test('a stored fee with only a rate keeps the default flat fee', async () => {
+  const { withRules } = await import('./scoutConfig.js');
+  // The seed sends an eBay rate and no flat fee. The 40 cents per order must survive.
+  const cfg = withRules(cleanConfig(seed));
+  assert.equal(cfg.fees.ebay.rate, 0.1325);
+  assert.equal(cfg.fees.ebay.flat, 0.4);
+  assert.equal(cfg.fees.ebay.plus_shipping, true);
+  // A stored flat fee still wins when one is sent.
+  assert.equal(withRules(cleanConfig({ fees: { ebay: { rate: 0.13, flat: 0.3 } } })).fees.ebay.flat, 0.3);
+  // On a $200 resale the fee is 0.136 x 200 + 0.40 = 27.60, not 27.20.
+  const { feeAmount } = await import('./decision.js');
+  assert.equal(feeAmount(200, withRules(cleanConfig({ fees: { ebay: { rate: 0.136 } } })).fees.ebay), 27.6);
+});
+
+test('the wider surplus radius never widens a listing search', async () => {
+  const { activeRules, rulesAsConfig } = await import('./rules.js');
+  const wide = activeRules({ optional: { surplus_radius: { enabled: true } } });
+  assert.equal(wide.pickup_miles, 60);
+  assert.equal(rulesAsConfig(wide).max_pickup_miles, 15);
+});
