@@ -4,6 +4,7 @@
 // The rules (max cost, minimum profit, pickup radius, gas rate) come from config/rules.js through lib/rules.js.
 import { money as parseMoney, moneyText, round2 } from './decision.js';
 import { DEFAULT_RULES, checkLot } from './rules.js';
+import { cleanDrive, driveCosts, driveText } from './drive.js';
 
 export const HAUL_PER_MILE = DEFAULT_RULES.gas_per_mile;
 export const TAX_ASSUMPTION_RATE = DEFAULT_RULES.tax_assumption_rate;
@@ -27,6 +28,9 @@ export function rulesView(rules = DEFAULT_RULES) {
     min_profit: rules.min_profit,
     min_profit_text: moneyText(rules.min_profit),
     pickup_miles: rules.pickup_miles,
+    hourly_rate: rules.hourly_rate,
+    hourly_rate_text: `${moneyText(rules.hourly_rate)} an hour`,
+    max_drive_minutes: rules.max_drive_minutes,
     haul_per_mile: rules.gas_per_mile,
     haul_per_mile_text: moneyText(rules.gas_per_mile),
     haul_confirmed: rules.gas_per_mile_confirmed,
@@ -204,6 +208,8 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     tax_rate: taxRate != null && taxRate >= 0 ? taxRate : null,
     tax_basis: taxBasis,
     pickup_address: str(raw.pickup_address, 200),
+    // Round-trip drive from home, from the routing service or posted with the lot. Null when unknown.
+    drive: cleanDrive(raw.drive),
     pickup_terms: str(raw.pickup_terms, 300),
     pickup_deadline: str(raw.pickup_deadline, 200),
     quantity: quantity != null && quantity > 0 ? quantity : null,
@@ -369,8 +375,15 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   if (!lot) return null;
   const bid = lot.current_bid;
   const premiumPct = lot.premium_pct;
-  const roundTrip = lot.miles_from_home != null ? round2(lot.miles_from_home * 2) : null;
+  // Routed miles when the drive is known. Otherwise twice the stated miles from home.
+  const drive = driveCosts(lot.drive, rules);
+  const roundTrip = drive.miles != null ? drive.miles : (lot.miles_from_home != null ? round2(lot.miles_from_home * 2) : null);
   const haul = roundTrip != null ? round2(roundTrip * rules.gas_per_mile) : null;
+  // Adam's time for the drive. It is not cash, so it is not part of the all-in cost or the max buy.
+  // It comes off profit. While the drive is unknown it is left out, and the lot says so and cannot be a buy.
+  const timeCost = drive.time_cost;
+  const timeOff = timeCost != null ? timeCost : 0;
+  const milesExact = lot.miles_approximate === false || drive.miles != null;
   const taxKnown = lot.tax_rate != null && lot.tax_basis !== 'unknown';
   // What the lot costs to win and bring home at a given bid. Null while any part is unknown.
   const costAt = (b) => {
@@ -385,7 +398,7 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const allInParts = nowCost != null && nowCost.all_in != null;
   const allIn = allInParts ? nowCost.all_in : null;
   const allInBasis = !allInParts ? 'unknown'
-    : (lot.tax_basis === 'stated' && lot.miles_approximate === false ? 'stated' : 'assumption');
+    : (lot.tax_basis === 'stated' && milesExact ? 'stated' : 'assumption');
 
   const comps = lot.comps.map(presentComp);
   const sold = comps.filter((c) => c.type === 'sold' && c.price != null);
@@ -400,15 +413,16 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const fee = gross != null && feeKnown ? round2(gross * lot.fee_rate + (lot.fee_fixed || 0)) : null;
   const ship = lot.shipping_basis !== 'unknown' && lot.shipping != null ? lot.shipping : null;
   const inputsConfirmed = unitResale != null && gross != null && fee != null && lot.fee_basis === 'stated'
-    && ship != null && lot.shipping_basis === 'stated' && allIn != null && allInBasis === 'stated';
-  const net = inputsConfirmed ? round2(gross - fee - ship - allIn) : null;
+    && ship != null && lot.shipping_basis === 'stated' && allIn != null && allInBasis === 'stated' && timeCost != null;
+  const net = inputsConfirmed ? round2(gross - fee - ship - allIn - timeCost) : null;
   const roi = net != null && allIn > 0 ? round4(net / allIn) : null;
   // An estimate needs every input present. It is shown apart from confirmed profit and never makes a lot a buy.
   const netEstimate = net == null && gross != null && fee != null && ship != null && allIn != null
-    ? round2(gross - fee - ship - allIn) : null;
+    ? round2(gross - fee - ship - allIn - timeOff) : null;
   const estimateAssumptions = netEstimate == null ? [] : [
+    timeCost == null ? 'drive time left out' : null,
     lot.tax_basis !== 'stated' ? 'tax rate' : null,
-    lot.miles_approximate !== false ? 'miles' : null,
+    !milesExact ? 'miles' : null,
     lot.fee_basis !== 'stated' ? 'platform fee' : null,
     lot.shipping_basis !== 'stated' ? 'shipping' : null,
   ].filter(Boolean);
@@ -434,17 +448,17 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   else {
     for (let b = Math.floor(rules.max_cost); b >= 1; b--) {
       const cost = costAt(b).all_in;
-      if (cost <= rules.max_cost && midCase.proceeds - cost >= rules.min_profit && lowCase.proceeds - cost >= 0) { maxBid = b; break; }
+      if (cost <= rules.max_cost && midCase.proceeds - cost - timeOff >= rules.min_profit && lowCase.proceeds - cost - timeOff >= 0) { maxBid = b; break; }
     }
     if (maxBid == null) {
       const floorCost = costAt(1).all_in;
-      maxBidReason = midCase.proceeds - floorCost < rules.min_profit
-        ? `No bid works. Even at a $1 bid the middle case makes ${moneyText(round2(midCase.proceeds - floorCost))}, under the ${moneyText(rules.min_profit)} minimum.`
-        : `No bid works. Even at a $1 bid the low case loses money (${moneyText(round2(lowCase.proceeds - floorCost))}).`;
+      maxBidReason = midCase.proceeds - floorCost - timeOff < rules.min_profit
+        ? `No bid works. Even at a $1 bid the middle case makes ${moneyText(round2(midCase.proceeds - floorCost - timeOff))}, under the ${moneyText(rules.min_profit)} minimum.`
+        : `No bid works. Even at a $1 bid the low case loses money (${moneyText(round2(lowCase.proceeds - floorCost - timeOff))}).`;
     }
   }
   const maxCost = maxBid != null ? costAt(maxBid) : null;
-  const profitAt = (c, cost) => (c && c.proceeds != null && cost != null ? round2(c.proceeds - cost) : null);
+  const profitAt = (c, cost) => (c && c.proceeds != null && cost != null ? round2(c.proceeds - cost - timeOff) : null);
   const cases = caseMoney.map((c) => ({
     name: c.name,
     unit: c.unit,
@@ -471,6 +485,7 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     if (!(lot.fee_rate != null && lot.fee_basis === 'stated')) missing.push('platform fee');
     if (ship == null || lot.shipping_basis !== 'stated') missing.push('shipping');
     if (allInBasis !== 'stated') missing.push('all-in cost');
+    if (timeCost == null) missing.push('drive time');
     if (quantity == null) missing.push('unit count');
     profitReason = `Profit is not confirmed. Missing or unconfirmed: ${missing.join(', ') || 'a required cost'}. Missing costs are not treated as zero.`;
   }
@@ -479,6 +494,7 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const ruleResult = checkLot({
     miles: lot.miles_from_home,
     miles_approximate: lot.miles_approximate,
+    drive_minutes: drive.minutes,
     all_in: allIn,
     price_floor: bid != null ? bid : lot.opening_bid,
     net,
@@ -535,6 +551,16 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     round_trip_miles: roundTrip,
     haul_cost: haul,
     haul_text: moneyOrUnknown(haul),
+    haul_basis: drive.miles != null ? 'routed' : (roundTrip != null ? 'stated miles' : 'unknown'),
+    drive_minutes: drive.minutes,
+    drive_miles: drive.miles,
+    drive_text: driveText(lot.drive),
+    drive_source: lot.drive ? lot.drive.source : null,
+    time_cost: timeCost,
+    time_cost_text: moneyOrUnknown(timeCost),
+    time_note: timeCost != null
+      ? `${drive.minutes} minutes at ${moneyText(rules.hourly_rate)} an hour. It comes off profit, not off the bankroll.`
+      : 'Drive time is unknown, so the time cost is left out of every profit number on this lot.',
     all_in: allIn,
     all_in_text: moneyOrUnknown(allIn),
     all_in_basis: allInBasis,
@@ -580,6 +606,7 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     max_bid_note: maxBid == null ? maxBidReason
       : [
         `All-in at this bid is ${moneyText(maxCost.all_in)}. The middle case still makes ${moneyText(rules.min_profit)} or more, the low case does not lose money, and the cost stays inside ${moneyText(rules.max_cost)}.`,
+        timeCost == null ? 'Drive time is unknown and is left out, so the real max bid is lower.' : null,
         bidPastMax ? `The current bid ${moneyText(bid)} is already above it.` : null,
         'Whole dollars. The bid is Adam\'s to place. This board never bids.',
       ].filter(Boolean).join(' '),

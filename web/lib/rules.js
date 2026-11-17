@@ -55,7 +55,7 @@ function check(rule, label, pass, text) {
   return { rule, label, pass, result: pass === true ? 'pass' : (pass === false ? 'fail' : 'unknown'), text };
 }
 
-// facts: { miles, miles_approximate, all_in, price_floor, net, net_estimate, net_low, net_high, roi }
+// facts: { miles, miles_approximate, drive_minutes, all_in, price_floor, net, net_estimate, net_low, net_high, roi }
 // Every number is in dollars or miles, or null when unknown.
 export function checkLot(facts, rules = DEFAULT_RULES) {
   const f = facts || {};
@@ -66,6 +66,15 @@ export function checkLot(facts, rules = DEFAULT_RULES) {
   if (miles == null) checks.push(check('radius', 'Pickup radius', null, `Distance from ${rules.home} is unknown.`));
   else if (miles > rules.pickup_miles) checks.push(check('radius', 'Pickup radius', false, `${milesText} from ${rules.home} is past the ${rules.pickup_miles}-mile pickup limit.`));
   else checks.push(check('radius', 'Pickup radius', true, `${milesText} is inside the ${rules.pickup_miles}-mile pickup limit.`));
+
+  // Round-trip drive time against the cap. Unknown is not a pass.
+  if (rules.max_drive_minutes != null) {
+    const mins = num(f.drive_minutes);
+    const capMin = rules.max_drive_minutes;
+    if (mins == null) checks.push(check('drive_time', 'Drive time', null, `Round-trip drive time from ${rules.home} is unknown, so the ${capMin}-minute cap cannot be checked.`));
+    else if (mins > capMin) checks.push(check('drive_time', 'Drive time', false, `A ${mins}-minute round trip is over the ${capMin}-minute drive cap.`));
+    else checks.push(check('drive_time', 'Drive time', true, `A ${mins}-minute round trip is inside the ${capMin}-minute drive cap.`));
+  }
 
   const allIn = num(f.all_in);
   const floor = num(f.price_floor);

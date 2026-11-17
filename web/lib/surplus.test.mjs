@@ -12,8 +12,12 @@ const LOOSE = activeRules({ min_profit: 0, max_pickup_miles: 100000, max_per_fli
 const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 
+// The fixture carries a drive that takes no time and matches its stated miles, so the older tests keep
+// their numbers. Drive time and its cost are tested on their own in drive.test.mjs.
 function confirmedLot(extra = {}) {
+  const miles = extra.miles_from_home === undefined ? 10 : extra.miles_from_home;
   return {
+    drive: miles == null ? null : { minutes_round_trip: 0, miles_round_trip: miles * 2, source: 'fixture' },
     id: 'sold-1',
     title: 'Widget',
     source_site: 'Public Surplus',
@@ -184,7 +188,7 @@ test('missing shipping, an assumed fee, assumed tax, or a sold comp without a UR
   assert.equal(assumedTax.net, null);
   assert.equal(assumedTax.status, 'watch');
 
-  const approxMiles = assessLot(confirmedLot({ miles_approximate: true }));
+  const approxMiles = assessLot(confirmedLot({ miles_approximate: true, drive: null }));
   assert.equal(approxMiles.all_in_basis, 'assumption');
   assert.equal(approxMiles.net, null);
 
@@ -218,9 +222,9 @@ test('needs preview and skip are kept when resale is unknown', () => {
 });
 
 test('same pickup address shares one haul and unknown addresses do not', () => {
-  const a = assessLot({ ...confirmedLot(), id: 'a', title: 'A', miles_from_home: 16, miles_approximate: true });
-  const b = assessLot({ ...confirmedLot(), id: 'b', title: 'B', miles_from_home: 16, miles_approximate: true });
-  const other = assessLot({ ...confirmedLot(), id: 'c', title: 'C', pickup_address: '9 Other Rd', miles_from_home: 16 });
+  const a = assessLot({ ...confirmedLot(), id: 'a', title: 'A', miles_from_home: 16, miles_approximate: true, drive: null });
+  const b = assessLot({ ...confirmedLot(), id: 'b', title: 'B', miles_from_home: 16, miles_approximate: true, drive: null });
+  const other = assessLot({ ...confirmedLot(), id: 'c', title: 'C', pickup_address: '9 Other Rd', miles_from_home: 16, drive: null });
   const blank = assessLot({ ...confirmedLot(), id: 'd', title: 'D', pickup_address: null });
   const shared = tripGroups([a, b, other, blank]);
   assert.equal(shared.length, 1);
@@ -416,7 +420,7 @@ test('a lot that passes every rule with confirmed profit keeps its buy mark', ()
   assert.equal(lot.net, 346.4);
   assert.equal(lot.status, BUY_STATUS);
   assert.equal(lot.rules_pass, true);
-  assert.deepEqual(lot.rule_checks.map((c) => [c.rule, c.result]), [['radius', 'pass'], ['max_cost', 'pass'], ['min_profit', 'pass']]);
+  assert.deepEqual(lot.rule_checks.map((c) => [c.rule, c.result]), [['radius', 'pass'], ['drive_time', 'pass'], ['max_cost', 'pass'], ['min_profit', 'pass']]);
 });
 
 test('past the pickup radius is a skip, at the limit is not', () => {

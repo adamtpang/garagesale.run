@@ -11,11 +11,12 @@ const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 // The rules file, with the fee sign-off a buy needs. Adam has not given it in the real config.
 const confirmed = () => { const c = withRules(null); c.fees = Object.fromEntries(Object.entries(c.fees).map(([k, v]) => [k, { ...v, confirmed: true }])); return c; };
 const sold = (price, i) => ({ url: `https://www.ebay.com/itm/90000000020${i}`, price, shipping: 10, sold: true, title: 'Canon EOS R body', condition: 'Used', model: 'EOS R', sold_at: '2026-10-01' });
-const camera = (extra = {}) => cleanDeal({
+// The fixture drive takes no time, so the older tests keep their numbers. Drive time is tested in drive.test.mjs.
+const camera = ({ drive = { minutes_round_trip: 0, miles_round_trip: 16, source: 'fixture' }, ...extra } = {}) => ({ drive, ...cleanDeal({
   source: 'fb', url: 'https://www.facebook.com/marketplace/item/321/', title: 'Canon EOS R body', ask: 40,
   distance_mi: 8, distance_from: 'New Braunfels', area: 'New Braunfels', category: 'cameras', condition: 'Used', model: 'EOS R',
   comps: [210, 220, 230, 240].map(sold), ...extra,
-});
+}) });
 const surplus = () => ({ ...assessSnapshot(seed, NOW), source: 'seed', updated_at: null });
 const feed = (deals = [], config = confirmed()) => buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-11-16T12:00:00.000Z', deals }, config, nowMs: NOW });
 
