@@ -17,7 +17,7 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: item.costs, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
 }
 
@@ -35,6 +35,7 @@ export function fromLot(lot) {
     kind: 'surplus',
     id: lot.id,
     title: lot.title,
+    photo_url: lot.photo_url || null,
     source: { site: lot.source_site, url: lot.url, seller: lot.seller, auction_id: lot.auction_id },
     location: {
       place: lot.city, pickup_address: lot.pickup_address, miles: lot.miles_from_home, miles_approximate: lot.miles_from_home == null ? null : lot.miles_approximate,
@@ -54,6 +55,9 @@ export function fromLot(lot) {
       tax: lot.tax_amount,
       tax_basis: lot.tax_basis,
       gas: lot.haul_cost,
+      // The round-trip miles the gas cost was worked out on: routed miles when there are any, else twice the stated miles.
+      gas_miles: lot.round_trip_miles,
+      gas_miles_basis: lot.haul_basis,
       // Adam's drive time at the hourly rate. It comes off profit and is not part of all_in.
       time: lot.time_cost,
       fee: lot.fee_amount,
@@ -62,6 +66,8 @@ export function fromLot(lot) {
       shipping_basis: lot.shipping_basis,
       all_in: lot.all_in,
       all_in_basis: lot.all_in_basis,
+      // The cash cost if the lot is won at the max bid. Null when there is no max bid.
+      all_in_at_max_bid: lot.max_bid_all_in,
     },
     resale: {
       per: 'unit',
@@ -151,6 +157,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     kind: 'listing',
     id: deal.url,
     title: v.title,
+    photo_url: deal.photo_url || null,
     source: { site: v.sourceLabel, url: v.buyUrl, seller: null, auction_id: null },
     location: {
       place: v.area || null, pickup_address: null, miles: v.pickup && v.pickup.known ? round2(v.pickup.miles) : null, miles_approximate: v.pickup && v.pickup.known ? false : null,
@@ -159,9 +166,10 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     price: { kind: 'ask', current: v.ask, opening: null, bid_count: null, closes_at: null, closes_text: null },
     costs: {
       premium: 0, premium_pct: 0, tax: 0, tax_basis: 'none on a private sale',
-      gas: v.gas, time: drive.time_cost, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
+      gas: v.gas, gas_miles: v.gas != null && v.pickup && v.pickup.known ? round2(v.pickup.miles * 2) : null, gas_miles_basis: v.gas != null ? 'stated miles' : 'unknown',
+      time: drive.time_cost, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
       shipping: v.shipping, shipping_basis: v.shipping == null ? 'unknown' : 'from the sold comps',
-      all_in: allIn, all_in_basis: allIn == null ? 'unknown' : 'ask plus gas',
+      all_in: allIn, all_in_basis: allIn == null ? 'unknown' : 'ask plus gas', all_in_at_max_bid: null,
     },
     resale: {
       per: 'item', units: 1, low: v.resaleLow, middle: v.resale, high: v.resaleHigh,
