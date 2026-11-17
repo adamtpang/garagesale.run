@@ -30,7 +30,6 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /seller says tax added, rate not stated/);
   assert.match(html, /1d 8h 0m/);
   assert.match(html, /Tue, Nov 17, 2026, 8:00 PM CT/);
-  assert.match(html, /needs preview/);
   assert.match(html, /Combine trips/);
   // The Schertz lots share one pickup address, so one haul covers them.
   assert.match(html, /One round trip is \$5\.76/);
@@ -52,7 +51,16 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.equal(html.includes('<form'), false);
   assert.equal((html.match(/data-lot=/g) || []).length, 13);
   assert.equal(html.includes('data-status="buy candidate (needs Adam yes)"'), false);
-  assert.match(html, /data-status="needs preview"/);
+  // Every lot in this scan is past the 15-mile radius, so every lot is a skip with its reason shown.
+  assert.equal((html.match(/data-status="skip"/g) || []).length, 13);
+  assert.match(html, /Skipped by rule\. About 16 mi from New Braunfels, TX is past the 15-mile pickup limit/);
+  assert.match(html, /data-field="rule-checks"/);
+  assert.match(html, /data-rule="radius" data-result="fail"/);
+  assert.match(html, />Fail</);
+  // The rules strip reads from the config.
+  assert.match(html, /Max cost per flip/);
+  assert.match(html, /\$100\.00 after fees and gas/);
+  assert.match(html, /15 mi from New Braunfels, TX/);
   assert.match(html, /\$114\.98/);
   assert.match(html, /data-lot="ps-4123518"/);
 });

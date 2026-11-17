@@ -1,24 +1,42 @@
 // Surplus lot math. No network and no disk.
 // Asking comps never become resale. Missing dollars stay null, not zero.
-// A lot is a buy candidate only when profit is confirmed and Adam's status says so.
+// A lot is a buy candidate only when profit is confirmed, every rule passes, and Adam's status says so.
+// The rules (max cost, minimum profit, pickup radius, gas rate) come from config/rules.js through lib/rules.js.
 import { money as parseMoney, moneyText, round2 } from './decision.js';
+import { DEFAULT_RULES, checkLot } from './rules.js';
 
-export const HAUL_PER_MILE = 0.18;
-export const TAX_ASSUMPTION_RATE = 0.0825;
+export const HAUL_PER_MILE = DEFAULT_RULES.gas_per_mile;
+export const TAX_ASSUMPTION_RATE = DEFAULT_RULES.tax_assumption_rate;
 export const TAX_ASSUMPTION_LABEL = 'seller says tax added, rate not stated';
-export const HOME = 'New Braunfels, TX';
+export const HOME = DEFAULT_RULES.home;
 export const BUY_STATUS = 'buy candidate (needs Adam yes)';
 export const STATUSES = ['watch', 'needs preview', BUY_STATUS, 'skip'];
+const TAX_BASE_NOTE = 'The assumed tax base is the bid plus the buyer\'s premium. Lots in this scan did not state the base.';
 
-export const RULES = {
-  home: HOME,
-  haul_per_mile: HAUL_PER_MILE,
-  haul_note: 'Hauling cost is round-trip miles times $0.18.',
-  tax_assumption_rate: TAX_ASSUMPTION_RATE,
-  tax_assumption_label: TAX_ASSUMPTION_LABEL,
-  tax_base_note: 'The assumed tax base is the bid plus the buyer\'s premium. Lots in this scan did not state the base.',
-  places_bids: false,
-};
+// What the board shows about the rules in force.
+export function rulesView(rules = DEFAULT_RULES) {
+  return {
+    home: rules.home,
+    approved_on: rules.approved_on,
+    max_cost: rules.max_cost,
+    max_cost_text: moneyText(rules.max_cost),
+    min_profit: rules.min_profit,
+    min_profit_text: moneyText(rules.min_profit),
+    pickup_miles: rules.pickup_miles,
+    haul_per_mile: rules.gas_per_mile,
+    haul_per_mile_text: moneyText(rules.gas_per_mile),
+    haul_confirmed: rules.gas_per_mile_confirmed,
+    haul_note: `Hauling cost is round-trip miles times ${moneyText(rules.gas_per_mile)}.`,
+    tax_assumption_rate: rules.tax_assumption_rate,
+    tax_assumption_text: `${round2(rules.tax_assumption_rate * 100)}%`,
+    tax_assumption_label: TAX_ASSUMPTION_LABEL,
+    tax_base_note: TAX_BASE_NOTE,
+    optional_on: Object.entries(rules.optional).filter(([, v]) => v.enabled).map(([k]) => k),
+    places_bids: false,
+  };
+}
+
+export const RULES = rulesView();
 
 const money = parseMoney;
 
@@ -117,14 +135,14 @@ function cleanComp(c) {
   return { type, url, price, title, note, marketplace };
 }
 
-export function cleanLot(raw) {
+export function cleanLot(raw, rules = DEFAULT_RULES) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const id = str(raw.id, 40);
   if (!id || !/^[a-z0-9-]+$/i.test(id)) return null;
   const miles = money(raw.miles_from_home);
   const taxBasis = raw.tax_basis === 'stated' || raw.tax_basis === 'assumption' ? raw.tax_basis : 'unknown';
   let taxRate = taxBasis === 'unknown' ? null : rate(raw.tax_rate);
-  if (taxBasis === 'assumption' && taxRate == null) taxRate = TAX_ASSUMPTION_RATE;
+  if (taxBasis === 'assumption' && taxRate == null) taxRate = rules.tax_assumption_rate;
   const feeBasis = raw.fee_basis === 'stated' || raw.fee_basis === 'assumption' ? raw.fee_basis : 'unknown';
   const feeRate = feeBasis === 'unknown' ? null : rate(raw.fee_rate);
   const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
@@ -224,8 +242,8 @@ function presentComp(c) {
   };
 }
 
-export function assessLot(raw, nowMs = null) {
-  const lot = cleanLot(raw);
+export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
+  const lot = cleanLot(raw, rules);
   if (!lot) return null;
   const bid = lot.current_bid;
   const premiumPct = lot.premium_pct;
@@ -234,7 +252,7 @@ export function assessLot(raw, nowMs = null) {
   const tax = taxBase != null && lot.tax_rate != null && lot.tax_basis !== 'unknown'
     ? round2(taxBase * lot.tax_rate) : null;
   const roundTrip = lot.miles_from_home != null ? round2(lot.miles_from_home * 2) : null;
-  const haul = roundTrip != null ? round2(roundTrip * HAUL_PER_MILE) : null;
+  const haul = roundTrip != null ? round2(roundTrip * rules.gas_per_mile) : null;
   const allInParts = bid != null && premium != null && tax != null && haul != null;
   const allIn = allInParts ? round2(bid + premium + tax + haul) : null;
   const allInBasis = !allInParts ? 'unknown'
@@ -279,21 +297,35 @@ export function assessLot(raw, nowMs = null) {
     profitReason = `Profit is not confirmed. Missing or unconfirmed: ${missing.join(', ') || 'a required cost'}. Missing costs are not treated as zero.`;
   }
 
+  // Adam's rules are hard checks. One failed rule turns the lot to skip, whatever status came in.
+  const ruleResult = checkLot({
+    miles: lot.miles_from_home,
+    miles_approximate: lot.miles_approximate,
+    all_in: allIn,
+    price_floor: bid != null ? bid : lot.opening_bid,
+    net,
+    net_estimate: netEstimate,
+    roi,
+  }, rules);
+
   let status = lot.status;
   let statusReason = null;
-  if (status === BUY_STATUS && profitConfidence !== 'confirmed') {
+  if (ruleResult.failed.length) {
+    status = 'skip';
+    statusReason = `Skipped by rule. ${ruleResult.skip_reason}`;
+  } else if (status === BUY_STATUS && profitConfidence !== 'confirmed') {
     status = 'watch';
     statusReason = unitResale == null
       ? 'Resale is unknown, so this lot cannot be marked buy.'
       : 'Profit is not confirmed, so this lot cannot be marked buy.';
-  } else if (status === BUY_STATUS && !(net > 0)) {
+  } else if (status === BUY_STATUS && !ruleResult.all_pass) {
     status = 'watch';
-    statusReason = 'Confirmed net is not above zero, so this lot is not a buy candidate.';
+    statusReason = `A rule could not be checked, so this lot cannot be marked buy. ${ruleResult.checks.filter((c) => c.pass == null).map((c) => c.text).join(' ')}`;
   }
 
   const milesText = lot.miles_from_home == null
     ? 'unknown'
-    : `${lot.miles_approximate ? 'about ' : ''}${lot.miles_from_home} mi from ${HOME}`;
+    : `${lot.miles_approximate ? 'about ' : ''}${lot.miles_from_home} mi from ${rules.home}`;
   const range = lot.bid_scan_low != null && lot.bid_scan_high != null
     ? `${moneyText(lot.bid_scan_low)}–${moneyText(lot.bid_scan_high)}`
     : null;
@@ -330,7 +362,7 @@ export function assessLot(raw, nowMs = null) {
       : [
         lot.tax_basis === 'assumption' ? `Includes assumed ${round2(lot.tax_rate * 100)}% tax. ${TAX_ASSUMPTION_LABEL}.` : null,
         lot.miles_approximate ? 'Miles are approximate, so the haul is approximate.' : null,
-        RULES.tax_base_note,
+        TAX_BASE_NOTE,
       ].filter(Boolean).join(' '),
     comps,
     marketplaces_text: lot.marketplaces.length ? lot.marketplaces.join(', ') : 'unknown',
@@ -357,6 +389,9 @@ export function assessLot(raw, nowMs = null) {
     profit_reason: profitReason,
     status,
     status_reason: statusReason,
+    rule_checks: ruleResult.checks,
+    rules_pass: ruleResult.all_pass,
+    haul_rate_text: moneyText(rules.gas_per_mile),
     places_bids: false,
   };
 }
@@ -395,9 +430,9 @@ export function tripGroups(lots) {
   return groups;
 }
 
-export function assessSnapshot(input, nowMs = null) {
+export function assessSnapshot(input, nowMs = null, rules = DEFAULT_RULES) {
   const doc = cleanSnapshot(input);
-  const lots = doc.lots.map((lot) => assessLot(lot, nowMs)).filter(Boolean);
+  const lots = doc.lots.map((lot) => assessLot(lot, nowMs, rules)).filter(Boolean);
   const trips = tripGroups(lots);
   return {
     kind: 'surplus-scan-snapshot',
@@ -407,7 +442,7 @@ export function assessSnapshot(input, nowMs = null) {
     label: doc.label || null,
     notice: doc.notice || null,
     places_bids: false,
-    rules: RULES,
+    rules: rulesView(rules),
     lots,
     trips,
     trip_note: trips.length
