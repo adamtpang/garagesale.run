@@ -60,6 +60,8 @@ The buy search (`POST /api/buy/search`) is separate. It reads Facebook Marketpla
 
 The flip ledger is key-gated and encrypted. `GS_LEDGER_KEY` is required. `GET`, `POST`, `PATCH`, and `DELETE` under `/api/ledger` check the `x-ledger-key` header. A missing key is 503 (`ledger key not configured`). A wrong key is 401.
 
+The ledger also records Adam's decisions: a yes or no on one item, with the most he will pay. `POST /api/ledger` with `{"decision": {"title": "...", "decision": "approved", "max_bid": 35}}` adds one. `PATCH /api/ledger/decisions/<id>` with `{"outcome": "won"}` (or `lost`, `not_bid`, `pending`) records what happened. An approval needs a `max_bid`. Decisions need the ledger key, so the worker key cannot record one. An open approval shows as committed, not spent.
+
 The blob store is public, so the ledger is AES-256-GCM ciphertext. The object path is an HMAC of a fixed label. It is not listed, and its URL is not returned. With no `BLOB_READ_WRITE_TOKEN`, the ciphertext is `web/.data/ledger.json`. The `/ledger` page keeps the key in `sessionStorage` for that tab.
 
 `net_profit` is `sell_price - buy_price - gas - fees - repairs`, and it stays null until the item is sold. Bankroll is `starting_bankroll` minus money spent plus sales.

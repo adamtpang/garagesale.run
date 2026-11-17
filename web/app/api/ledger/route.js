@@ -1,5 +1,5 @@
 import { json } from '../../../lib/store.js';
-import { authFromRequest, readLedger, writeLedger, addItem, totals, moneyField } from '../../../lib/ledger.js';
+import { authFromRequest, readLedger, writeLedger, addItem, addDecision, totals, moneyField } from '../../../lib/ledger.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,10 @@ export async function POST(req) {
     if ('starting_bankroll' in body) doc.starting_bankroll = moneyField(body.starting_bankroll);
     let created = null;
     if (body.item != null || body.buy_price != null) created = addItem(doc, body);
+    // { "decision": { "title": ..., "decision": "approved", "max_bid": 35 } } records Adam's yes or no on one item.
+    let decided = null;
+    if (body.decision != null) decided = addDecision(doc, body.decision);
     const saved = await writeLedger(doc);
-    return json({ ...view(saved), created }, created ? 201 : 200);
+    return json({ ...view(saved), created, decided }, created || decided ? 201 : 200);
   } catch (e) { return failed(e); }
 }

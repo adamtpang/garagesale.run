@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 
 const KEY = 'gs_ledger_key';
 const PLATFORMS = ['fb', 'craigslist', 'ebay', 'offerup'];
-const $ = (v) => (v == null || v === '' || Number.isNaN(Number(v)) ? '—' : '$' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const $ = (v) => (v == null || v === '' || Number.isNaN(Number(v)) ? 'none' : '$' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyForm = () => ({ item: '', date_bought: today(), buy_price: '', source_link: '', gas: '', fees: '', repairs: '', saved_deal_id: '' });
+const emptyDecision = () => ({ title: '', source_link: '', decision: 'approved', max_bid: '', note: '', decided_on: today() });
+const OUTCOME_LABEL = { pending: 'Open', won: 'Bought', lost: 'Lost the auction', not_bid: 'Did not bid' };
 
 export default function LedgerPage() {
   const [key, setKey] = useState('');
@@ -21,6 +23,7 @@ export default function LedgerPage() {
   const [selling, setSelling] = useState(null);
   const [sale, setSale] = useState({ sell_price: '', sell_date: today(), platform: 'ebay' });
   const [bankroll, setBankroll] = useState('');
+  const [dec, setDec] = useState(emptyDecision);
 
   useEffect(() => {
     let stored = '';
@@ -85,6 +88,28 @@ export default function LedgerPage() {
       await load();
     } catch (e2) { setErr(e2.message); }
   }
+  async function addDecision(e) {
+    e.preventDefault();
+    setErr('');
+    try {
+      await api('/api/ledger', { method: 'POST', body: JSON.stringify({ decision: {
+        title: dec.title, source_link: dec.source_link || null, decision: dec.decision,
+        max_bid: dec.decision === 'approved' ? dec.max_bid : null, note: dec.note || null, decided_on: dec.decided_on || null,
+      } }) });
+      setDec(emptyDecision());
+      await load();
+    } catch (e2) { setErr(e2.message); }
+  }
+  async function setOutcome(id, outcome) {
+    setErr('');
+    try { await api(`/api/ledger/decisions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ outcome }) }); await load(); }
+    catch (e2) { setErr(e2.message); }
+  }
+  async function removeDecision(id) {
+    setErr('');
+    try { await api(`/api/ledger/decisions/${encodeURIComponent(id)}`, { method: 'DELETE' }); await load(); }
+    catch (e2) { setErr(e2.message); }
+  }
   async function saveBankroll(e) {
     e.preventDefault();
     setErr('');
@@ -128,12 +153,49 @@ export default function LedgerPage() {
         <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Realized profit</div><div className="mt-2 text-2xl font-semibold tabular-nums text-success">{$(totals.realized_profit)}</div></Card>
         <Card className="border-border p-5"><div className="text-xs text-muted-foreground">On hand</div><div className="mt-2 text-2xl font-semibold tabular-nums">{totals.on_hand_count ?? 0}</div></Card>
         <Card className="border-border p-5"><div className="text-xs text-muted-foreground">On-hand value</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.on_hand_value)}</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Open approvals</div><div className="mt-2 text-2xl font-semibold tabular-nums">{totals.open_approvals ?? 0}</div><div className="mt-1 text-xs text-muted-foreground">Up to {$(totals.committed)} approved, not spent yet</div></Card>
+        <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Bankroll if every open approval is spent</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.bankroll_after_open_approvals)}</div></Card>
       </div>}
       {doc && <form onSubmit={saveBankroll} className="mb-8 flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Starting bankroll</span>
           <Input className="w-36" inputMode="decimal" value={bankroll} onChange={(e) => setBankroll(e.target.value)} aria-label="Starting bankroll" /></label>
         <Button type="submit" variant="secondary" size="sm">Save</Button>
       </form>}
+      <h2 className="mb-1 text-sm font-medium text-muted-foreground">Decisions</h2>
+      <p className="mb-3 text-xs text-muted-foreground">Your yes or no on one item, with the most you will pay. Only this page, with the ledger key, can record one. Nothing here places a bid.</p>
+      <Card className="mb-4 border-border p-4" data-field="decision-form">
+        <form onSubmit={addDecision} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Item or lot</span><Input value={dec.title} onChange={(e) => setDec((d) => ({ ...d, title: e.target.value }))} required aria-label="Item or lot" /></label>
+          <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Date</span><Input type="date" value={dec.decided_on} onChange={(e) => setDec((d) => ({ ...d, decided_on: e.target.value }))} aria-label="Decision date" /></label>
+          <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Link</span><Input value={dec.source_link} onChange={(e) => setDec((d) => ({ ...d, source_link: e.target.value }))} aria-label="Link to the lot or listing" /></label>
+          <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Decision</span>
+            <select className="h-10 rounded-md border border-foreground bg-white px-2 text-sm" value={dec.decision} onChange={(e) => setDec((d) => ({ ...d, decision: e.target.value }))} aria-label="Decision"><option value="approved">Approved</option><option value="declined">Declined</option></select></label>
+          {dec.decision === 'approved' && <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Max bid or price</span><Input inputMode="decimal" value={dec.max_bid} onChange={(e) => setDec((d) => ({ ...d, max_bid: e.target.value }))} required aria-label="Max bid or price" /></label>}
+          <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Note</span><Input value={dec.note} onChange={(e) => setDec((d) => ({ ...d, note: e.target.value }))} aria-label="Note" /></label>
+          <div className="sm:col-span-3"><Button type="submit" variant="brand">Record decision</Button></div>
+        </form>
+      </Card>
+      <div className="mb-10 overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-sm" data-field="decisions">
+          <thead className="text-xs text-muted-foreground"><tr>
+            <th className="py-2 pr-3 font-medium">Item or lot</th><th className="py-2 pr-3 font-medium">Date</th><th className="py-2 pr-3 font-medium">Decision</th>
+            <th className="py-2 pr-3 font-medium">Max</th><th className="py-2 pr-3 font-medium">What happened</th><th className="py-2 font-medium" />
+          </tr></thead>
+          <tbody>
+            {doc && (doc.decisions || []).length === 0 && <tr><td colSpan={6} className="py-6 text-muted-foreground">No decisions recorded yet.</td></tr>}
+            {doc && (doc.decisions || []).map((d) => <tr key={d.id} className="border-t border-border align-top">
+              <td className="py-3 pr-3"><div className="font-medium">{d.title}</div>{d.source_link && <a className="text-xs text-link underline-offset-4 hover:underline" href={d.source_link} target="_blank" rel="noopener">Open link</a>}{d.note && <div className="text-xs text-muted-foreground">{d.note}</div>}</td>
+              <td className="py-3 pr-3 text-muted-foreground">{d.decided_on || 'no date'}</td>
+              <td className="py-3 pr-3"><Badge variant={d.decision === 'approved' ? 'success' : 'secondary'} className="font-normal">{d.decision === 'approved' ? 'Approved' : 'Declined'}</Badge></td>
+              <td className="py-3 pr-3 tabular-nums">{d.decision === 'approved' ? $(d.max_bid) : 'none'}</td>
+              <td className="py-3 pr-3">{d.decision === 'approved'
+                ? <select className="h-9 rounded-md border border-foreground bg-white px-2 text-sm" aria-label={`What happened with ${d.title}`} value={d.outcome} onChange={(e) => setOutcome(d.id, e.target.value)}>{Object.entries(OUTCOME_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+                : OUTCOME_LABEL.not_bid}</td>
+              <td className="py-3 text-right"><Button size="sm" variant="ghost" onClick={() => removeDecision(d.id)}>Remove</Button></td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
       <h2 className="mb-3 text-sm font-medium text-muted-foreground">Add buy</h2>
       <Card className="mb-10 border-border p-4">
         <form onSubmit={addBuy} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -161,12 +223,12 @@ export default function LedgerPage() {
               const cost = (Number(c.gas) || 0) + (Number(c.fees) || 0) + (Number(c.repairs) || 0);
               return <tr key={it.id} className="border-t border-border align-top">
                 <td className="py-3 pr-3"><div className="font-medium">{it.item}</div>{it.source_link && <a className="text-xs text-muted-foreground underline-offset-4 hover:underline" href={it.source_link} target="_blank" rel="noopener">Listing</a>}</td>
-                <td className="py-3 pr-3 text-muted-foreground">{it.date_bought || '—'}</td>
+                <td className="py-3 pr-3 text-muted-foreground">{it.date_bought || 'none'}</td>
                 <td className="py-3 pr-3 tabular-nums">{$(it.buy_price)}</td>
                 <td className="py-3 pr-3 tabular-nums">{$(cost)}</td>
                 <td className="py-3 pr-3"><Badge variant={it.status === 'sold' ? 'success' : 'secondary'} className="font-normal">{it.status}</Badge></td>
-                <td className="py-3 pr-3">{it.status === 'sold' ? <span className="tabular-nums">{$(it.sell_price)}{it.platform ? ` · ${it.platform}` : ''}</span> : '—'}</td>
-                <td className="py-3 pr-3 tabular-nums">{it.net_profit == null ? '—' : $(it.net_profit)}</td>
+                <td className="py-3 pr-3">{it.status === 'sold' ? <span className="tabular-nums">{$(it.sell_price)}{it.platform ? ` · ${it.platform}` : ''}</span> : 'none'}</td>
+                <td className="py-3 pr-3 tabular-nums">{it.net_profit == null ? 'none' : $(it.net_profit)}</td>
                 <td className="py-3 text-right">
                   {it.status !== 'sold' && <Button size="sm" variant="secondary" className="mr-2" onClick={() => { setSelling(it.id); setSale({ sell_price: '', sell_date: today(), platform: 'ebay' }); }}>Mark sold</Button>}
                   <Button size="sm" variant="ghost" onClick={() => remove(it.id)}>Delete</Button>

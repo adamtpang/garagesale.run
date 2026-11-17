@@ -105,7 +105,63 @@ function dealId(v) {
 }
 
 export function emptyLedger() {
-  return { starting_bankroll: null, items: [] };
+  return { starting_bankroll: null, items: [], decisions: [] };
+}
+
+// Adam's decisions. An approval is his yes on one item, with the most he will pay.
+// Only a request with the ledger key can record one, so a worker cannot approve its own find.
+export const DECISIONS = ['approved', 'declined'];
+// What happened after an approval: still open, bought, lost to another bidder, or never bid.
+export const OUTCOMES = ['pending', 'won', 'lost', 'not_bid'];
+
+export function cleanDecision(input, id) {
+  if (!input || typeof input !== 'object') throw new Error('bad decision');
+  const title = str(input.title, 200);
+  if (!title) throw new Error('title required');
+  if (!DECISIONS.includes(input.decision)) throw new Error('decision must be approved or declined');
+  const approved = input.decision === 'approved';
+  const max = money(input.max_bid);
+  // A yes with no ceiling is not a usable approval.
+  if (approved && !(max > 0)) throw new Error('max_bid required for an approval');
+  const outcome = approved ? (OUTCOMES.includes(input.outcome) ? input.outcome : 'pending') : 'not_bid';
+  return {
+    id,
+    decided_on: dateStr(input.decided_on),
+    title,
+    source_link: httpUrl(input.source_link),
+    lot_id: dealId(input.lot_id),
+    decision: input.decision,
+    max_bid: approved ? max : null,
+    note: str(input.note, 500),
+    outcome,
+    item_id: dealId(input.item_id),
+  };
+}
+
+export function applyDecisionPatch(existing, patch) {
+  const p = patch && typeof patch === 'object' ? patch : {};
+  const next = { ...existing };
+  if ('note' in p) next.note = str(p.note, 500);
+  if ('item_id' in p) next.item_id = dealId(p.item_id);
+  if ('max_bid' in p) {
+    if (next.decision !== 'approved') throw new Error('only an approval has a max bid');
+    const max = money(p.max_bid);
+    if (!(max > 0)) throw new Error('max_bid required for an approval');
+    next.max_bid = max;
+  }
+  if ('outcome' in p) {
+    if (!OUTCOMES.includes(p.outcome)) throw new Error('bad outcome');
+    if (next.decision !== 'approved' && p.outcome !== 'not_bid') throw new Error('a declined item was not bid on');
+    next.outcome = p.outcome;
+  }
+  return next;
+}
+
+export function addDecision(doc, input) {
+  const rec = cleanDecision(input, newId());
+  if (!Array.isArray(doc.decisions)) doc.decisions = [];
+  doc.decisions.unshift(rec);
+  return rec;
 }
 
 export function costOf(item) {
@@ -129,11 +185,19 @@ export function totals(doc) {
   const sales = items.reduce((s, it) => s + (it.status === 'sold' ? num0(it.sell_price) : 0), 0);
   const onHand = items.filter((it) => it.status === 'on_hand' || it.status === 'listed');
   const realized = items.reduce((s, it) => s + (it.status === 'sold' && it.net_profit != null ? it.net_profit : 0), 0);
+  const bankroll = round2(num0(doc && doc.starting_bankroll) - spent + sales);
+  // An open approval is money Adam has said he may spend. It is not spent until the item is bought.
+  const open = ((doc && doc.decisions) || []).filter((d) => d.decision === 'approved' && d.outcome === 'pending');
+  const committed = round2(open.reduce((s, d) => s + num0(d.max_bid), 0));
   return {
-    bankroll: round2(num0(doc && doc.starting_bankroll) - spent + sales),
+    bankroll,
     realized_profit: round2(realized),
     on_hand_count: onHand.length,
     on_hand_value: round2(onHand.reduce((s, it) => s + num0(it.buy_price) + costOf(it), 0)),
+    sold_count: items.filter((it) => it.status === 'sold').length,
+    open_approvals: open.length,
+    committed,
+    bankroll_after_open_approvals: round2(bankroll - committed),
   };
 }
 
@@ -209,7 +273,22 @@ export function normalize(doc) {
     platform: str(it.platform, 40),
     saved_deal_id: dealId(it.saved_deal_id),
   }));
-  return { starting_bankroll: money(base.starting_bankroll), items };
+  const decisions = (Array.isArray(base.decisions) ? base.decisions : []).filter((d) => d && d.id && DECISIONS.includes(d.decision)).map((d) => {
+    const approved = d.decision === 'approved';
+    return {
+      id: String(d.id).slice(0, 40),
+      decided_on: dateStr(d.decided_on),
+      title: str(d.title, 200),
+      source_link: httpUrl(d.source_link),
+      lot_id: dealId(d.lot_id),
+      decision: d.decision,
+      max_bid: approved ? money(d.max_bid) : null,
+      note: str(d.note, 500),
+      outcome: approved ? (OUTCOMES.includes(d.outcome) ? d.outcome : 'pending') : 'not_bid',
+      item_id: dealId(d.item_id),
+    };
+  });
+  return { starting_bankroll: money(base.starting_bankroll), items, decisions };
 }
 
 // Header x-ledger-key against GS_LEDGER_KEY. Unset key is 503, not a silent open.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
-import { netProfit, totals, cleanItem, applyPatch, ledgerAuth, sealLedger, openLedger, ledgerPathname, writeLedger, readLedger, rekeyLedger } from './ledger.js';
+import { netProfit, totals, cleanItem, applyPatch, ledgerAuth, sealLedger, openLedger, ledgerPathname, writeLedger, readLedger, rekeyLedger, cleanDecision, applyDecisionPatch, addDecision, normalize, emptyLedger } from './ledger.js';
 
 const ledgerFile = path.join(process.cwd(), '.data', 'ledger.json');
 
@@ -129,5 +129,92 @@ test('ledger auth fails closed', async () => {
     try { fs.unlinkSync(`${ledgerFile}.tmp`); } catch (e) {}
     if (prevKey === undefined) delete process.env.GS_LEDGER_KEY; else process.env.GS_LEDGER_KEY = prevKey;
     if (prevBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN; else process.env.BLOB_READ_WRITE_TOKEN = prevBlob;
+  }
+});
+
+// Decisions: what Adam approved or declined.
+
+test('an approval needs a ceiling, and a decline has none', () => {
+  const yes = cleanDecision({ title: '8 Zebra TC700K handhelds', decision: 'approved', max_bid: '35', decided_on: '2026-11-16', source_link: 'https://www.publicsurplus.com/sms/all,tx/auction/view?auc=4123518', lot_id: 'ps-4123518' }, 'd1');
+  assert.deepEqual([yes.decision, yes.max_bid, yes.outcome, yes.lot_id, yes.decided_on], ['approved', 35, 'pending', 'ps-4123518', '2026-11-16']);
+  assert.throws(() => cleanDecision({ title: 'Lot', decision: 'approved' }, 'd2'), /max_bid required/);
+  assert.throws(() => cleanDecision({ title: 'Lot', decision: 'approved', max_bid: 0 }, 'd2'), /max_bid required/);
+  assert.throws(() => cleanDecision({ title: 'Lot', decision: 'maybe', max_bid: 10 }, 'd2'), /approved or declined/);
+  assert.throws(() => cleanDecision({ decision: 'approved', max_bid: 10 }, 'd2'), /title required/);
+  const no = cleanDecision({ title: 'TFC Lot 13', decision: 'declined', max_bid: 500, outcome: 'won' }, 'd3');
+  assert.deepEqual([no.decision, no.max_bid, no.outcome], ['declined', null, 'not_bid']);
+});
+
+test('an approval moves to won, lost or not bid, and a decline cannot be won', () => {
+  const yes = cleanDecision({ title: 'Lot', decision: 'approved', max_bid: 35 }, 'd1');
+  assert.equal(applyDecisionPatch(yes, { outcome: 'won', item_id: 'abc123' }).outcome, 'won');
+  assert.equal(applyDecisionPatch(yes, { outcome: 'won', item_id: 'abc123' }).item_id, 'abc123');
+  assert.equal(applyDecisionPatch(yes, { outcome: 'lost' }).outcome, 'lost');
+  assert.equal(applyDecisionPatch(yes, { max_bid: 40 }).max_bid, 40);
+  assert.throws(() => applyDecisionPatch(yes, { outcome: 'maybe' }), /bad outcome/);
+  assert.throws(() => applyDecisionPatch(yes, { max_bid: null }), /max_bid required/);
+  const no = cleanDecision({ title: 'Lot', decision: 'declined' }, 'd2');
+  assert.throws(() => applyDecisionPatch(no, { outcome: 'won' }), /was not bid on/);
+  assert.throws(() => applyDecisionPatch(no, { max_bid: 10 }), /only an approval/);
+});
+
+test('open approvals show as committed, not spent', () => {
+  const doc = { ...emptyLedger(), starting_bankroll: 100 };
+  doc.items.push(cleanItem({ item: 'Lamp', buy_price: 15, costs: { gas: 1 } }, 'it1'));
+  addDecision(doc, { title: 'Zebra lot', decision: 'approved', max_bid: 35 });
+  addDecision(doc, { title: 'Phone', decision: 'approved', max_bid: 20, outcome: 'lost' });
+  addDecision(doc, { title: 'TFC Lot 13', decision: 'declined' });
+  const t = totals(doc);
+  // Bankroll: 100 - (15 + 1) = 84. One approval is still open, for up to $35.
+  assert.equal(t.bankroll, 84);
+  assert.equal(t.open_approvals, 1);
+  assert.equal(t.committed, 35);
+  assert.equal(t.bankroll_after_open_approvals, 49);
+  assert.equal(t.sold_count, 0);
+  assert.equal(totals({ starting_bankroll: 100, items: [] }).open_approvals, 0);
+});
+
+test('decisions survive encryption and an old ledger with none still opens', () => {
+  const doc = { ...emptyLedger(), starting_bankroll: 100 };
+  addDecision(doc, { title: 'Zebra lot', decision: 'approved', max_bid: 35, note: 'Zebra only' });
+  const sealed = sealLedger(doc, 'secret-key-for-test');
+  assert.equal(JSON.stringify(sealed).includes('Zebra'), false);
+  const opened = normalize(openLedger(sealed, 'secret-key-for-test'));
+  assert.equal(opened.decisions.length, 1);
+  assert.deepEqual([opened.decisions[0].title, opened.decisions[0].max_bid, opened.decisions[0].note], ['Zebra lot', 35, 'Zebra only']);
+  assert.deepEqual(normalize({ starting_bankroll: 50, items: [] }).decisions, []);
+  // A stored record with a decision that is not approved or declined is dropped.
+  assert.deepEqual(normalize({ items: [], decisions: [{ id: 'x', decision: 'bought', title: 'x' }] }).decisions, []);
+});
+
+test('only the ledger key can record a decision, and the worker key cannot', async () => {
+  const prev = { l: process.env.GS_LEDGER_KEY, w: process.env.GST_WORKER_KEY, b: process.env.BLOB_READ_WRITE_TOKEN };
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  process.env.GS_LEDGER_KEY = 'ledger-key-for-test';
+  process.env.GST_WORKER_KEY = 'worker-key-for-test-0123456789';
+  fs.rmSync(ledgerFile, { force: true });
+  try {
+    const route = await import('../app/api/ledger/route.js');
+    const one = await import('../app/api/ledger/decisions/[id]/route.js');
+    const post = (headers, body) => route.POST(new Request('http://localhost/api/ledger', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) }));
+    const body = { decision: { title: 'Zebra lot', decision: 'approved', max_bid: 35 } };
+    assert.equal((await post({ 'x-worker-key': 'worker-key-for-test-0123456789' }, body)).status, 401);
+    assert.equal((await post({ 'x-ledger-key': 'worker-key-for-test-0123456789' }, body)).status, 401);
+    assert.equal((await post({}, body)).status, 401);
+    const ok = await post({ 'x-ledger-key': 'ledger-key-for-test' }, body);
+    assert.equal(ok.status, 201);
+    const saved = await ok.json();
+    assert.equal(saved.decided.outcome, 'pending');
+    assert.equal(saved.totals.open_approvals, 1);
+    const id = saved.decided.id;
+    const patch = (headers, b) => one.PATCH(new Request(`http://localhost/api/ledger/decisions/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(b) }), { params: { id } });
+    assert.equal((await patch({ 'x-worker-key': 'worker-key-for-test-0123456789' }, { outcome: 'won' })).status, 401);
+    const won = await patch({ 'x-ledger-key': 'ledger-key-for-test' }, { outcome: 'won' });
+    assert.equal(won.status, 200);
+    assert.equal((await won.json()).totals.open_approvals, 0);
+    assert.equal((await post({ 'x-ledger-key': 'ledger-key-for-test' }, { decision: { title: 'x', decision: 'approved' } })).status, 400);
+  } finally {
+    fs.rmSync(ledgerFile, { force: true });
+    for (const [k, name] of [['l', 'GS_LEDGER_KEY'], ['w', 'GST_WORKER_KEY'], ['b', 'BLOB_READ_WRITE_TOKEN']]) { if (prev[k] === undefined) delete process.env[name]; else process.env[name] = prev[k]; }
   }
 });
