@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${dm.variable} ${marker.variable}`}><body className="bg-background font-sans text-foreground antialiased">
       <nav className="nav"><div className="wrap navin gap-2">
         <a href="/" className="brand shrink-0 whitespace-nowrap !gap-2 text-[14px] font-semibold tracking-tight sm:text-[15px]"><span className="logo !h-7 !w-7 !rounded-lg text-sm" aria-hidden="true">G</span>Garage Sale</a>
-        <div className="navlinks min-w-0 items-center !gap-0 whitespace-nowrap text-[12px] max-[520px]:text-[11px] sm:text-[13px] sm:!gap-1 [&>a]:rounded-full [&>a]:px-[5px] max-[520px]:[&>a]:px-1 sm:[&>a]:px-3 [&>a]:py-1.5 [&>a]:transition-colors hover:[&>a]:bg-accent/60"><a href="/sell">Sell</a><a href="/buy">Buy</a><a href="/dashboard">Dashboard</a><a href="/surplus">Surplus</a><NavMsgs /><a href="/about">About</a></div>
+        <div className="navlinks min-w-0 items-center !gap-0 whitespace-nowrap text-[12px] max-[520px]:text-[11px] sm:text-[13px] sm:!gap-1 [&>a]:rounded-full [&>a]:px-[5px] max-[520px]:[&>a]:px-1 sm:[&>a]:px-3 [&>a]:py-1.5 [&>a]:transition-colors hover:[&>a]:bg-accent/60"><a href="/dashboard">Deals</a><a href="/surplus">Surplus</a><a href="/buy">Buy</a><a href="/sell">Sell</a><NavMsgs /><a href="/about">About</a></div>
       </div></nav>
       {children}
       <Assistant />
