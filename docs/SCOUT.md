@@ -230,3 +230,43 @@ The reply is the stored scan as the board shows it: each lot with `all_in`, `cas
 
 - `400` with an `error` message when the body is not usable.
 - `401` with a `reason` when the key is refused.
+
+## GET /api/feed
+
+The daily deals feed. Public and read-only. It takes the stored surplus scan and the stored listings, scores them again against today's rules, and returns them in one shape, best first.
+
+```bash
+curl -s "$GARAGESALE_BASE_URL/api/feed"
+```
+
+Top level:
+
+| Field | What it is |
+| --- | --- |
+| `rules` | The rules in force: max cost, minimum profit, pickup radius, gas rate |
+| `sources` | When each side was last posted, and how many days old it is |
+| `stale` | Plain sentences when the data is old or was never posted. Empty when it is fresh |
+| `counts` | How many items are `buy`, `watch` and `skip` |
+| `items` | The deals. Buys first, then watches, then skips. Inside each group, best profit first and unknown profit last |
+
+Each item:
+
+| Field | What it is |
+| --- | --- |
+| `kind` | `surplus` (an auction lot) or `listing` (a local listing) |
+| `source` | `site` and `url` of the lot or listing |
+| `location` | `place`, `miles` from New Braunfels, and whether the miles are approximate |
+| `price` | `current` bid or ask, `opening` bid, `bid_count`, `closes_at` |
+| `costs` | `premium`, `tax`, `gas`, `fee`, `shipping`, and the `all_in` cost, each with where it came from |
+| `resale` | `low`, `middle` and `high`, how each was worked out, and any caveats |
+| `comps` | Every comp with its `url`, `price` and `sold_on` date. Asking comps are labeled and have no sale date |
+| `profit` | `low`, `middle` and `high` at the current price, `confirmed` when every input is stated, and `at_max_bid` for a lot |
+| `roi` | Profit divided by the all-in cost, and whether it is confirmed |
+| `max_bid` | The highest bid or offer that still fits the rules, in whole dollars, or null |
+| `risks` | What could go wrong |
+| `decision` | `buy`, `watch` or `skip`, with the reasons. `needs_adam_yes` is always true |
+| `unknown` | The names of every value above that is null |
+
+- A value that is not known is `null`. It is never 0 and never a guess.
+- `buy` means the math and the rules pass. It is not a go-ahead. Every bid, purchase, offer and message needs Adam's yes on that item.
+- The feed is as fresh as the last `POST /api/surplus` and `POST /api/deals`. Read `stale` before trusting it.
