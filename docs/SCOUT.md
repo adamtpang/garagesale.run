@@ -80,7 +80,13 @@ To switch it on, Adam does this once. No agent sees the key.
 2. In Vercel, project `grokbothackathon`, add the environment variable `ORS_API_KEY` for Production.
 3. Redeploy.
 
-Until that is done every drive time is unknown. Each place is looked up once and kept under `drive-cache/` in Blob storage, and one page load makes at most 8 new lookups. A lot is found by its pickup address. A lot with only a city has no drive time, because the middle of a city is not the pickup point. A batch of lookups stops starting new ones after 12 seconds and saves what it found. A listing is found by its `lat` and `lng`, so a listing with no coordinates has no drive time. The bot may also post its own `drive: { minutes_round_trip, miles_round_trip }` on a lot, and that is used as posted.
+Until that is done every drive time is unknown.
+
+**Who can spend the key.** Only calls that carry the worker key look up a drive time: `POST /api/surplus`, `POST /api/deals`, and `POST /api/drive/refresh`. The public pages and `GET /api/feed` and `GET /api/surplus` read the cache and never call the routing service, so a visitor cannot use up the quota. A place that is not in the cache yet shows an unknown drive.
+
+**The bot's daily step.** After posting, call `POST /api/drive/refresh` with the `x-worker-key` header. It looks up every pickup address and listing that has no drive time yet, up to 20 a call, and answers with `{ places, known, unknown }`. Call it again while `unknown` is above zero. This is also how the Nov 15 scan file gets its drive times, since it was never posted.
+
+Each place is looked up once and kept under `drive-cache/` in Blob storage. One call makes at most 8 new lookups (20 for the refresh), and all callers together make at most 300 a day. A lot is found by its pickup address. A lot with only a city has no drive time, because the middle of a city is not the pickup point. A batch of lookups stops starting new ones after 12 seconds and saves what it found. A listing is found by its `lat` and `lng`, so a listing with no coordinates has no drive time. The bot may also post its own `drive: { minutes_round_trip, miles_round_trip }` on a lot, and that is used as posted.
 
 Not yet tested against the live service: the code follows the official client's request format, but no real key was available to try it.
 
