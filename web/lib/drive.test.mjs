@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { activeRules } from './rules.js';
 import { cleanDrive, driveCosts, driveText, geocode, lookUpDrive, placeKey, routeRoundTrip, HOME_POINT, MIN_GEOCODE_CONFIDENCE } from './drive.js';
-import { drivesFor, BATCH_BUDGET_MS } from './driveStore.js';
+import { drivesFor, cachedDrives, BATCH_BUDGET_MS, DAILY_LOOKUP_CAP } from './driveStore.js';
+import fs from 'fs';
 import { assessLot, BUY_STATUS } from './surplus.js';
 import { withDrives } from './surplusStore.js';
 import { fromDeal } from './feed.js';
@@ -84,7 +85,7 @@ test('each place is looked up once, lookups are capped, and no key means no look
   // Three different places, two lookups allowed.
   assert.equal(ors.calls.length, 2);
   assert.equal([...first.values()].filter(Boolean).length, 2);
-  assert.equal(Object.keys(saved).length, 2);
+  assert.equal(Object.keys(saved).filter((k) => !k.startsWith('_')).length, 2);
   // The key is not in what is stored.
   assert.equal(JSON.stringify(saved).includes('test-key-not-real'), false);
   await drivesFor(places, { max: 2, deps: ors.deps, store });
@@ -201,5 +202,42 @@ test('a slow batch stops starting lookups, keeps what it found, and saves it', a
   assert.equal(ors.calls.length, 1);
   assert.equal([...out.values()].filter(Boolean).length, 1);
   assert.equal(out.size, 3);
-  assert.equal(Object.keys(saved).length, 1);
+  assert.equal(Object.keys(saved).filter((k) => !k.startsWith('_')).length, 1);
+});
+
+test('a public read never calls the routing service, even with a key and an empty cache', async () => {
+  const ors = fakeOrs();
+  let saved = 0;
+  const store = { load: async () => ({ 'p:29.5000,-98.2000': { drive: { minutes_round_trip: 20, miles_round_trip: 12, source: 'openrouteservice' } } }), save: async () => { saved += 1; } };
+  const out = await cachedDrives([{ lat: 29.5, lng: -98.2 }, { lat: 29.6, lng: -98.3 }], { deps: ors.deps, store });
+  assert.equal(ors.calls.length, 0);
+  assert.equal(saved, 0);
+  // The cached place is served. The other stays unknown until a call with the worker key looks it up.
+  assert.equal(out.get('p:29.5000,-98.2000').minutes_round_trip, 20);
+  assert.equal(out.get('p:29.6000,-98.3000'), null);
+  // The public routes use the cache-only reader. Only the worker-key routes import the one that looks up.
+  const src = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8');
+  assert.equal(/\bdrivesFor\b/.test(src('../app/api/feed/route.js')), false);
+  assert.match(src('./surplusStore.js'), /readSurplus\(nowMs = null, rules = undefined, find = cachedDrives\)/);
+  for (const p of ['../app/api/deals/route.js', '../app/api/drive/refresh/route.js']) {
+    const text = src(p);
+    assert.ok(text.indexOf('workerCheck(req)') > -1 && text.indexOf('workerCheck(req)') < text.indexOf('drivesFor('), p);
+  }
+});
+
+test('lookups stop at the daily cap and start again the next day', async () => {
+  const mem = { _day: { day: '2026-11-17', count: DAILY_LOOKUP_CAP - 1 } };
+  const store = { load: async () => mem, save: async () => {} };
+  const ors = fakeOrs();
+  const noon = Date.parse('2026-11-17T12:00:00Z');
+  const out = await drivesFor([{ lat: 29.5, lng: -98.2 }, { lat: 29.6, lng: -98.3 }], { deps: ors.deps, store, nowMs: noon });
+  // One lookup was left for the day.
+  assert.equal(ors.calls.length, 1);
+  assert.equal([...out.values()].filter(Boolean).length, 1);
+  assert.equal(mem._day.count, DAILY_LOOKUP_CAP);
+  await drivesFor([{ lat: 29.7, lng: -98.4 }], { deps: ors.deps, store, nowMs: noon });
+  assert.equal(ors.calls.length, 1);
+  await drivesFor([{ lat: 29.7, lng: -98.4 }], { deps: ors.deps, store, nowMs: noon + 24 * 3600 * 1000 });
+  assert.equal(ors.calls.length, 2);
+  assert.deepEqual(mem._day, { day: '2026-11-18', count: 1 });
 });
