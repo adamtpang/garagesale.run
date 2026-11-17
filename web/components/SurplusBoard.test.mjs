@@ -75,7 +75,8 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /data-rule="radius" data-result="fail"/);
   assert.match(html, />Fail</);
   // The rules strip reads from the config.
-  assert.match(html, /Max cost per flip/);
+  assert.match(html, /Max buy per flip/);
+  assert.match(html, /Starting bankroll of \$100\.00/);
   assert.match(html, /\$100\.00 after fees and gas/);
   assert.match(html, /15 mi from New Braunfels, TX/);
   assert.match(html, /\$114\.98/);

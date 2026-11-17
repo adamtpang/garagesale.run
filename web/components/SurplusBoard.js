@@ -240,9 +240,10 @@ export default function SurplusBoard({ view, failed, loading }) {
         ].filter(Boolean).join(' '))),
 
       e('div', { className: 'mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground sm:grid-cols-3 lg:grid-cols-6', 'data-field': 'rules', 'aria-label': 'Flip rules' },
-        [['Max cost per flip', view.rules.max_cost_text], ['Min profit', `${view.rules.min_profit_text} after fees and gas`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Gas', `${view.rules.haul_per_mile_text} a mile${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Tax assumed', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v]) => e('div', { key: k, className: 'bg-card px-3 py-2' },
+        [['Max buy per flip', view.rules.max_cost_text, view.rules.max_cost_note], ['Min profit', `${view.rules.min_profit_text} after fees and gas`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Gas', `${view.rules.haul_per_mile_text} a mile${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Tax assumed', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v, note]) => e('div', { key: k, className: 'bg-card px-3 py-2' },
           e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, k),
-          e('div', { className: 'mt-0.5 text-sm font-medium' }, v)))),
+          e('div', { className: 'mt-0.5 text-sm font-medium' }, v),
+          note ? e('div', { className: 'text-xs text-muted-foreground', 'data-field': 'max-buy-note' }, note) : null))),
       e('details', { className: 'mb-2 text-sm' },
         e('summary', { className: 'cursor-pointer font-medium underline-offset-4 hover:underline' }, 'How the rules are applied'),
         e('p', { className: 'mt-1 text-muted-foreground' }, `${view.rules.tax_assumption_label}. ${view.rules.tax_base_note} A lot that breaks a rule is skipped, with the reason on the lot. A lot stays off the buy list while resale or any cost is unknown.`)),

@@ -11,8 +11,8 @@ export const RULES_SOURCE = 'web/config/rules.js';
 const STORED_FIELDS = ['sites', 'areas', 'fees', 'run_hours'];
 
 // Rules from the file, with the stored look-and-fee settings on top where one is set.
-export function withRules(stored) {
-  const base = rulesAsConfig();
+export function withRules(stored, rules) {
+  const base = rulesAsConfig(rules);
   const s = stored && typeof stored === 'object' ? stored : {};
   for (const key of STORED_FIELDS) {
     const v = s[key];
@@ -132,15 +132,16 @@ export function filtersReady(config) {
   return config.sites.every((s) => config.fees[s] && config.fees[s].rate != null);
 }
 
-function present(doc) {
-  const cleaned = withRules(cleanConfig(doc || {}));
+function present(doc, rules) {
+  const cleaned = withRules(cleanConfig(doc || {}), rules);
   if (doc && doc.updated_at) cleaned.updated_at = String(doc.updated_at).slice(0, 40);
   return cleaned;
 }
 
-export async function readConfig() {
-  if (blobOn()) return present(await readLatest('scout-config/').catch(() => null));
-  try { return present(JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { return present(null); }
+// rules: the rules in force (lib/bankroll.js liveRules). Without them the starting bankroll is the cap.
+export async function readConfig(rules) {
+  if (blobOn()) return present(await readLatest('scout-config/').catch(() => null), rules);
+  try { return present(JSON.parse(fs.readFileSync(FILE, 'utf8')), rules); } catch (e) { return present(null, rules); }
 }
 
 // Rule fields in the body that differ from the rules file. They are not stored.
@@ -152,7 +153,7 @@ export function ignoredRuleFields(input) {
   return RULE_FIELDS.filter((key) => key !== 'gas_per_mile_note' && sent[key] != null && !same(sent[key], rules[key]));
 }
 
-export async function writeConfig(input) {
+export async function writeConfig(input, rules) {
   const cleaned = cleanConfig(input);
   const stored = { updated_at: new Date().toISOString() };
   for (const key of STORED_FIELDS) stored[key] = cleaned[key];
@@ -163,7 +164,7 @@ export async function writeConfig(input) {
   }
   const ignored = ignoredRuleFields(input);
   return {
-    ...present(stored),
+    ...present(stored, rules),
     ignored,
     ignored_note: ignored.length ? `These are Adam's rules and come from ${RULES_SOURCE}. They were not changed: ${ignored.join(', ')}.` : null,
   };

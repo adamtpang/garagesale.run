@@ -59,11 +59,19 @@ With nothing stored, the config is the rules file with its default sites, areas 
 GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://garagesale.run node scripts/seed-scout-config.mjs
 ```
 
+### The max buy follows the bankroll
+
+The most one flip can cost is the current bankroll: the starting bankroll, plus sales, minus buys and open approvals in the ledger. `GET /api/bankroll` is public and returns only that number (`bankroll`, `start`, `source`, `max_buy`). `source` is `ledger` when the ledger was read and `start` when it could not be read or has no entries. Buys, sales and profit stay behind the ledger key. `GET /api/scout/config`, `/api/surplus` and `/api/feed` all score against this number.
+
+The hourly rate and the drive cap are in the rules file and in the config the API returns. No deal is scored against them yet. That comes with drive times.
+
 | Field | Seed | Role |
 | --- | --- | --- |
-| `max_per_flip` | 100 | Skip asks above this |
-| `bankroll` | 100 | Cash the routine should stay inside |
-| `min_profit` | 100 | Minimum profit after fee, shipping, and gas |
+| `bankroll` | 100 | Starting bankroll. The API returns the current bankroll here |
+| `max_per_flip` | the current bankroll | Skip asks above this. There is no fixed cap |
+| `min_profit` | 100 | Minimum profit after fee, shipping, gas and drive time |
+| `hourly_rate` | 20 | Dollars an hour of driving costs. Set by Adam on Nov 17, 2026 |
+| `max_drive_minutes` | 45 | Longest round-trip drive for one deal. Set by Adam on Nov 17, 2026 |
 | `max_pickup_miles` | 15 | One-way miles |
 | `categories` | electronics, game consoles, tools, furniture, bikes, cameras | What to search |
 | `sites` | `fb`, `craigslist`, `ebay`, `offerup` | Allowed sources |

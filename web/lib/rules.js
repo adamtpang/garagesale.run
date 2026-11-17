@@ -18,17 +18,25 @@ export function activeRules(overrides) {
   const optional = o.optional && typeof o.optional === 'object' ? o.optional : {};
   const lotRoi = onOff(optional.lot_roi, RULES_CONFIG.optional.lot_roi);
   const surplusRadius = onOff(optional.surplus_radius, RULES_CONFIG.optional.surplus_radius);
-  const maxPerFlip = pick('max_per_flip');
-  const bankroll = pick('bankroll');
+  // "bankroll" as an override is the current bankroll, read from the ledger. Without one it is the starting number.
+  const bankrollStart = RULES_CONFIG.bankroll;
+  const bankroll = num(o.bankroll) != null && o.bankroll >= 0 ? o.bankroll : bankrollStart;
+  const fixedCap = num(o.max_per_flip) != null && o.max_per_flip >= 0 ? o.max_per_flip : RULES_CONFIG.max_per_flip;
+  const maxCost = fixedCap == null ? bankroll : Math.min(fixedCap, bankroll);
   const baseMiles = pick('max_pickup_miles');
   return {
     approved_on: RULES_CONFIG.approved_on,
     home: typeof o.home === 'string' && o.home.trim() ? o.home.trim() : RULES_CONFIG.home,
-    max_per_flip: maxPerFlip,
+    bankroll_start: bankrollStart,
     bankroll,
-    // The most one flip can cost is the smaller of the two.
-    max_cost: Math.min(maxPerFlip, bankroll),
+    // 'ledger' when the current bankroll was read from the ledger, 'start' when it is the starting number.
+    bankroll_source: o.bankroll_source === 'ledger' ? 'ledger' : 'start',
+    // The most one flip can cost: the current bankroll, or a fixed cap when one is set and smaller.
+    max_cost: maxCost,
+    max_per_flip: maxCost,
     min_profit: pick('min_profit'),
+    hourly_rate: pick('hourly_rate'),
+    max_drive_minutes: pick('max_drive_minutes'),
     max_pickup_miles: baseMiles,
     // The radius in force. The wider surplus radius counts only when it is switched on.
     pickup_miles: surplusRadius.enabled && num(surplusRadius.miles) != null ? surplusRadius.miles : baseMiles,
@@ -101,6 +109,10 @@ export function rulesAsConfig(rules = DEFAULT_RULES) {
   return {
     max_per_flip: rules.max_per_flip,
     bankroll: rules.bankroll,
+    bankroll_start: rules.bankroll_start,
+    bankroll_source: rules.bankroll_source,
+    hourly_rate: rules.hourly_rate,
+    max_drive_minutes: rules.max_drive_minutes,
     categories: [...rules.categories],
     min_profit: rules.min_profit,
     // The 15-mile rule for local listings. The wider surplus radius, when it is on, is for surplus lots only.

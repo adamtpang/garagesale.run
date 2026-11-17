@@ -94,14 +94,13 @@ export default function DealBoard() {
       </div>
     </div>
 
-    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground sm:grid-cols-3 lg:grid-cols-5" aria-label="Flip rules">
+    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground lg:grid-cols-4" aria-label="Flip rules">
       {[
-        ['Bankroll', summary.bankroll],
-        ['Max per item', summary.maxPerFlip],
+        [config && config.bankroll_source === 'ledger' && !sample ? 'Bankroll now, and max buy' : 'Starting bankroll, and max buy', summary.bankroll],
         ['Minimum net', summary.minProfit],
         ['Pickup', summary.maxMiles],
         ['Gas', summary.gas],
-      ].map(([k, v]) => <div key={k} className="bg-card px-3 py-2 last:col-span-2 sm:last:col-span-1"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-0.5 text-sm font-medium">{v}</div></div>)}
+      ].map(([k, v]) => <div key={k} className="bg-card px-3 py-2"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-0.5 text-sm font-medium">{v}</div></div>)}
     </div>}
     <details className="mb-4 text-sm">
       <summary className="cursor-pointer font-medium underline-offset-4 hover:underline">How the rules are applied</summary>
