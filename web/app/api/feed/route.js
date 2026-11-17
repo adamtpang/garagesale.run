@@ -7,6 +7,8 @@ import { drivesFor } from '../../../lib/driveStore.js';
 import { placeKey } from '../../../lib/drive.js';
 
 export const dynamic = 'force-dynamic';
+// Drive lookups can take a while the first time a place is seen. See BATCH_BUDGET_MS in lib/driveStore.js.
+export const maxDuration = 30;
 
 // The daily deals feed: the stored surplus scan and the stored listings, in one shape, best first.
 // Public and read-only. It scores everything again on each read, so today's rules always apply.
