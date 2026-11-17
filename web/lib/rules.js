@@ -94,3 +94,22 @@ export function checkLot(facts, rules = DEFAULT_RULES) {
     skip_reason: failed.length ? failed.map((c) => c.text).join(' ') : null,
   };
 }
+
+// The rules in the shape the scout config uses. The deals API scores every deal against this.
+export const RULE_FIELDS = ['max_per_flip', 'bankroll', 'min_profit', 'max_pickup_miles', 'categories', 'gas_per_mile', 'gas_per_mile_note'];
+export function rulesAsConfig(rules = DEFAULT_RULES) {
+  return {
+    max_per_flip: rules.max_per_flip,
+    bankroll: rules.bankroll,
+    categories: [...rules.categories],
+    min_profit: rules.min_profit,
+    // The 15-mile rule for local listings. The wider surplus radius, when it is on, is for surplus lots only.
+    max_pickup_miles: rules.max_pickup_miles,
+    sites: [...RULES_CONFIG.sites],
+    areas: RULES_CONFIG.areas.map((a) => ({ ...a })),
+    gas_per_mile: rules.gas_per_mile,
+    gas_per_mile_note: rules.gas_per_mile_note,
+    fees: Object.fromEntries(Object.entries(RULES_CONFIG.fees).map(([k, v]) => [k, { ...v }])),
+    run_hours: RULES_CONFIG.run_hours,
+  };
+}

@@ -1,8 +1,40 @@
-// Scout filters. Every value defaults to null until a worker PUTs a config.
+// Scout config. Adam's rule numbers (max cost, bankroll, minimum profit, radius, categories, gas rate)
+// always come from config/rules.js. A stored config can only change where the scout looks and what
+// each site charges: sites, areas, fees and run hours. Nothing sent to the API can change a rule.
 // Blob when BLOB_READ_WRITE_TOKEN is set, otherwise web/.data/scout-config.json.
 import fs from 'fs';
 import path from 'path';
 import { saveVersioned, readLatest } from './store.js';
+import { rulesAsConfig, RULE_FIELDS } from './rules.js';
+
+export const RULES_SOURCE = 'web/config/rules.js';
+const STORED_FIELDS = ['sites', 'areas', 'fees', 'run_hours'];
+
+// Rules from the file, with the stored look-and-fee settings on top where one is set.
+export function withRules(stored) {
+  const base = rulesAsConfig();
+  const s = stored && typeof stored === 'object' ? stored : {};
+  for (const key of STORED_FIELDS) {
+    const v = s[key];
+    if (v == null || (Array.isArray(v) && v.length === 0)) continue;
+    if (key === 'fees') {
+      // A stored fee changes that site only, and only the parts it sets. A stored rate with no flat fee
+      // keeps the default flat fee, so eBay's $0.40 per order is not lost when only the rate is sent.
+      for (const [site, fee] of Object.entries(v)) {
+        if (!fee || fee.rate == null) continue;
+        const was = base.fees[site] || {};
+        base.fees[site] = {
+          rate: fee.rate,
+          flat: fee.flat != null ? fee.flat : (was.flat ?? null),
+          plus_shipping: fee.plus_shipping === true || was.plus_shipping === true,
+          confirmed: fee.confirmed === true,
+          note: fee.note || was.note || null,
+        };
+      }
+    } else base[key] = v;
+  }
+  return { ...base, rules_source: RULES_SOURCE };
+}
 
 export const SOURCES = ['fb', 'craigslist', 'ebay', 'offerup'];
 const FILE = path.join(process.cwd(), '.data', 'scout-config.json');
@@ -101,23 +133,40 @@ export function filtersReady(config) {
 }
 
 function present(doc) {
-  const cleaned = cleanConfig(doc || {});
+  const cleaned = withRules(cleanConfig(doc || {}));
   if (doc && doc.updated_at) cleaned.updated_at = String(doc.updated_at).slice(0, 40);
   return cleaned;
 }
 
 export async function readConfig() {
   if (blobOn()) return present(await readLatest('scout-config/').catch(() => null));
-  try { return present(JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { return emptyConfig(); }
+  try { return present(JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { return present(null); }
+}
+
+// Rule fields in the body that differ from the rules file. They are not stored.
+export function ignoredRuleFields(input) {
+  const sent = cleanConfig(input);
+  const rules = rulesAsConfig();
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // The gas note is wording, not a rule, so a different note is not reported.
+  return RULE_FIELDS.filter((key) => key !== 'gas_per_mile_note' && sent[key] != null && !same(sent[key], rules[key]));
 }
 
 export async function writeConfig(input) {
-  const doc = present(cleanConfig(input));
-  doc.updated_at = new Date().toISOString();
-  if (blobOn()) await saveVersioned('scout-config/', doc);
+  const cleaned = cleanConfig(input);
+  const stored = { updated_at: new Date().toISOString() };
+  for (const key of STORED_FIELDS) stored[key] = cleaned[key];
+  if (blobOn()) await saveVersioned('scout-config/', stored);
   else {
     fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(doc, null, 1));
+    fs.writeFileSync(FILE, JSON.stringify(stored, null, 1));
   }
-  return doc;
+  const ignored = ignoredRuleFields(input);
+  return {
+    ...present(stored),
+    ignored,
+    ignored_note: ignored.length ? `These are Adam's rules and come from ${RULES_SOURCE}. They were not changed: ${ignored.join(', ')}.` : null,
+  };
 }
+
+export const scoutConfigFile = FILE;

@@ -34,7 +34,7 @@ Do not bid, buy, offer, message a seller, or publish a listing unless Adam says 
 
 ### Flip rules (Nov 3, 2026)
 
-These are the rules he set. The seed file is `web/config/scout-config.seed.json`. Production config is not this file. See State.
+These are the rules he set. They live in one file, `web/config/rules.js`. The surplus board, the deals API and the buy search all read it, and the API cannot change it. To change a rule, change that file in a PR that Adam merges.
 
 - Max $100 per flip.
 - $100 bankroll.
