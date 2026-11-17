@@ -6,6 +6,8 @@ import DealFeed from '@/components/DealFeed';
 export default function DealFeedScreen() {
   const [feed, setFeed] = useState(undefined);
   const [failed, setFailed] = useState(false);
+  // True when a later refresh failed but an earlier load is still on screen.
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const [now, setNow] = useState(null);
 
   useEffect(() => {
@@ -13,8 +15,9 @@ export default function DealFeedScreen() {
     const load = () => {
       fetch('/api/feed', { cache: 'no-store', signal: AbortSignal.timeout(20000) })
         .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-        .then((body) => { if (!dead) { setFeed(body); setFailed(false); } })
-        .catch(() => { if (!dead) { setFailed(true); setFeed(null); } });
+        .then((body) => { if (!dead) { setFeed(body); setFailed(false); setRefreshFailed(false); } })
+        // A failed refresh never removes deals that already loaded. Only a first load with nothing to show is an error page.
+        .catch(() => { if (!dead) setFeed((had) => { if (had) { setRefreshFailed(true); return had; } setFailed(true); return null; }); });
     };
     load();
     const timer = setInterval(load, 5 * 60000);
@@ -27,5 +30,5 @@ export default function DealFeedScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  return <DealFeed feed={feed} now={now} failed={failed} loading={feed === undefined && !failed} />;
+  return <DealFeed feed={feed} now={now} failed={failed} refreshFailed={refreshFailed} loading={feed === undefined && !failed} />;
 }

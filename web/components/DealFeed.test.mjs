@@ -72,7 +72,7 @@ test('a surplus card uses the max bid, counts the buyer fees, and never shows an
   const buyFees = Math.round((zebra.costs.all_in_at_max_bid - 79 - zebra.costs.gas) * 100) / 100;
   assert.equal(cost.fees.value, `$${(buyFees + zebra.costs.fee + zebra.costs.shipping).toFixed(2)}`);
   assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet']);
-  assert.match(cost.gas.note, /About 32 mi round trip/);
+  assert.equal(cost.gas.note, 'About 32 mi round trip, from the stated miles');
   assert.deepEqual(card.cases.map((c) => c.value), ['$0.40', '$152.53', '$152.53']);
   assert.match(card.reason, /past the 15-mile pickup limit/);
   assert.match(card.risk, /./);
@@ -137,4 +137,55 @@ test('the page shows one card per deal with a label, costs, cases, links and no 
   const empty = renderToStaticMarkup(e(DealFeed, { feed: { items: [], stale: [], rules: feed.rules }, now: NOW, failed: false, loading: false }));
   assert.match(empty, /No deals in the feed yet/);
   assert.match(renderToStaticMarkup(e(DealFeed, { feed: null, now: NOW, failed: true, loading: false })), /Could not load the deals feed/);
+});
+
+test('the gas note shows the miles the gas cost was worked out on', () => {
+  const feed = feedWith([camera({ minutes_round_trip: 30, miles_round_trip: 22 })]);
+  const item = feed.items.find((it) => it.kind === 'listing');
+  // The listing's gas comes from its stated 8 miles each way, not from the 22 routed miles.
+  assert.deepEqual([item.costs.gas, item.costs.gas_miles, item.costs.gas_miles_basis], [2.88, 16, 'stated miles']);
+  const gas = cardFor(item, NOW).costs.find((c) => c.key === 'gas');
+  assert.equal(gas.note, '16 mi round trip, from the stated miles');
+  assert.equal(Math.round(16 * 0.18 * 100) / 100, item.costs.gas);
+  // A surplus lot with a routed drive pays gas on the routed miles, and the note says so.
+  const routed = buildDailyFeed({
+    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => ({ ...l, drive: { minutes_round_trip: 40, miles_round_trip: 30.4, source: 'openrouteservice' } })) }, NOW), source: 'seed', updated_at: null },
+    deals: null, config: confirmed(), nowMs: NOW,
+  }).items.find((it) => it.id === 'ps-4123518');
+  const g = cardFor(routed, NOW).costs.find((c) => c.key === 'gas');
+  assert.deepEqual([routed.costs.gas_miles, g.value, g.note], [30.4, '$5.47', '30.4 mi round trip, routed']);
+  assert.equal(feed.items.every((it) => !it.unknown.includes('costs.gas_miles')), true);
+});
+
+test('once the bid is over the max bid, the card shows profit at the bid, not at a price that is gone', () => {
+  const zebra = feedWith([]).items.find((it) => it.id === 'ps-4123518');
+  // The same lot with the bid pushed to $95, past the $79 max bid. The feed's own numbers for that bid are used.
+  const bidUp = buildDailyFeed({
+    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 95 } : l)) }, NOW), source: 'seed', updated_at: null },
+    deals: null, config: confirmed(), nowMs: NOW,
+  }).items.find((it) => it.id === 'ps-4123518');
+  assert.equal(bidUp.max_bid, zebra.max_bid);
+  const card = cardFor(bidUp, NOW);
+  assert.equal(card.profit, bidUp.profit.middle);
+  assert.ok(card.profit < cardFor(zebra, NOW).profit);
+  assert.match(card.basis, /At today's \$95\.00 bid, which is already over your \$79\.00 max bid\./);
+  const price = card.costs.find((c) => c.key === 'price');
+  assert.deepEqual([price.label, price.value, price.note], ['Current bid', '$95.00', 'Over your $79.00 max bid']);
+  assert.deepEqual(card.cases.map((c) => c.value), ['low', 'middle', 'high'].map((n) => `${bidUp.profit[n] < 0 ? '-' : ''}$${Math.abs(bidUp.profit[n]).toFixed(2)}`));
+  // A bid exactly at the max bid can still win there.
+  const atMax = buildDailyFeed({
+    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 79 } : l)) }, NOW), source: 'seed', updated_at: null },
+    deals: null, config: confirmed(), nowMs: NOW,
+  }).items.find((it) => it.id === 'ps-4123518');
+  assert.match(cardFor(atMax, NOW).basis, /If you win at your \$79\.00 max bid/);
+});
+
+test('a failed refresh keeps the deals on screen and says so', () => {
+  const feed = feedWith([]);
+  const html = renderToStaticMarkup(e(DealFeed, { feed, now: NOW, failed: false, refreshFailed: true, loading: false }));
+  assert.match(html, /data-field="refresh-failed"/);
+  assert.match(html, /The last refresh failed, so these are the deals as of/);
+  assert.equal((html.match(/data-card=/g) || []).length, feed.items.length);
+  assert.equal(html.includes('Could not load the deals feed'), false);
+  assert.equal(renderToStaticMarkup(e(DealFeed, { feed, now: NOW, failed: false, refreshFailed: false, loading: false })).includes('refresh-failed'), false);
 });

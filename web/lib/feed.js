@@ -17,7 +17,7 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
 }
 
@@ -55,6 +55,9 @@ export function fromLot(lot) {
       tax: lot.tax_amount,
       tax_basis: lot.tax_basis,
       gas: lot.haul_cost,
+      // The round-trip miles the gas cost was worked out on: routed miles when there are any, else twice the stated miles.
+      gas_miles: lot.round_trip_miles,
+      gas_miles_basis: lot.haul_basis,
       // Adam's drive time at the hourly rate. It comes off profit and is not part of all_in.
       time: lot.time_cost,
       fee: lot.fee_amount,
@@ -163,7 +166,8 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     price: { kind: 'ask', current: v.ask, opening: null, bid_count: null, closes_at: null, closes_text: null },
     costs: {
       premium: 0, premium_pct: 0, tax: 0, tax_basis: 'none on a private sale',
-      gas: v.gas, time: drive.time_cost, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
+      gas: v.gas, gas_miles: v.gas != null && v.pickup && v.pickup.known ? round2(v.pickup.miles * 2) : null, gas_miles_basis: v.gas != null ? 'stated miles' : 'unknown',
+      time: drive.time_cost, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
       shipping: v.shipping, shipping_basis: v.shipping == null ? 'unknown' : 'from the sold comps',
       all_in: allIn, all_in_basis: allIn == null ? 'unknown' : 'ask plus gas', all_in_at_max_bid: null,
     },

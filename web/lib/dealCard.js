@@ -28,7 +28,10 @@ function sum(parts) {
 
 export function cardFor(item, nowMs = null) {
   const lot = item.kind === 'surplus';
-  const atMax = !!(lot && num(item.max_bid) != null && item.profit.at_max_bid);
+  // Profit at the max bid, but only while the lot can still be won there. Once the bid has passed the
+  // max bid, the card shows today's bid and says the max is behind it.
+  const overbid = lot && num(item.max_bid) != null && num(item.price.current) != null && item.price.current > item.max_bid;
+  const atMax = !!(lot && num(item.max_bid) != null && item.profit.at_max_bid && !overbid);
   const cases = atMax ? item.profit.at_max_bid : { low: item.profit.low, middle: item.profit.middle, high: item.profit.high };
   const confirmed = !atMax && num(item.profit.confirmed) != null;
   const profit = confirmed ? item.profit.confirmed : num(cases.middle);
@@ -38,6 +41,7 @@ export function cardFor(item, nowMs = null) {
   const headline = profit == null ? 'Profit unknown' : (profit >= 0 ? 'You make about' : 'You lose about');
   let where;
   if (atMax) where = `If you win at your ${money(item.max_bid)} max bid.`;
+  else if (overbid) where = `At today's ${money(pay)} bid, which is already over your ${money(item.max_bid)} max bid.`;
   else if (lot) where = num(pay) != null ? `At today's ${money(pay)} bid.` : 'No bid yet.';
   else where = num(pay) != null ? `At the ${money(pay)} asking price.` : 'No asking price.';
   const basis = [
@@ -57,14 +61,13 @@ export function cardFor(item, nowMs = null) {
     `shipping ${money(c.shipping)}`,
   ].filter(Boolean).join(', ');
   const mins = item.location.drive_minutes_round_trip;
-  const miles = item.location.drive_miles_round_trip;
-  const statedMiles = num(item.location.miles) != null ? round2(item.location.miles * 2) : null;
   let priceNote = null;
   if (atMax && num(item.price.current) != null) priceNote = `Bid now ${money(item.price.current)}`;
+  else if (overbid) priceNote = `Over your ${money(item.max_bid)} max bid`;
   else if (lot && num(pay) == null && num(item.price.opening) != null) priceNote = `Opens at ${money(item.price.opening)}`;
+  // The miles the gas dollars were worked out on, so the two always describe the same trip.
   let milesNote = 'Miles unknown';
-  if (num(miles) != null) milesNote = `${miles} mi round trip`;
-  else if (statedMiles != null) milesNote = `About ${statedMiles} mi round trip`;
+  if (num(c.gas_miles) != null) milesNote = c.gas_miles_basis === 'routed' ? `${c.gas_miles} mi round trip, routed` : `${item.location.miles_approximate ? 'About ' : ''}${c.gas_miles} mi round trip, from the stated miles`;
   const costs = [
     { key: 'price', label: atMax ? 'Your max bid' : (lot ? 'Current bid' : 'Asking price'), value: money(pay), note: priceNote },
     { key: 'fees', label: 'Fees', value: money(fees), note: `${feeParts}.` },
