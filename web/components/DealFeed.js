@@ -73,7 +73,7 @@ function dealCard(card) {
         card.comps_none ? e('span', { className: 'text-muted-foreground' }, card.comps_none) : null))));
 }
 
-export default function DealFeed({ feed, now, failed, loading }) {
+export default function DealFeed({ feed, now, failed, refreshFailed, loading }) {
   const [show, setShow] = useState('all');
   const items = (feed && feed.items) || [];
   const cards = sortCards(items.map((it) => cardFor(it, now)));
@@ -98,6 +98,8 @@ export default function DealFeed({ feed, now, failed, loading }) {
       e('button', { type: 'button', className: 'mt-3 underline', onClick: () => window.location.reload() }, 'Try again')) : null,
 
     feed ? e('div', null,
+      refreshFailed ? e('p', { role: 'status', className: 'mb-3 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm', 'data-field': 'refresh-failed' },
+        `The last refresh failed, so these are the deals as of ${feed.generated_at ? new Date(feed.generated_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'the last load'}. It will try again.`) : null,
       r ? e('p', { className: 'mb-3 text-sm', 'data-field': 'rules-line' },
         e('b', null, 'Your rules: '),
         `max buy $${r.max_cost} (${r.bankroll_source === 'ledger' ? 'bankroll now' : 'starting bankroll'}), at least $${r.min_profit} profit, within ${r.pickup_miles} miles and ${r.max_drive_minutes} minutes round trip of ${String(r.home).split(',')[0]}, time at $${r.hourly_rate} an hour.`) : null,

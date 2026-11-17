@@ -3,6 +3,8 @@ import { readSurplus, writeSurplus } from '../../../lib/surplusStore.js';
 import { liveRules } from '../../../lib/bankroll.js';
 
 export const dynamic = 'force-dynamic';
+// Drive lookups can take a while the first time a place is seen. See BATCH_BUDGET_MS in lib/driveStore.js.
+export const maxDuration = 30;
 
 export async function GET() {
   try {
