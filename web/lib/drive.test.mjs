@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { activeRules } from './rules.js';
 import { cleanDrive, driveCosts, driveText, geocode, lookUpDrive, placeKey, routeRoundTrip, HOME_POINT, MIN_GEOCODE_CONFIDENCE } from './drive.js';
-import { drivesFor } from './driveStore.js';
+import { drivesFor, BATCH_BUDGET_MS } from './driveStore.js';
 import { assessLot, BUY_STATUS } from './surplus.js';
 import { withDrives } from './surplusStore.js';
 import { fromDeal } from './feed.js';
@@ -153,7 +153,8 @@ test('time cost lowers the max bid', () => {
 });
 
 test('the store adds a drive to lots that have a place and keeps a posted one', async () => {
-  const doc = { lots: [lot({ id: 'a' }), lot({ id: 'b', drive: { minutes_round_trip: 12, miles_round_trip: 8 } }), lot({ id: 'c', pickup_address: null, city: null })] };
+  // Lot c has a city and no pickup address. The middle of a city is not a pickup point, so it is not routed.
+  const doc = { lots: [lot({ id: 'a' }), lot({ id: 'b', drive: { minutes_round_trip: 12, miles_round_trip: 8 } }), lot({ id: 'c', pickup_address: null, city: 'Schertz, TX' })] };
   const seen = [];
   const out = await withDrives(doc, async (places) => { seen.push(...places); return new Map(places.map((p) => [placeKey(p), { minutes_round_trip: 30, miles_round_trip: 24, source: 'openrouteservice' }])); });
   assert.deepEqual(seen, [{ address: '1 Main St, Schertz, TX' }]);
@@ -178,9 +179,27 @@ test('a listing takes drive time off profit, and is not a buy when the drive is 
   assert.deepEqual([timed.costs.time, timed.location.drive_minutes_round_trip], [10, 30]);
   const unknown = fromDeal(deal, config);
   assert.equal(unknown.decision.value, 'watch');
+  // The max offer was worked out without time, and it says so. With a known drive it does not.
+  assert.match(unknown.max_bid_note, /Drive time is unknown and is left out, so the real max offer is lower/);
+  assert.equal(/left out/.test(timed.max_bid_note), false);
   assert.ok(unknown.unknown.includes('costs.time'));
   assert.match(unknown.decision.reasons.join(' '), /drive time is unknown/);
   const far = fromDeal({ ...deal, drive: { minutes_round_trip: 50, miles_round_trip: 16 } }, config);
   assert.equal(far.decision.value, 'skip');
   assert.match(far.decision.reasons.join(' '), /50-minute round trip is over the 45-minute drive cap/);
+});
+
+test('a slow batch stops starting lookups, keeps what it found, and saves it', async () => {
+  let saved = null;
+  const store = { load: async () => ({}), save: async (e) => { saved = e; } };
+  const ors = fakeOrs();
+  // A clock that jumps past the budget after the first lookup has started.
+  let t = 0;
+  const clock = () => { const now = t; t += BATCH_BUDGET_MS; return now; };
+  const places = [{ lat: 29.5, lng: -98.2 }, { lat: 29.6, lng: -98.3 }, { lat: 29.7, lng: -98.4 }];
+  const out = await drivesFor(places, { deps: ors.deps, store, clock });
+  assert.equal(ors.calls.length, 1);
+  assert.equal([...out.values()].filter(Boolean).length, 1);
+  assert.equal(out.size, 3);
+  assert.equal(Object.keys(saved).length, 1);
 });

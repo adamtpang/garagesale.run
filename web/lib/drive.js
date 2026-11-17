@@ -11,6 +11,8 @@ const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const METERS_PER_MILE = 1609.344;
 // A geocoder match below this is not trusted, and the drive stays unknown.
 export const MIN_GEOCODE_CONFIDENCE = 0.8;
+// One call to the routing service may take this long before it is dropped.
+export const CALL_TIMEOUT_MS = 5000;
 
 export const HOME_POINT = Object.freeze({ lat: RULES_CONFIG.areas[0].lat, lng: RULES_CONFIG.areas[0].lng });
 export const routingKey = () => (process.env.ORS_API_KEY || '').trim() || null;
@@ -58,7 +60,7 @@ export function driveText(drive) {
 }
 
 async function call(url, init, deps) {
-  const res = await deps.fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: deps.key }, signal: AbortSignal.timeout(8000) });
+  const res = await deps.fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: deps.key }, signal: AbortSignal.timeout(CALL_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`routing service answered ${res.status}`);
   return res.json();
 }

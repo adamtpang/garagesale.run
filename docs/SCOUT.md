@@ -80,7 +80,7 @@ To switch it on, Adam does this once. No agent sees the key.
 2. In Vercel, project `grokbothackathon`, add the environment variable `ORS_API_KEY` for Production.
 3. Redeploy.
 
-Until that is done every drive time is unknown. Each place is looked up once and kept under `drive-cache/` in Blob storage, and one page load makes at most 8 new lookups. A lot is found by its pickup address. A listing is found by its `lat` and `lng`, so a listing with no coordinates has no drive time. The bot may also post its own `drive: { minutes_round_trip, miles_round_trip }` on a lot, and that is used as posted.
+Until that is done every drive time is unknown. Each place is looked up once and kept under `drive-cache/` in Blob storage, and one page load makes at most 8 new lookups. A lot is found by its pickup address. A lot with only a city has no drive time, because the middle of a city is not the pickup point. A batch of lookups stops starting new ones after 12 seconds and saves what it found. A listing is found by its `lat` and `lng`, so a listing with no coordinates has no drive time. The bot may also post its own `drive: { minutes_round_trip, miles_round_trip }` on a lot, and that is used as posted.
 
 Not yet tested against the live service: the code follows the official client's request format, but no real key was available to try it.
 

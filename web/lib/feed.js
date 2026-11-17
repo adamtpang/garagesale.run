@@ -178,7 +178,11 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     max_bid: maxOffer,
     max_bid_note: maxOffer == null
       ? 'No offer works, or a cost is unknown.'
-      : `The most to offer: the cost stays inside ${moneyText(rules.max_cost)} and the middle case still makes ${moneyText(rules.min_profit)}. The offer is Adam's to make. Nothing here contacts a seller.`,
+      : [
+        `The most to offer: the cost stays inside ${moneyText(rules.max_cost)} and the middle case still makes ${moneyText(rules.min_profit)}.`,
+        drive.time_cost == null ? 'Drive time is unknown and is left out, so the real max offer is lower.' : null,
+        'The offer is Adam\'s to make. Nothing here contacts a seller.',
+      ].filter(Boolean).join(' '),
     risks: [v.riskNote, ...v.flags].filter(Boolean),
     decision: { value: decision, reasons, needs_adam_yes: true },
   };

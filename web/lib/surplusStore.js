@@ -32,11 +32,13 @@ function stamp(view, source, updatedAt) {
   return { ...view, source, updated_at: updatedAt || null };
 }
 
-// Adds the round-trip drive to each lot that has a pickup place and no drive of its own.
+// Adds the round-trip drive to each lot that has a pickup address and no drive of its own.
+// A lot with only a city is not routed: the middle of a city is not the pickup point, and a drive time
+// to the wrong point could pass the drive cap. Its drive stays unknown.
 // A lookup that fails leaves the drive unknown. It never stops the board from loading.
 export async function withDrives(doc, lookup = drivesFor) {
   if (!doc || !Array.isArray(doc.lots)) return doc;
-  const placeOf = (lot) => (lot && !lot.drive && (lot.pickup_address || lot.city) ? { address: lot.pickup_address || lot.city } : null);
+  const placeOf = (lot) => (lot && !lot.drive && lot.pickup_address ? { address: lot.pickup_address } : null);
   const places = doc.lots.map(placeOf).filter(Boolean);
   if (!places.length) return doc;
   let found;
