@@ -172,6 +172,7 @@ function lotCard(lot) {
   const low = lot.cases && lot.cases.find((c) => c.name === 'low');
   const high = lot.cases && lot.cases.find((c) => c.name === 'high');
   const atMax = lot.max_bid != null;
+  const maxBidUnknown = !atMax && !/^No bid works/.test(lot.max_bid_note || '');
   const range = (k) => {
     const lo = low ? low[k] : 'unknown';
     const hi = high ? high[k] : 'unknown';
@@ -196,7 +197,8 @@ function lotCard(lot) {
     lot.current_bid == null && lot.bid_count === 0
       ? keyNumber('Current bid', 'No bids yet', lot.opening_bid_text ? `Opens at ${lot.opening_bid_text}` : 'Opening bid unknown')
       : keyNumber('Current bid', e('span', { className: 'tabular-nums' }, lot.current_bid_text), lot.bid_count_text === 'unknown' ? 'Bid count unknown' : `${lot.bid_count_text} bid${lot.bid_count_text === '1' ? '' : 's'}`),
-    keyNumber('Max bid', e('span', { className: atMax ? 'font-marker text-2xl font-normal text-price' : 'text-muted-foreground' }, lot.max_bid_text), atMax ? `All-in ${lot.max_bid_all_in_text}` : 'No bid fits the rules'),
+    // No max bid has two causes: it cannot be worked out yet, or no bid works. The strip says which, with the reason.
+    keyNumber('Max bid', e('span', { className: atMax ? 'font-marker text-2xl font-normal text-price' : 'text-muted-foreground', 'data-field': 'key-max-bid' }, atMax ? lot.max_bid_text : (maxBidUnknown ? 'unknown' : 'none')), atMax ? `All-in ${lot.max_bid_all_in_text}` : (lot.max_bid_note || 'Max bid is unknown.')),
     keyNumber(atMax ? 'Profit at max bid' : 'Profit at this bid', e('span', { className: 'tabular-nums' }, range(atMax ? 'profit_at_max_bid_text' : 'profit_at_current_bid_text')), 'Low to high case, estimate'),
     keyNumber('Closes in', lot.countdown || lot.close_text, lot.countdown ? lot.close_text : null)),
 
