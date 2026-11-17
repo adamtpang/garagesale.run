@@ -52,9 +52,21 @@ function side(name, children) {
   children);
 }
 
+// A long comp list folds, with the counts on the fold so nothing is hidden without a number.
 function comps(lot) {
   if (!lot.comps.length) return e('p', { className: 'text-xs text-muted-foreground' }, 'No comps in the scan.');
-  return e('ul', { className: 'mt-2' }, lot.comps.map((c, i) => e('li', {
+  if (lot.comps.length <= 8) return compList(lot);
+  const sold = lot.comps.filter((c) => c.type === 'sold').length;
+  const kinds = lot.comps_working_sales || lot.comps_parts_sales
+    ? ` (${lot.comps_working_sales} working, ${lot.comps_parts_sales} for parts)` : '';
+  return e('details', { className: 'rounded-xl border border-border bg-white p-3', 'data-field': 'comps-fold' },
+    e('summary', { className: 'cursor-pointer text-sm font-semibold' }, `${sold} sold comps${kinds}. Show all ${lot.comps.length}.`),
+    lot.comps_note ? e('p', { className: 'mt-1 text-xs text-foreground' }, lot.comps_note) : null,
+    compList(lot));
+}
+
+function compList(lot) {
+  return e('ul', { className: 'mt-2 list-none p-0' }, lot.comps.map((c, i) => e('li', {
     key: `${c.title || 'comp'}-${i}`,
     className: 'border-t border-border py-2',
   },
@@ -66,6 +78,8 @@ function comps(lot) {
         c.marketplace,
         c.confidence === 'lower' ? 'Lower confidence' : 'Used for resale',
         c.type === 'sold' ? (c.lot_size ? `Lot of ${c.lot_size}${c.lot_price != null ? ` for $${c.lot_price.toFixed(2)}` : ''}` : 'Single unit') : null,
+        c.type === 'sold' && c.condition === 'working' ? 'Working' : null,
+        c.type === 'sold' && c.condition === 'parts' ? 'For parts' : null,
         c.type === 'sold' && c.battery === 'none' ? 'No battery' : null,
         c.type === 'sold' && c.battery === 'included' ? 'Battery included' : null,
         c.type === 'sold' && c.sold_on ? `Sold ${c.sold_on}` : null,
@@ -97,7 +111,7 @@ function casesBlock(lot) {
         e('span', { className: 'text-muted-foreground' }, atMax ? `Profit at the ${lot.max_bid_text} max bid` : 'Profit at the max bid'),
         e('span', { className: 'font-semibold tabular-nums', 'data-field': `profit-max-${c.name}` }, atMax ? c.profit_at_max_bid_text : 'no max bid')),
       e('div', { className: 'mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted-foreground' },
-        e('span', null, `At today's ${lot.current_bid_text} bid`),
+        e('span', null, lot.current_bid == null ? 'No bid on the lot yet' : `At today's ${lot.current_bid_text} bid`),
         e('span', { className: 'tabular-nums' }, c.profit_at_current_bid_text)),
       e('p', { className: 'mt-1 text-xs leading-5 text-muted-foreground' }, c.basis)))),
     lot.case_caveats.length ? e('p', { className: 'mt-2 text-xs leading-5 text-foreground', 'data-field': 'case-caveats' }, lot.case_caveats.join(' ')) : null,
@@ -155,6 +169,7 @@ function lotCard(lot) {
       e('p', { className: 'mt-1 text-xs text-muted-foreground' }, [lot.seller, lot.city, lot.auction_id ? `Auction ${lot.auction_id}` : null].filter(Boolean).join(' · '))),
     e('span', { className: `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${TONE[lot.status] || TONE.watch}` }, lot.status)),
   lot.status_reason ? e('p', { className: 'mb-3 text-sm font-medium', 'data-field': 'status-reason' }, lot.status_reason) : null,
+  lot.lock_flag ? e('p', { className: 'mb-3 rounded-xl border border-border bg-amber-200 px-3 py-2 text-sm font-medium text-amber-950', 'data-field': 'lock-flag' }, lot.lock_flag) : null,
   ruleChecks(lot),
   e('div', { 'data-sides': 'buy-sell', className: 'grid gap-3 md:grid-cols-2' }, buy, sell),
   lot.risks.length ? e('p', { className: 'mt-3 text-xs text-amber-950' }, `Risk: ${lot.risks.join(' ')}`) : null,

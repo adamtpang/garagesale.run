@@ -49,6 +49,11 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /No battery/);
   assert.match(html, /Battery included/);
   assert.match(html, /Single unit/);
+  // Phone lots fold their 35 comps behind a count, and carry the fleet lock flag.
+  assert.match(html, /data-field="comps-fold"/);
+  assert.match(html, /35 sold comps \(24 working, 11 for parts\)\. Show all 35\./);
+  assert.match(html, /data-field="lock-flag"/);
+  assert.match(html, /For parts/);
   assert.match(html, /Estimate, not confirmed/);
   assert.match(html, /Minimum \$1\.00 per auction/);
   const noBid = renderToStaticMarkup(e(SurplusBoard, {
