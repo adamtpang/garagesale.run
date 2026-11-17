@@ -39,6 +39,7 @@ export function rulesView(rules = DEFAULT_RULES) {
 export const RULES = rulesView();
 
 const money = parseMoney;
+const BATTERY_STATES = ['included', 'none', 'unknown'];
 
 function str(v, n) {
   if (v === null || v === undefined) return null;
@@ -132,7 +133,17 @@ function cleanComp(c) {
   const note = str(c.note, 400);
   const marketplace = str(c.marketplace, 80);
   if (price == null && !url && !title) return null;
-  return { type, url, price, title, note, marketplace };
+  // price is always per unit. A lot sale also records how many units sold together and for how much.
+  const lotSize = intOrNull(c.lot_size);
+  const lotPrice = money(c.lot_price);
+  const battery = BATTERY_STATES.includes(c.battery) ? c.battery : 'unknown';
+  return {
+    type, url, price, title, note, marketplace,
+    lot_size: lotSize != null && lotSize > 1 ? lotSize : null,
+    lot_price: lotSize != null && lotSize > 1 && lotPrice != null && lotPrice >= 0 ? lotPrice : null,
+    battery,
+    sold_on: str(c.sold_on, 40),
+  };
 }
 
 export function cleanLot(raw, rules = DEFAULT_RULES) {
@@ -198,6 +209,11 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     shipping_basis: shipping != null && shipping >= 0 ? shippingBasis : 'unknown',
     shipping_note: str(raw.shipping_note, 240),
     resale_note: str(raw.resale_note, 300),
+    // Whether the units in this lot come with batteries. "none" means resale is priced from battery-less sales.
+    batteries: BATTERY_STATES.includes(raw.batteries) ? raw.batteries : 'unknown',
+    // What one battery costs, only when a source is cited. Without it, a sale that included a battery cannot be adjusted.
+    battery_cost: (() => { const n = money(raw.battery_cost); return n != null && n >= 0 ? n : null; })(),
+    battery_cost_note: str(raw.battery_cost_note, 240),
     status,
     risks,
     scan_notes: str(raw.scan_notes, 500),
@@ -242,19 +258,71 @@ function presentComp(c) {
   };
 }
 
+// Low, middle and high resale per unit, from cited sold comps only.
+// The lot is sold as one lot (one box, one order fee), so lot sales set the middle and high cases
+// when there are any. Single-unit sales are kept apart and can only pull the low case down.
+// When the lot has no batteries, only battery-less sales set the middle and high cases.
+// A sale that included a battery is lowered by the battery cost when that cost is cited.
+// When it is not, that sale still counts toward the low case, unadjusted.
+export function resaleCases(lot, soldCited) {
+  if (!soldCited.length) return null;
+  const noBatteries = lot.batteries === 'none';
+  const adjusted = soldCited.map((c) => {
+    if (noBatteries && c.battery === 'included' && lot.battery_cost != null) {
+      return { ...c, unit: round2(Math.max(0, c.price - lot.battery_cost)), fit: 'adjusted' };
+    }
+    if (noBatteries && c.battery !== 'none') return { ...c, unit: c.price, fit: c.battery === 'included' ? 'has battery' : 'battery unknown' };
+    return { ...c, unit: c.price, fit: 'match' };
+  });
+  const matched = adjusted.filter((c) => c.fit === 'match' || c.fit === 'adjusted');
+  const pool = matched.length ? matched : adjusted;
+  const lotSales = pool.filter((c) => c.lot_size != null);
+  const core = lotSales.length ? lotSales : pool;
+  const coreUnits = core.map((c) => c.unit);
+  const lowUnit = Math.min(...adjusted.map((c) => c.unit));
+  const lowComp = adjusted.find((c) => c.unit === lowUnit);
+  const coreText = [
+    lotSales.length ? `${lotSales.length} lot sale${lotSales.length === 1 ? '' : 's'}` : `${core.length} sold comp${core.length === 1 ? '' : 's'}`,
+    noBatteries && matched.length ? 'without batteries' : null,
+  ].filter(Boolean).join(' ');
+  const caveats = [];
+  if (noBatteries && !matched.length) caveats.push('No cited sale is known to be battery-less, so these cases use sales whose battery state is unknown or included. They are likely too high.');
+  if (!lotSales.length && lot.quantity != null && lot.quantity > 1) caveats.push('No cited sale was a lot, so the cases use single-unit prices. A lot usually sells for less a unit.');
+  const biggest = lotSales.reduce((m, c) => Math.max(m, c.lot_size), 0);
+  if (lotSales.length && lot.quantity != null && biggest && lot.quantity > biggest) caveats.push(`The biggest cited lot sale was ${biggest} units. This lot is ${lot.quantity}.`);
+  return {
+    cases: [
+      { name: 'low', unit: round2(lowUnit), basis: `Lowest cited sale of any kind${lowComp && lowComp.fit !== 'match' ? ` (${lowComp.fit})` : ''}.` },
+      { name: 'middle', unit: median(coreUnits), basis: `Median of ${coreText}.` },
+      { name: 'high', unit: round2(Math.max(...coreUnits)), basis: `Highest of ${coreText}.` },
+    ],
+    used: core.length,
+    lot_sales: adjusted.filter((c) => c.lot_size != null).length,
+    single_sales: adjusted.filter((c) => c.lot_size == null).length,
+    caveats,
+  };
+}
+
 export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const lot = cleanLot(raw, rules);
   if (!lot) return null;
   const bid = lot.current_bid;
   const premiumPct = lot.premium_pct;
-  const premium = bid != null && premiumPct != null ? round2(Math.max(bid * (premiumPct / 100), lot.premium_min || 0)) : null;
-  const taxBase = bid != null && premium != null ? round2(bid + premium) : null;
-  const tax = taxBase != null && lot.tax_rate != null && lot.tax_basis !== 'unknown'
-    ? round2(taxBase * lot.tax_rate) : null;
   const roundTrip = lot.miles_from_home != null ? round2(lot.miles_from_home * 2) : null;
   const haul = roundTrip != null ? round2(roundTrip * rules.gas_per_mile) : null;
-  const allInParts = bid != null && premium != null && tax != null && haul != null;
-  const allIn = allInParts ? round2(bid + premium + tax + haul) : null;
+  const taxKnown = lot.tax_rate != null && lot.tax_basis !== 'unknown';
+  // What the lot costs to win and bring home at a given bid. Null while any part is unknown.
+  const costAt = (b) => {
+    if (b == null || premiumPct == null) return null;
+    const prem = round2(Math.max(b * (premiumPct / 100), lot.premium_min || 0));
+    const tx = taxKnown ? round2(round2(b + prem) * lot.tax_rate) : null;
+    return { premium: prem, tax: tx, all_in: tx != null && haul != null ? round2(b + prem + tx + haul) : null };
+  };
+  const nowCost = costAt(bid);
+  const premium = nowCost ? nowCost.premium : null;
+  const tax = nowCost ? nowCost.tax : null;
+  const allInParts = nowCost != null && nowCost.all_in != null;
+  const allIn = allInParts ? nowCost.all_in : null;
   const allInBasis = !allInParts ? 'unknown'
     : (lot.tax_basis === 'stated' && lot.miles_approximate === false ? 'stated' : 'assumption');
 
@@ -262,7 +330,9 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const sold = comps.filter((c) => c.type === 'sold' && c.price != null);
   const soldCited = sold.filter((c) => c.url);
   const asking = comps.filter((c) => c.type === 'asking');
-  const unitResale = sold.length > 0 && soldCited.length === sold.length ? median(soldCited.map((c) => c.price)) : null;
+  // One sold comp without a URL blocks resale for the whole lot.
+  const resale = sold.length > 0 && soldCited.length === sold.length ? resaleCases(lot, soldCited) : null;
+  const unitResale = resale ? resale.cases[1].unit : null;
   const quantity = lot.quantity;
   const gross = unitResale != null && quantity != null ? round2(unitResale * quantity) : null;
   const feeKnown = lot.fee_rate != null && (lot.fee_basis === 'stated' || lot.fee_basis === 'assumption');
@@ -282,6 +352,53 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     lot.shipping_basis !== 'stated' ? 'shipping' : null,
   ].filter(Boolean);
   const profitConfidence = net != null ? 'confirmed' : 'unknown';
+
+  // What is left from a sale at one unit price, after the platform fee and shipping. Null while any part is unknown.
+  const proceedsAt = (unit) => {
+    if (unit == null || quantity == null || !feeKnown || ship == null) return null;
+    const g = round2(unit * quantity);
+    const f = round2(g * lot.fee_rate + (lot.fee_fixed || 0));
+    return { gross: g, fee: f, proceeds: round2(g - f - ship) };
+  };
+  const caseMoney = resale ? resale.cases.map((c) => ({ ...c, ...(proceedsAt(c.unit) || { gross: null, fee: null, proceeds: null }) })) : [];
+  const lowCase = caseMoney[0] || null;
+  const midCase = caseMoney[1] || null;
+  const highCase = caseMoney[2] || null;
+  // Max bid: the highest whole-dollar bid where the all-in cost stays inside the max cost,
+  // the middle case still makes the minimum profit, and the low case does not lose money.
+  let maxBid = null;
+  let maxBidReason = null;
+  if (!midCase || midCase.proceeds == null) maxBidReason = 'Max bid is unknown until resale, the platform fee and shipping are known.';
+  else if (costAt(1) == null || costAt(1).all_in == null) maxBidReason = 'Max bid is unknown until the buyer\'s premium, tax and haul are known.';
+  else {
+    for (let b = Math.floor(rules.max_cost); b >= 1; b--) {
+      const cost = costAt(b).all_in;
+      if (cost <= rules.max_cost && midCase.proceeds - cost >= rules.min_profit && lowCase.proceeds - cost >= 0) { maxBid = b; break; }
+    }
+    if (maxBid == null) {
+      const floorCost = costAt(1).all_in;
+      maxBidReason = midCase.proceeds - floorCost < rules.min_profit
+        ? `No bid works. Even at a $1 bid the middle case makes ${moneyText(round2(midCase.proceeds - floorCost))}, under the ${moneyText(rules.min_profit)} minimum.`
+        : `No bid works. Even at a $1 bid the low case loses money (${moneyText(round2(lowCase.proceeds - floorCost))}).`;
+    }
+  }
+  const maxCost = maxBid != null ? costAt(maxBid) : null;
+  const profitAt = (c, cost) => (c && c.proceeds != null && cost != null ? round2(c.proceeds - cost) : null);
+  const cases = caseMoney.map((c) => ({
+    name: c.name,
+    unit: c.unit,
+    unit_text: moneyOrUnknown(c.unit),
+    basis: c.basis,
+    gross: c.gross,
+    gross_text: moneyOrUnknown(c.gross),
+    proceeds: c.proceeds,
+    proceeds_text: moneyOrUnknown(c.proceeds),
+    profit_at_max_bid: profitAt(c, maxCost && maxCost.all_in),
+    profit_at_max_bid_text: moneyOrUnknown(profitAt(c, maxCost && maxCost.all_in)),
+    profit_at_current_bid: profitAt(c, allIn),
+    profit_at_current_bid_text: moneyOrUnknown(profitAt(c, allIn)),
+  }));
+  const bidPastMax = maxBid != null && bid != null && bid > maxBid;
 
   let profitReason;
   if (profitConfidence === 'confirmed') profitReason = 'Profit is confirmed from sold comps and stated costs.';
@@ -305,6 +422,9 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     price_floor: bid != null ? bid : lot.opening_bid,
     net,
     net_estimate: netEstimate,
+    // Estimated profit at the current bid in the low and high cases, so the rule sees the range.
+    net_low: net == null ? profitAt(lowCase, allIn) : null,
+    net_high: net == null ? profitAt(highCase, allIn) : null,
     roi,
   }, rules);
 
@@ -382,7 +502,23 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     net_estimate: netEstimate,
     net_estimate_text: netEstimate == null ? null : moneyText(netEstimate),
     net_estimate_note: netEstimate == null ? null
-      : `Estimate, not confirmed. Assumed: ${estimateAssumptions.join(', ') || 'none'}. It also assumes every unit sells at the median sold comp.`,
+      : `Estimate, not confirmed. Assumed: ${estimateAssumptions.join(', ') || 'none'}. This is the middle case at the current bid, and it assumes every unit sells.`,
+    cases,
+    case_caveats: resale ? resale.caveats : [],
+    comps_lot_sales: resale ? resale.lot_sales : 0,
+    comps_single_sales: resale ? resale.single_sales : 0,
+    max_bid: maxBid,
+    max_bid_text: maxBid == null ? 'none' : moneyText(maxBid),
+    max_bid_all_in: maxCost ? maxCost.all_in : null,
+    max_bid_all_in_text: moneyOrUnknown(maxCost ? maxCost.all_in : null),
+    max_bid_note: maxBid == null ? maxBidReason
+      : [
+        `All-in at this bid is ${moneyText(maxCost.all_in)}. The middle case still makes ${moneyText(rules.min_profit)} or more, the low case does not lose money, and the cost stays inside ${moneyText(rules.max_cost)}.`,
+        bidPastMax ? `The current bid ${moneyText(bid)} is already above it.` : null,
+        'Whole dollars. The bid is Adam\'s to place. This board never bids.',
+      ].filter(Boolean).join(' '),
+    bid_past_max: bidPastMax,
+    batteries_text: lot.batteries === 'none' ? 'No batteries' : (lot.batteries === 'included' ? 'Batteries included' : 'unknown'),
     roi,
     roi_text: roi == null ? 'unknown' : `${round2(roi * 100)}%`,
     profit_confidence: profitConfidence,
