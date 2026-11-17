@@ -63,7 +63,32 @@ GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://garagesale.run node scripts/seed-
 
 The most one flip can cost is the current bankroll: the starting bankroll, plus sales, minus buys and open approvals in the ledger. `GET /api/bankroll` is public and returns only that number (`bankroll`, `start`, `source`, `max_buy`). `source` is `ledger` when the ledger was read and `start` when it could not be read or has no entries. Buys, sales and profit stay behind the ledger key. `GET /api/scout/config`, `/api/surplus` and `/api/feed` all score against this number.
 
-The hourly rate and the drive cap are in the rules file and in the config the API returns. No deal is scored against them yet. That comes with drive times.
+### Drive time
+
+Every surplus lot and every listing in `/api/feed` carries the round-trip drive from New Braunfels: `location.drive_minutes_round_trip`, `location.drive_miles_round_trip` and `costs.time`.
+
+- **Time cost** is the round-trip minutes at `hourly_rate` ($20 an hour). It comes off every profit number. It is not cash, so it is not part of `all_in` or the max buy.
+- **Gas** on a surplus lot uses the routed miles when there are any, and twice the stated miles when there are not.
+- **Drive cap.** A round trip over `max_drive_minutes` (45) is a skip.
+- **Unknown drive.** With no drive time, the time cost is left out, the item says so, and it cannot be a buy.
+
+The times come from OpenRouteService. They are typical times with no live traffic. The way back is taken to be the same as the way there.
+
+To switch it on, Adam does this once. No agent sees the key.
+
+1. Sign up at openrouteservice.org and create an API key (free plan).
+2. In Vercel, project `grokbothackathon`, add the environment variable `ORS_API_KEY` for Production.
+3. Redeploy.
+
+Until that is done every drive time is unknown.
+
+**Who can spend the key.** Only calls that carry the worker key look up a drive time: `POST /api/surplus`, `POST /api/deals`, and `POST /api/drive/refresh`. The public pages and `GET /api/feed` and `GET /api/surplus` read the cache and never call the routing service, so a visitor cannot use up the quota. A place that is not in the cache yet shows an unknown drive.
+
+**The bot's daily step.** After posting, call `POST /api/drive/refresh` with the `x-worker-key` header. It looks up every pickup address and listing that has no drive time yet, up to 20 a call, and answers with `{ places, known, unknown }`. Call it again while `unknown` is above zero. This is also how the Nov 15 scan file gets its drive times, since it was never posted.
+
+Each place is looked up once and kept under `drive-cache/` in Blob storage. One call makes at most 8 new lookups (20 for the refresh), and all callers together make at most 300 a day. A lot is found by its pickup address. A lot with only a city has no drive time, because the middle of a city is not the pickup point. A batch of lookups stops starting new ones after 12 seconds and saves what it found. A listing is found by its `lat` and `lng`, so a listing with no coordinates has no drive time. The bot may also post its own `drive: { minutes_round_trip, miles_round_trip }` on a lot, and that is used as posted.
+
+Not yet tested against the live service: the code follows the official client's request format, but no real key was available to try it.
 
 | Field | Seed | Role |
 | --- | --- | --- |
