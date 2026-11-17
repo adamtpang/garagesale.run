@@ -135,7 +135,7 @@ export default function LedgerPage() {
   return <main className="wrap py-16 md:py-24">
     <div className="mb-6 flex items-center justify-between gap-3">
       <h1 className="text-3xl font-semibold tracking-tight">Ledger</h1>
-      <Button asChild variant="secondary" size="sm"><a href="/dashboard">Dashboard</a></Button>
+      <div className="flex flex-wrap gap-2"><Button asChild variant="secondary" size="sm"><a href="/ladder">Bankroll ladder</a></Button><Button asChild variant="secondary" size="sm"><a href="/dashboard">Deals</a></Button></div>
     </div>
     {!key && <Card className="max-w-md border-border p-6">
       <form onSubmit={unlock} className="grid gap-3">
