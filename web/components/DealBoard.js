@@ -94,18 +94,21 @@ export default function DealBoard() {
       </div>
     </div>
 
-    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground sm:grid-cols-3 lg:grid-cols-5" aria-label="Flip rules">
       {[
         ['Bankroll', summary.bankroll],
         ['Max per item', summary.maxPerFlip],
         ['Minimum net', summary.minProfit],
         ['Pickup', summary.maxMiles],
         ['Gas', summary.gas],
-      ].map(([k, v]) => <div key={k} className="rounded-2xl border border-border bg-card px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-1 text-sm font-medium">{v}</div></div>)}
+      ].map(([k, v]) => <div key={k} className="bg-card px-3 py-2 last:col-span-2 sm:last:col-span-1"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div><div className="mt-0.5 text-sm font-medium">{v}</div></div>)}
     </div>}
-    <p className="mb-4 text-sm text-muted-foreground">{HOME_LINE} {summary.gasNote || ''} Cash already spent stays in the encrypted ledger and is not loaded here.</p>
-    {!sample && config && Array.isArray(config.areas) && config.areas.length > 0 && <p className="mb-4 text-sm text-muted-foreground">Stored search areas: {config.areas.map((a) => a.name).filter(Boolean).join(', ')}. Those names are not pickup origins.</p>}
-    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p className="mb-4 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
+    <details className="mb-4 text-sm">
+      <summary className="cursor-pointer font-medium underline-offset-4 hover:underline">How the rules are applied</summary>
+      <p className="mt-1 text-muted-foreground">{HOME_LINE} {summary.gasNote || ''} Cash already spent stays in the encrypted ledger and is not loaded here.</p>
+      {!sample && config && Array.isArray(config.areas) && config.areas.length > 0 && <p className="mt-1 text-muted-foreground">Stored search areas: {config.areas.map((a) => a.name).filter(Boolean).join(', ')}. Those names are not pickup origins.</p>}
+    </details>
+    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p role="status" className="mb-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
     {!sample && !rulesMissing && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
 
     <div className="mb-4 text-sm text-muted-foreground">

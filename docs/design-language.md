@@ -97,6 +97,26 @@ Fixed in a follow-up the same day:
 - The agent log on a job page was long and technical. It is a fold that starts closed once the job is done.
 - Old scout-feed photos were dead links, because Facebook image links expire. A feed write now keeps one copy of each photo in Blob storage (`web/lib/dealPhotos.js`). Photos on deals stored before this cannot be recovered.
 
+## Verdict first, Nov 16, 2026
+
+Adam said the design was still off. The look was fine, the order was wrong: a lot card ran about 1,500px tall and the answer sat in a small chip.
+
+Two rules were added. Both can be checked on a screenshot.
+
+8. The verdict and the deciding numbers come first. A lot card opens with the verdict word, the reason, and one strip of four numbers: current bid, max bid, profit range, time left. The max bid is the marker price.
+9. No box inside a box. A card may hold an ink-line grid or a quiet gray well, never a second bordered card. Fine print and long lists sit behind a fold with a count or a plain name on it.
+
+Changed:
+
+- Surplus lot cards follow rule 8. Costs, resale and comps fold shut on skipped lots and open on the rest.
+- The six rule tiles on Surplus and five on Deals are one strip each. The fine print and the trip list fold.
+- Notices are a left-edge bar, not a full yellow card. Yellow cards are kept for a risk on a single lot.
+- Filter names are capitalized the same way on both boards.
+- The nav leads with Deals and Surplus, and the Deals link is named after its page.
+- Buttons and inputs use the page font. They were falling back to the system font.
+
+Screenshots are in `docs/screens/verdict-first/`. Not changed in this pass: home, buy, sell, ledger, messages, a job page.
+
 ## Checked
 
 - Every page at 1280px and 390px wide, with a script that measures text contrast and looks for leftover dark surfaces: home, buy, sell, dashboard, surplus, messages, about, ledger, a live sell job, a job awaiting approval, a buy job, and a deal.

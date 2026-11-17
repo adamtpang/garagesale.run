@@ -80,4 +80,15 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /15 mi from New Braunfels, TX/);
   assert.match(html, /\$114\.98/);
   assert.match(html, /data-lot="ps-4123518"/);
+  // The strip never says no bid works when the max bid is only unknown.
+  assert.equal(html.includes('No bid fits the rules'), false);
+  for (const lot of view.lots.filter((l) => l.max_bid == null)) {
+    const one = renderToStaticMarkup(e(SurplusBoard, { view: { ...view, lots: [lot], trips: [] }, loading: false, failed: false }));
+    const unknown = !/^No bid works/.test(lot.max_bid_note);
+    assert.equal(lot.max_bid_text, unknown ? 'unknown' : 'none', lot.id);
+    assert.match(one, unknown ? /data-field="key-max-bid">unknown</ : /data-field="key-max-bid">none</, lot.id);
+    // The cases block uses the same word as the strip.
+    assert.equal(/Max bid<\/span><span[^>]*>(none|unknown)</.exec(one)?.[1] ?? lot.max_bid_text, lot.max_bid_text, lot.id);
+  }
+  assert.ok(view.lots.some((l) => l.max_bid == null && /^Max bid is unknown/.test(l.max_bid_note)));
 });
