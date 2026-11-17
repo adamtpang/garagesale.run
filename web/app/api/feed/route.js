@@ -2,6 +2,7 @@ import { readLatest, json } from '../../../lib/store.js';
 import { readSurplus } from '../../../lib/surplusStore.js';
 import { readConfig } from '../../../lib/scoutConfig.js';
 import { buildDailyFeed } from '../../../lib/feed.js';
+import { liveRules } from '../../../lib/bankroll.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +11,13 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const now = Date.now();
+    const rules = await liveRules();
     const [surplus, deals, config] = await Promise.all([
-      readSurplus(now),
+      readSurplus(now, rules),
       readLatest('deals/').catch(() => null),
-      readConfig(),
+      readConfig(rules),
     ]);
-    return json(buildDailyFeed({ surplus, deals, config, nowMs: now }));
+    return json(buildDailyFeed({ surplus, deals, config, nowMs: now, rules }));
   } catch {
     return json({ error: 'feed unavailable' }, 500);
   }

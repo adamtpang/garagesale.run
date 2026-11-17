@@ -34,9 +34,9 @@ Do not bid, buy, offer, message a seller, or publish a listing unless Adam says 
 
 These are the rules he set. They live in one file, `web/config/rules.js`. The surplus board, the deals API and the buy search all read it, and the API cannot change it. To change a rule, change that file in a PR that Adam merges.
 
-- Max $100 per flip.
-- $100 bankroll.
-- $100 minimum profit after fees and gas.
+- $100 starting bankroll. The max buy per flip is the current bankroll, not a fixed $100 (Adam, Nov 17). The site reads it from the ledger and shows that one number at `/api/bankroll`.
+- $100 minimum profit after fees, gas and drive time.
+- Drive time costs $20 an hour, and a deal may take at most 45 minutes of round-trip driving (Adam, Nov 17). These two are in the rules file but are not applied to deals yet.
 - 15-mile pickup radius from New Braunfels. Do not measure that radius from Austin or San Marcos.
 - Categories: electronics, consoles, tools, furniture, bikes, cameras.
 - Gas $0.18 per mile. That rate is an unconfirmed estimate (`estimate: ~20 MPG, $3.50/gal premium`).

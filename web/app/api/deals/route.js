@@ -2,6 +2,7 @@ import { saveVersioned, readLatest, workerCheck, now, json } from '../../../lib/
 import { readConfig } from '../../../lib/scoutConfig.js';
 import { buildFeed } from '../../../lib/deals.js';
 import { keepPhotos } from '../../../lib/dealPhotos.js';
+import { liveRules } from '../../../lib/bankroll.js';
 import { put, head } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function POST(req) {
   if (!auth.ok) return json({ error: 'unauthorized', reason: auth.reason, hint: auth.hint }, 401);
   const body = await req.json().catch(() => null);
   if (!body || !Array.isArray(body.deals)) return json({ error: 'body must be {deals:[...], area?}' }, 400);
-  const config = await readConfig();
+  const config = await readConfig(await liveRules());
   const built = buildFeed(body.deals, config);
   const area = typeof body.area === 'string' ? body.area.trim().slice(0, 80) : null;
   // Listing photo links expire within days. With Blob storage set, keep a copy so the feed still has photos later.

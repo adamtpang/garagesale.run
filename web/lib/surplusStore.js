@@ -30,13 +30,13 @@ function stamp(view, source, updatedAt) {
   return { ...view, source, updated_at: updatedAt || null };
 }
 
-export async function readSurplus(nowMs = null) {
+export async function readSurplus(nowMs = null, rules = undefined) {
   const stored = await loadStored();
-  if (stored) return stamp(assessSnapshot(stored, nowMs), 'stored', stored.updated_at || null);
-  return stamp(assessSnapshot(readSeed(), nowMs), 'seed', null);
+  if (stored) return stamp(assessSnapshot(stored, nowMs, rules), 'stored', stored.updated_at || null);
+  return stamp(assessSnapshot(readSeed(), nowMs, rules), 'seed', null);
 }
 
-export async function writeSurplus(body, nowMs = null) {
+export async function writeSurplus(body, nowMs = null, rules = undefined) {
   const doc = cleanSnapshot(body);
   doc.updated_at = new Date().toISOString();
   if (blobOn()) await saveVersioned('surplus/', doc);
@@ -44,7 +44,7 @@ export async function writeSurplus(body, nowMs = null) {
     fs.mkdirSync(path.dirname(FILE), { recursive: true });
     fs.writeFileSync(FILE, JSON.stringify(doc, null, 1));
   }
-  return stamp(assessSnapshot(doc, nowMs), 'stored', doc.updated_at);
+  return stamp(assessSnapshot(doc, nowMs, rules), 'stored', doc.updated_at);
 }
 
 export const surplusFile = FILE;

@@ -1,14 +1,20 @@
 // Adam's flip rules. This is the one place they live.
-// The surplus board reads this file. Change a rule here, not in the code that applies it.
-// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md).
+// Every page and API reads this file. Change a rule here, not in the code that applies it.
+// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md). Bankroll cap, hourly rate and drive cap: Adam, Nov 17, 2026.
 export const RULES_CONFIG = Object.freeze({
   approved_on: '2026-11-03',
   home: 'New Braunfels, TX',
-  // Most Adam will pay for one flip, counting the bid, buyer's premium, tax and gas.
-  max_per_flip: 100,
+  // Starting bankroll. The most one flip can cost is the CURRENT bankroll: this number plus sales,
+  // minus buys and open approvals in the ledger. With no ledger to read, it is this number.
   bankroll: 100,
-  // Least profit a flip must make after fees and gas.
+  // An extra fixed cap on one flip. null means none: the current bankroll is the cap.
+  max_per_flip: null,
+  // Least profit a flip must make after fees, gas and drive time.
   min_profit: 100,
+  // What an hour of Adam's driving costs. Profit is counted after it.
+  hourly_rate: 20,
+  // Longest round-trip drive for one deal, in minutes, from home.
+  max_drive_minutes: 45,
   // Pickup radius, measured from home.
   max_pickup_miles: 15,
   categories: Object.freeze(['electronics', 'game consoles', 'tools', 'furniture', 'bikes', 'cameras']),

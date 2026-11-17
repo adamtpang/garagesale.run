@@ -187,7 +187,10 @@ test('scout config PUT and deals POST require the worker key', async () => {
 
 test('the scout seed and the rules file agree, so there is one set of rule numbers', async () => {
   const { RULES_CONFIG } = await import('../config/rules.js');
-  for (const key of ['max_per_flip', 'bankroll', 'min_profit', 'max_pickup_miles', 'gas_per_mile']) assert.equal(seed[key], RULES_CONFIG[key], key);
+  for (const key of ['bankroll', 'min_profit', 'max_pickup_miles', 'gas_per_mile', 'hourly_rate', 'max_drive_minutes']) assert.equal(seed[key], RULES_CONFIG[key], key);
+  // No fixed cap is set, so the most one flip can cost is the bankroll.
+  assert.equal(RULES_CONFIG.max_per_flip, null);
+  assert.equal(seed.max_per_flip, RULES_CONFIG.bankroll);
   assert.deepEqual(seed.categories, [...RULES_CONFIG.categories]);
   assert.deepEqual(seed.sites, [...RULES_CONFIG.sites]);
   assert.deepEqual(seed.areas, RULES_CONFIG.areas.map((a) => ({ ...a })));
