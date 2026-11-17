@@ -3,6 +3,7 @@ import { readConfig } from '../../../lib/scoutConfig.js';
 import { buildFeed } from '../../../lib/deals.js';
 import { keepPhotos } from '../../../lib/dealPhotos.js';
 import { liveRules } from '../../../lib/bankroll.js';
+import { drivesFor } from '../../../lib/driveStore.js';
 import { put, head } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
@@ -31,5 +32,8 @@ export async function POST(req) {
   }
   const feed = { updated_at: now(), area: area || null, test: !!body.test, filters_set: built.filters_set, photos_kept: photos, deals };
   await saveVersioned('deals/', feed);
+  // This call carries the worker key, so it may look up drive times for the new listings. The feed reads them from the cache.
+  const places = deals.filter((d) => d && typeof d.lat === 'number' && typeof d.lng === 'number').map((d) => ({ lat: d.lat, lng: d.lng }));
+  if (places.length) await drivesFor(places).catch(() => null);
   return json(feed);
 }
