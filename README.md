@@ -64,6 +64,8 @@ The ledger also records Adam's decisions: a yes or no on one item, with the most
 
 The blob store is public, so the ledger is AES-256-GCM ciphertext. The object path is an HMAC of a fixed label. It is not listed, and its URL is not returned. With no `BLOB_READ_WRITE_TOKEN`, the ciphertext is `web/.data/ledger.json`. The `/ledger` page keeps the key in `sessionStorage` for that tab.
 
+The bankroll ladder at `/ladder` shows the same ledger as steps: the starting bankroll, each buy and sale in date order, and the bankroll after each. It needs the same key. `GET /api/bankroll` is the one public number, the bankroll now, and it is also the max buy per flip.
+
 `net_profit` is `sell_price - buy_price - gas - fees - repairs`, and it stays null until the item is sold. Bankroll is `starting_bankroll` minus money spent plus sales.
 
 ```bash
