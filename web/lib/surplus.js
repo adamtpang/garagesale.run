@@ -569,7 +569,8 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     comps_note: lot.comps_dropped > 0 ? `${lot.comps_dropped} more comp${lot.comps_dropped === 1 ? ' was' : 's were'} sent than the ${MAX_COMPS} this board keeps. They are not counted.` : null,
     lock_flag: lot.fleet_device ? 'Fleet device. A device-management, Google account or carrier lock is likely, and it cannot be checked before pickup.' : null,
     max_bid: maxBid,
-    max_bid_text: maxBid == null ? 'none' : moneyText(maxBid),
+    // 'none' means no bid works. 'unknown' means it cannot be worked out yet. One word, used everywhere.
+    max_bid_text: maxBid != null ? moneyText(maxBid) : (/^No bid works/.test(maxBidReason || '') ? 'none' : 'unknown'),
     max_bid_all_in: maxCost ? maxCost.all_in : null,
     max_bid_all_in_text: moneyOrUnknown(maxCost ? maxCost.all_in : null),
     max_bid_note: maxBid == null ? maxBidReason

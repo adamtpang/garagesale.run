@@ -120,7 +120,7 @@ function casesBlock(lot) {
         e('span', { className: 'text-sm tabular-nums' }, `${c.unit_text} a unit · ${c.gross_text} for the lot`)),
       e('div', { className: 'mt-1 flex items-baseline justify-between gap-3 text-sm' },
         e('span', { className: 'text-muted-foreground' }, atMax ? `Profit at the ${lot.max_bid_text} max bid` : 'Profit at the max bid'),
-        e('span', { className: 'font-semibold tabular-nums', 'data-field': `profit-max-${c.name}` }, atMax ? c.profit_at_max_bid_text : 'no max bid')),
+        e('span', { className: 'font-semibold tabular-nums', 'data-field': `profit-max-${c.name}` }, atMax ? c.profit_at_max_bid_text : (lot.max_bid_text === 'none' ? 'no max bid' : 'unknown'))),
       e('div', { className: 'mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted-foreground' },
         e('span', null, lot.current_bid == null ? 'No bid on the lot yet' : `At today's ${lot.current_bid_text} bid`),
         e('span', { className: 'tabular-nums' }, c.profit_at_current_bid_text)),
@@ -172,7 +172,6 @@ function lotCard(lot) {
   const low = lot.cases && lot.cases.find((c) => c.name === 'low');
   const high = lot.cases && lot.cases.find((c) => c.name === 'high');
   const atMax = lot.max_bid != null;
-  const maxBidUnknown = !atMax && !/^No bid works/.test(lot.max_bid_note || '');
   const range = (k) => {
     const lo = low ? low[k] : 'unknown';
     const hi = high ? high[k] : 'unknown';
@@ -198,7 +197,7 @@ function lotCard(lot) {
       ? keyNumber('Current bid', 'No bids yet', lot.opening_bid_text ? `Opens at ${lot.opening_bid_text}` : 'Opening bid unknown')
       : keyNumber('Current bid', e('span', { className: 'tabular-nums' }, lot.current_bid_text), lot.bid_count_text === 'unknown' ? 'Bid count unknown' : `${lot.bid_count_text} bid${lot.bid_count_text === '1' ? '' : 's'}`),
     // No max bid has two causes: it cannot be worked out yet, or no bid works. The strip says which, with the reason.
-    keyNumber('Max bid', e('span', { className: atMax ? 'font-marker text-2xl font-normal text-price' : 'text-muted-foreground', 'data-field': 'key-max-bid' }, atMax ? lot.max_bid_text : (maxBidUnknown ? 'unknown' : 'none')), atMax ? `All-in ${lot.max_bid_all_in_text}` : (lot.max_bid_note || 'Max bid is unknown.')),
+    keyNumber('Max bid', e('span', { className: atMax ? 'font-marker text-2xl font-normal text-price' : 'text-muted-foreground', 'data-field': 'key-max-bid' }, lot.max_bid_text), atMax ? `All-in ${lot.max_bid_all_in_text}` : (lot.max_bid_note || 'Max bid is unknown.')),
     keyNumber(atMax ? 'Profit at max bid' : 'Profit at this bid', e('span', { className: 'tabular-nums' }, range(atMax ? 'profit_at_max_bid_text' : 'profit_at_current_bid_text')), 'Low to high case, estimate'),
     keyNumber('Closes in', lot.countdown || lot.close_text, lot.countdown ? lot.close_text : null)),
 
