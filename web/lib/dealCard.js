@@ -1,0 +1,113 @@
+// Turns one item from the daily feed into the plain words a deal card shows.
+// No network and no disk. Every number comes from the feed item. Nothing is worked out here that the
+// feed does not already carry, except adding up cost parts for one line.
+const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const round2 = (n) => Math.round(n * 100) / 100;
+export const money = (v) => (num(v) == null ? 'unknown' : `${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}`);
+const whole = (v) => `$${Math.round(Math.abs(v)).toLocaleString('en-US')}`;
+const LABEL = { buy: 'Buy', watch: 'Watch', skip: 'Skip' };
+
+export function countdown(iso, nowMs) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t) || nowMs == null) return null;
+  const diff = t - nowMs;
+  if (diff <= 0) return 'Closed';
+  const mins = Math.floor(diff / 60000);
+  const d = Math.floor(mins / 1440);
+  const h = Math.floor((mins % 1440) / 60);
+  const m = mins % 60;
+  if (d) return `Closes in ${d}d ${h}h`;
+  return h ? `Closes in ${h}h ${m}m` : `Closes in ${m}m`;
+}
+
+// Adds the parts that are known. Null when any part is unknown, so a missing fee is never shown as $0.
+function sum(parts) {
+  if (parts.some((p) => num(p) == null)) return null;
+  return round2(parts.reduce((s, p) => s + p, 0));
+}
+
+export function cardFor(item, nowMs = null) {
+  const lot = item.kind === 'surplus';
+  const atMax = !!(lot && num(item.max_bid) != null && item.profit.at_max_bid);
+  const cases = atMax ? item.profit.at_max_bid : { low: item.profit.low, middle: item.profit.middle, high: item.profit.high };
+  const confirmed = !atMax && num(item.profit.confirmed) != null;
+  const profit = confirmed ? item.profit.confirmed : num(cases.middle);
+  const pay = atMax ? item.max_bid : item.price.current;
+  const c = item.costs;
+
+  const headline = profit == null ? 'Profit unknown' : (profit >= 0 ? 'You make about' : 'You lose about');
+  let where;
+  if (atMax) where = `If you win at your ${money(item.max_bid)} max bid.`;
+  else if (lot) where = num(pay) != null ? `At today's ${money(pay)} bid.` : 'No bid yet.';
+  else where = num(pay) != null ? `At the ${money(pay)} asking price.` : 'No asking price.';
+  const basis = [
+    where,
+    profit == null ? null : (confirmed ? 'Confirmed from sold prices and stated costs.' : 'Middle case. An estimate, not confirmed.'),
+    profit != null && num(c.time) == null ? 'Drive time is not counted yet.' : null,
+  ].filter(Boolean).join(' ');
+
+  // What it costs to buy on top of the price: the buyer's premium and tax. On a listing both are $0.
+  const cash = atMax ? c.all_in_at_max_bid : c.all_in;
+  let buyFees = lot ? null : 0;
+  if (lot && num(cash) != null && num(pay) != null && num(c.gas) != null) buyFees = round2(cash - pay - c.gas);
+  const fees = sum([buyFees, c.fee, c.shipping]);
+  const feeParts = [
+    lot ? `Buyer's premium and tax ${money(buyFees)}` : null,
+    `${lot ? 'selling' : 'Selling'} fee ${money(c.fee)}`,
+    `shipping ${money(c.shipping)}`,
+  ].filter(Boolean).join(', ');
+  const mins = item.location.drive_minutes_round_trip;
+  const miles = item.location.drive_miles_round_trip;
+  const statedMiles = num(item.location.miles) != null ? round2(item.location.miles * 2) : null;
+  let priceNote = null;
+  if (atMax && num(item.price.current) != null) priceNote = `Bid now ${money(item.price.current)}`;
+  else if (lot && num(pay) == null && num(item.price.opening) != null) priceNote = `Opens at ${money(item.price.opening)}`;
+  let milesNote = 'Miles unknown';
+  if (num(miles) != null) milesNote = `${miles} mi round trip`;
+  else if (statedMiles != null) milesNote = `About ${statedMiles} mi round trip`;
+  const costs = [
+    { key: 'price', label: atMax ? 'Your max bid' : (lot ? 'Current bid' : 'Asking price'), value: money(pay), note: priceNote },
+    { key: 'fees', label: 'Fees', value: money(fees), note: `${feeParts}.` },
+    { key: 'gas', label: 'Gas', value: money(c.gas), note: milesNote },
+    { key: 'drive', label: 'Drive time', value: num(mins) != null ? `${mins} min` : 'unknown', note: num(c.time) != null ? `${money(c.time)} of your time` : 'Not counted in profit yet' },
+  ];
+
+  const sold = (item.comps || []).filter((x) => x.type === 'sold' && x.url);
+  return {
+    id: item.id,
+    kind: item.kind,
+    title: item.title || 'Untitled',
+    photo_url: item.photo_url || null,
+    label: LABEL[item.decision.value] || 'Watch',
+    decision: LABEL[item.decision.value] ? item.decision.value : 'watch',
+    headline,
+    amount: profit == null ? null : whole(profit),
+    profit,
+    loss: profit != null && profit < 0,
+    basis,
+    costs,
+    cases: ['low', 'middle', 'high'].map((name) => ({ name, label: name[0].toUpperCase() + name.slice(1), value: money(cases[name]) })),
+    // Why it has this label, in one line.
+    reason: (item.decision.reasons || [])[0] || null,
+    // The main risk, in one line.
+    risk: (item.risks || [])[0] || null,
+    place: [item.location.place, item.source.site].filter(Boolean).join(' · '),
+    listing_url: item.source.url || null,
+    listing_text: lot ? 'Open the auction' : 'Open the listing',
+    comps: sold.slice(0, 3).map((x) => ({ url: x.url, text: `Sold ${money(x.price)}${x.sold_on ? `, ${x.sold_on}` : ''}` })),
+    comps_more: Math.max(0, sold.length - 3),
+    comps_none: sold.length === 0 ? 'No sold comps with a link.' : null,
+    countdown: countdown(item.price.closes_at, nowMs),
+    closes_text: item.price.closes_text || null,
+  };
+}
+
+// Best profit first. A card with no profit number goes last.
+export function sortCards(cards) {
+  return [...cards].sort((a, b) => {
+    if (a.profit == null && b.profit == null) return 0;
+    if (a.profit == null) return 1;
+    if (b.profit == null) return -1;
+    return b.profit - a.profit;
+  });
+}

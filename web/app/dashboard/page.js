@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import DealBoard from '@/components/DealBoard';
+import DealFeedScreen from './DealFeedScreen';
 import Photo from '@/components/Photo';
 import SavedDeals from '@/components/SavedDeals';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ export default function Dashboard() {
   }, []);
   const sells = (jobs || []).filter((j) => j.kind === 'sell');
   return <main className="wrap py-10 md:py-16">
-    <DealBoard />
+    <DealFeedScreen />
     <section className="mt-16">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold tracking-tight">Your listings</h2>

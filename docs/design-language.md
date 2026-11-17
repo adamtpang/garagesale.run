@@ -117,6 +117,16 @@ Changed:
 
 Screenshots are in `docs/screens/verdict-first/`. Not changed in this pass: home, buy, sell, ledger, messages, a job page.
 
+## Deal cards, Nov 17, 2026
+
+The Deals page is one card per deal, best profit first (`web/components/DealFeed.js`, words from `web/lib/dealCard.js`). It follows rule 8 one step further:
+
+10. A deal card says the profit as a sentence: "You make about $153". The dollar figure is the marker price, and it is the only marker price on the card. One line under it says what the number assumes.
+
+Card order, top to bottom: label, title, profit sentence, the four costs (price, fees, gas, drive time), low, middle and high, why, main risk, links. On a phone the photo sits on top. From 768px it sits on the left.
+
+Screenshots are in `docs/screens/deal-cards/`.
+
 ## Checked
 
 - Every page at 1280px and 390px wide, with a script that measures text contrast and looks for leftover dark surfaces: home, buy, sell, dashboard, surplus, messages, about, ledger, a live sell job, a job awaiting approval, a buy job, and a deal.
