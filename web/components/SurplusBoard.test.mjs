@@ -82,7 +82,7 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /data-rule="drive_time" data-result="unknown"/);
   assert.match(html, /No routed drive time yet/);
   assert.match(html, /Starting bankroll of \$100\.00/);
-  assert.match(html, /\$100\.00 after fees and gas/);
+  assert.match(html, /\$100\.00 after fees, gas and time/);
   assert.match(html, /15 mi from New Braunfels, TX/);
   assert.match(html, /\$114\.98/);
   assert.match(html, /data-lot="ps-4123518"/);
