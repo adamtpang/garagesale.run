@@ -160,7 +160,8 @@ export async function readLatest(prefixKey) {
   if (blobs.length > 40) { try { await del(blobs.slice(0, -5).map((b) => b.url)); } catch (e) {} }
   return r.ok ? r.json() : null;
 }
-export const workerOk = (req) => !!process.env.GST_WORKER_KEY && req.headers.get('x-worker-key') === process.env.GST_WORKER_KEY;
+// The check lives in workerKey.js: it trims stray whitespace, allows a second key during rotation, and compares in constant time.
+export { workerOk, workerCheck } from './workerKey.js';
 
 export const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });

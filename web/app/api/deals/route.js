@@ -1,4 +1,4 @@
-import { saveVersioned, readLatest, workerOk, now, json } from '../../../lib/store.js';
+import { saveVersioned, readLatest, workerCheck, now, json } from '../../../lib/store.js';
 import { readConfig } from '../../../lib/scoutConfig.js';
 import { buildFeed } from '../../../lib/deals.js';
 import { keepPhotos } from '../../../lib/dealPhotos.js';
@@ -14,7 +14,8 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  if (!workerOk(req)) return json({ error: 'unauthorized' }, 401);
+  const auth = workerCheck(req);
+  if (!auth.ok) return json({ error: 'unauthorized', reason: auth.reason, hint: auth.hint }, 401);
   const body = await req.json().catch(() => null);
   if (!body || !Array.isArray(body.deals)) return json({ error: 'body must be {deals:[...], area?}' }, 400);
   const config = await readConfig();
