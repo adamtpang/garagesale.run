@@ -1,5 +1,5 @@
-import { workerCheck, json } from '../../../lib/store.js';
-import { readSurplus, writeSurplus } from '../../../lib/surplusStore.js';
+import { workerCheck, json, isDryRun, DRY_RUN_NOTE } from '../../../lib/store.js';
+import { readSurplus, writeSurplus, previewSurplus } from '../../../lib/surplusStore.js';
 import { liveRules } from '../../../lib/bankroll.js';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export async function POST(req) {
   if (!auth.ok) return json({ error: 'unauthorized', reason: auth.reason, hint: auth.hint }, 401);
   const body = await req.json().catch(() => null);
   try {
+    if (isDryRun(req)) return json({ ...(await previewSurplus(body, Date.now(), await liveRules())), note: DRY_RUN_NOTE });
     return json(await writeSurplus(body, Date.now(), await liveRules()));
   } catch (e) {
     return json({ error: String(e.message || e) }, 400);

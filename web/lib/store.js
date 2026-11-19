@@ -146,6 +146,10 @@ export async function queue(job, event, payload) {
   await indexPending(job, event, payload);
   return job;
 }
+// ?dry_run=1 on a write route checks and scores the body and says what would be saved, but saves nothing
+// and makes no drive lookups. For testing a post without changing the live site.
+export const isDryRun = (req) => { try { return ['1', 'true'].includes(new URL(req.url).searchParams.get('dry_run')); } catch { return false; } };
+export const DRY_RUN_NOTE = 'Dry run: nothing was saved and no drive times were looked up. Send the same body without ?dry_run=1 to save it.';
 export const isTest = (req, form) => req.headers.get('x-gst-test') === '1' || (form && String(form.get('test') || '') === '1');
 
 export async function saveVersioned(prefixKey, obj) {

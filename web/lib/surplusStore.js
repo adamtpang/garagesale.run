@@ -59,6 +59,13 @@ export async function surplusPlaces() {
   return (doc.lots || []).filter((lot) => lot && !lot.drive && lot.pickup_address).map((lot) => ({ address: lot.pickup_address }));
 }
 
+// A dry run: the body checked and scored exactly as a write would, with drive times from the cache only.
+// Nothing is saved.
+export async function previewSurplus(body, nowMs = null, rules = undefined) {
+  const doc = cleanSnapshot(body);
+  return { ...stamp(assessSnapshot(await withDrives(doc, cachedDrives), nowMs, rules), 'dry run', null), dry_run: true, saved: false };
+}
+
 // Writing needs the worker key, so it may look up drive times for the lots it stores.
 export async function writeSurplus(body, nowMs = null, rules = undefined) {
   const doc = cleanSnapshot(body);
