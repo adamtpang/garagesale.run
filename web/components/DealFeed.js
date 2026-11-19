@@ -112,7 +112,7 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
         chip(show === 'watch', `Watch ${counts.watch}`, () => setShow('watch')),
         chip(show === 'skip', `Skip ${counts.skip}`, () => setShow('skip'))),
 
-      cards.length === 0 ? e('p', { className: 'rounded-2xl border border-border bg-card p-6 text-base' }, 'No deals in the feed yet.') : null,
+      cards.length === 0 ? e('p', { className: 'rounded-2xl border border-border bg-card p-6 text-base' }, (feed.hidden && (feed.hidden.closed_lots || feed.hidden.old_listings)) ? 'No open deals right now. Everything in the last scan has closed or is too old. A new scan has not been posted.' : 'No deals in the feed yet.') : null,
       cards.length > 0 && shown.length === 0 ? e('p', { className: 'text-base' }, `Nothing is marked ${show} right now.`) : null,
       e('div', { className: 'grid gap-5' }, shown.map(dealCard))) : null);
 }

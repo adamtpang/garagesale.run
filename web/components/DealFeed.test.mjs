@@ -189,3 +189,13 @@ test('a failed refresh keeps the deals on screen and says so', () => {
   assert.equal(html.includes('Could not load the deals feed'), false);
   assert.equal(renderToStaticMarkup(e(DealFeed, { feed, now: NOW, failed: false, refreshFailed: false, loading: false })).includes('refresh-failed'), false);
 });
+
+test('with every lot closed, the deals page says so instead of showing closed lots', () => {
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const onlyClosed = { ...seed, lots: seed.lots.filter((l) => l.closes_at && Date.parse(l.closes_at) <= later) };
+  const f = buildDailyFeed({ surplus: { ...assessSnapshot(onlyClosed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later });
+  assert.equal(f.items.length, 0);
+  const html = renderToStaticMarkup(e(DealFeed, { feed: f, now: later, failed: false, refreshFailed: false, loading: false }));
+  assert.match(html, /No open deals right now/);
+  assert.equal((html.match(/data-card=/g) || []).length, 0);
+});

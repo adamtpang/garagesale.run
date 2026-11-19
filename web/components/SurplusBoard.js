@@ -215,7 +215,11 @@ function lotCard(lot) {
 
 export default function SurplusBoard({ view, failed, loading }) {
   const [status, setStatus] = useState('all');
-  const lots = (view && view.lots) || [];
+  const [showClosed, setShowClosed] = useState(false);
+  const allLots = (view && view.lots) || [];
+  // A closed lot can no longer be bid on, so it is hidden unless asked for. closed is null when the close time is unknown.
+  const closedCount = allLots.filter((lot) => lot.closed === true).length;
+  const lots = showClosed ? allLots : allLots.filter((lot) => lot.closed !== true);
   const counts = { all: lots.length };
   for (const id of STATUSES) counts[id] = lots.filter((lot) => lot.status === id).length;
   const shown = lots.filter((lot) => status === 'all' || lot.status === status);
@@ -262,6 +266,9 @@ export default function SurplusBoard({ view, failed, loading }) {
         chip(status === 'all', `All ${counts.all}`, () => setStatus('all')),
         ...STATUSES.map((id) => chip(status === id, `${FILTER[id] || id} ${counts[id]}`, () => setStatus(id)))),
 
-      shown.length === 0 && e('p', { className: 'text-sm text-muted-foreground' }, 'No lots with this status.'),
+      closedCount ? e('p', { className: 'mb-4 text-sm', 'data-field': 'closed-hidden' },
+        showClosed ? `Showing ${closedCount} closed lot${closedCount === 1 ? '' : 's'}. ` : `${closedCount} lot${closedCount === 1 ? ' has' : 's have'} closed and ${closedCount === 1 ? 'is' : 'are'} hidden. `,
+        e('button', { type: 'button', className: 'font-medium underline underline-offset-4', onClick: () => setShowClosed(!showClosed) }, showClosed ? 'Hide closed' : 'Show closed')) : null,
+      shown.length === 0 && e('p', { className: 'text-sm text-muted-foreground' }, closedCount && !showClosed && allLots.length === closedCount ? 'Every lot in this scan has closed. A new scan has not been posted.' : 'No lots with this status.'),
       e('div', { className: 'grid gap-4' }, shown.map((lot) => e(React.Fragment, { key: lot.id }, lotCard(lot))))));
 }

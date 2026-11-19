@@ -98,3 +98,20 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   }
   assert.ok(view.lots.some((l) => l.max_bid == null && /^Max bid is unknown/.test(l.max_bid_note)));
 });
+
+test('closed lots are hidden on the surplus board until asked for, and the count says so', async () => {
+  const { withClock } = await import('../lib/surplus.js');
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const view = withClock(assessSnapshot(seed, later), later);
+  const closed = view.lots.filter((l) => l.closed === true).length;
+  assert.ok(closed > 0);
+  const html = renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false }));
+  assert.match(html, /data-field="closed-hidden"/);
+  assert.match(html, new RegExp(`${closed} lots have closed and are hidden`));
+  // Only lots that are still open, or have no close time, get a card.
+  const open = view.lots.length - closed;
+  assert.match(html, new RegExp(`All ${open}<`));
+  // Before the close nothing is hidden.
+  const early = renderToStaticMarkup(e(SurplusBoard, { view: withClock(assessSnapshot(seed, NOW), NOW), failed: false, loading: false }));
+  assert.equal(early.includes('closed-hidden'), false);
+});
