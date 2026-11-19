@@ -115,3 +115,21 @@ test('closed lots are hidden on the surplus board until asked for, and the count
   const early = renderToStaticMarkup(e(SurplusBoard, { view: withClock(assessSnapshot(seed, NOW), NOW), failed: false, loading: false }));
   assert.equal(early.includes('closed-hidden'), false);
 });
+
+test('combined trips leave out closed lots unless closed lots are shown', async () => {
+  const { withClock } = await import('../lib/surplus.js');
+  const early = withClock(assessSnapshot(seed, NOW), NOW);
+  assert.ok(early.trips.length > 0);
+  const tripHtml = (view) => (renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false })).match(/data-field="trips"[\s\S]*?<\/details>/) || [''])[0];
+  // Before the close the shared pickup shows.
+  assert.match(tripHtml(early), /Combine trips/);
+  // After the close every lot in the shared pickup is closed, so no trip is offered.
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const after = withClock(assessSnapshot(seed, later), later);
+  const closedIds = new Set(after.lots.filter((l) => l.closed === true).map((l) => l.id));
+  const html = tripHtml(after);
+  for (const trip of after.trips) {
+    const open = trip.lot_ids.filter((id) => !closedIds.has(id));
+    if (open.length < 2) assert.equal(html.includes(trip.address), false, trip.address);
+  }
+});

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { BUY_STATUS, STATUSES } from '../lib/surplus.js';
+import { BUY_STATUS, STATUSES, tripGroups } from '../lib/surplus.js';
 
 const e = React.createElement;
 const TONE = {
@@ -220,6 +220,8 @@ export default function SurplusBoard({ view, failed, loading }) {
   // A closed lot can no longer be bid on, so it is hidden unless asked for. closed is null when the close time is unknown.
   const closedCount = allLots.filter((lot) => lot.closed === true).length;
   const lots = showClosed ? allLots : allLots.filter((lot) => lot.closed !== true);
+  // Shared pickups are worked out from the lots on show, so a closed lot never appears in a trip.
+  const trips = view ? (showClosed ? view.trips : tripGroups(lots)) : [];
   const counts = { all: lots.length };
   for (const id of STATUSES) counts[id] = lots.filter((lot) => lot.status === id).length;
   const shown = lots.filter((lot) => status === 'all' || lot.status === status);
@@ -254,10 +256,10 @@ export default function SurplusBoard({ view, failed, loading }) {
         e('summary', { className: 'cursor-pointer font-medium underline-offset-4 hover:underline' }, 'How the rules are applied'),
         e('p', { className: 'mt-1 text-muted-foreground' }, `${view.rules.tax_assumption_label}. ${view.rules.tax_base_note} A lot that breaks a rule is skipped, with the reason on the lot. A lot stays off the buy list while resale or any cost is unknown.`)),
 
-      view.trips.length ? e('details', { className: 'mb-5 text-sm', 'data-field': 'trips' },
-        e('summary', { className: 'cursor-pointer font-medium underline-offset-4 hover:underline' }, `Combine trips: ${view.trips.length} shared pickup${view.trips.length === 1 ? '' : 's'}`),
+      trips.length ? e('details', { className: 'mb-5 text-sm', 'data-field': 'trips' },
+        e('summary', { className: 'cursor-pointer font-medium underline-offset-4 hover:underline' }, `Combine trips: ${trips.length} shared pickup${trips.length === 1 ? '' : 's'}`),
         e('p', { className: 'mt-1 text-muted-foreground' }, view.trip_note),
-        view.trips.map((trip) => e('div', { key: trip.address, className: 'mt-2 border-t border-border pt-2' },
+        trips.map((trip) => e('div', { key: trip.address, className: 'mt-2 border-t border-border pt-2' },
           e('div', { className: 'font-medium' }, trip.address),
           e('div', { className: 'mt-1 text-muted-foreground' }, trip.titles.join(' · ')),
           e('p', { className: 'mt-1' }, trip.hint)))) : e('div', { className: 'mb-5' }),
