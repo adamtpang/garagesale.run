@@ -33,7 +33,7 @@ export default function ModeFeed({ mode }) {
   }, [mode]);
   const empty = failed ? (mode === 'sell' ? 'Could not load listings right now.' : 'Could not load saved deals right now.') : mode === 'sell' ? 'No live listings yet.' : 'No saved deals yet. Search above and save the ones worth chasing.';
   return <section className="pb-8 pt-8"><div className="wrap">
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h2 className="!text-3xl !font-semibold !tracking-tight">{mode === 'sell' ? 'Live now' : 'Top flips'}</h2><span className="flex flex-wrap gap-2"><Button asChild variant="secondary" size="sm"><a href="/deals">Deals</a></Button><Button asChild variant="secondary" size="sm"><a href="/dashboard">Dashboard</a></Button></span></div>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h2 className="!text-3xl !font-semibold !tracking-tight">{mode === 'sell' ? 'Live now' : 'Top flips'}</h2><span className="flex flex-wrap gap-2"><Button asChild variant="secondary" size="sm"><a href="/deals">Deals</a></Button><Button asChild variant="secondary" size="sm"><a href="/">Market</a></Button></span></div>
     {mode === 'buy' && <ScoutFreshness updatedAt={feed && feed.updated_at} filtersSet={feed && feed.filters_set} />}
     {items === null ? <p className="text-muted-foreground">Loading...</p> : items.length === 0 ? <p className="text-muted-foreground">{empty}</p> :
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{items.map((x) => <a key={x.key} href={x.href} target={x.ext ? '_blank' : undefined} rel="noopener" className="group">

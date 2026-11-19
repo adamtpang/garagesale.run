@@ -53,7 +53,7 @@ export default function LadderPage() {
         <p className="mt-2 max-w-2xl text-base">Every buy and sale in order, and what the bankroll was after each one. The max buy per flip is the bankroll you have now.</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="secondary" size="sm"><a href="/dashboard">Deals</a></Button>
+        <Button asChild variant="secondary" size="sm"><a href="/">Market</a></Button>
         <Button asChild variant="secondary" size="sm"><a href="/ledger">Ledger</a></Button>
         {key && <Button variant="ghost" size="sm" onClick={forget}>Forget key</Button>}
       </div>

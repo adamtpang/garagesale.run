@@ -226,7 +226,7 @@ export default function SurplusBoard({ view, failed, loading }) {
         e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Surplus arbitrage'),
         e('p', { className: 'mt-2 max-w-2xl text-sm text-muted-foreground' }, 'Buy a government surplus lot, then sell the units somewhere else. The two sides stay apart. This board does not place bids.')),
       e('div', { className: 'flex flex-wrap gap-2' },
-        e('a', { href: '/dashboard', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 shadow-tag-sm text-sm font-medium text-secondary-foreground' }, 'Deals'))),
+        e('a', { href: '/', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 shadow-tag-sm text-sm font-medium text-secondary-foreground' }, 'Market'))),
 
     loading && e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground' }, 'Loading the surplus scan…'),
     failed && e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-sm' },

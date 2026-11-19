@@ -85,7 +85,7 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
   return e('section', null,
     e('div', { className: 'mb-4 flex flex-wrap items-end justify-between gap-3' },
       e('div', null,
-        e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Deals'),
+        e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Market'),
         e('p', { className: 'mt-2 max-w-2xl text-base text-foreground' }, 'Best profit first. Profit is after every fee, gas and your drive time. Nothing here bids, buys or messages a seller.')),
       e('div', { className: 'flex flex-wrap gap-2 text-sm' },
         e('a', { href: '/surplus', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium shadow-tag-sm' }, 'Surplus detail'),
