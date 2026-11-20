@@ -17,14 +17,15 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined, drive_unknown_reason: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
 }
 
-// Why a drive time is unknown, in a few words, or null when it is known. A lot is routed by its street
+// Why a drive time is unknown, in a few words. Left out (undefined) when it is known, so it is never
+// listed as a missing value. A lot is routed by its street
 // address and a listing by its map location; with those, it is only waiting for the drive refresh.
 export function driveUnknownReason(minutes, hasPlace, kind) {
-  if (typeof minutes === 'number' && Number.isFinite(minutes)) return null;
+  if (typeof minutes === 'number' && Number.isFinite(minutes)) return undefined;
   if (!hasPlace) return kind === 'surplus' ? 'no pickup address' : 'no map location';
   return 'not looked up yet';
 }
