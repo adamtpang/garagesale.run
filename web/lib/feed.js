@@ -17,7 +17,7 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: { ...item.resale, listing_plan: undefined, comps_say: undefined }, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
 }
 
@@ -90,6 +90,9 @@ export function fromLot(lot) {
       basis: (lot.cases || []).map((c) => `${c.name}: ${c.basis}`),
       caveats: lot.case_caveats || [],
       sell_on: lot.marketplaces,
+      // Adam's listing draft, when it set the cases, and what the comps alone said.
+      listing_plan: lot.listing_plan || undefined,
+      comps_say: lot.comps_say || undefined,
     },
     comps: lot.comps.map((c) => ({
       type: c.type, url: c.url, price: c.price, sold_on: c.type === 'sold' ? c.sold_on : null,
