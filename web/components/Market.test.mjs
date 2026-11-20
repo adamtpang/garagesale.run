@@ -98,7 +98,7 @@ test('the Market page draws one tile per deal, honors starting filters, and offe
 
 test('a tile and the full card say why a drive time is unknown', async () => {
   const { driveUnknownReason } = await import('../lib/feed.js');
-  assert.equal(driveUnknownReason(30, false, 'surplus'), null);
+  assert.equal(driveUnknownReason(30, false, 'surplus'), undefined);
   assert.equal(driveUnknownReason(null, false, 'surplus'), 'no pickup address');
   assert.equal(driveUnknownReason(null, false, 'listing'), 'no map location');
   assert.equal(driveUnknownReason(null, true, 'surplus'), 'not looked up yet');
@@ -111,7 +111,7 @@ test('a tile and the full card say why a drive time is unknown', async () => {
   assert.equal(cardFor(noAddress, NOW).costs.find((c) => c.key === 'drive').note, 'Not counted in profit yet: no pickup address');
   // The fixture listing has a drive, so it has no reason, and the reason is never listed as an unknown value.
   const listing = f.items.find((it) => it.kind === 'listing');
-  assert.equal(listing.location.drive_unknown_reason, null);
+  assert.equal(listing.location.drive_unknown_reason, undefined);
   for (const it of f.items) assert.equal(it.unknown.includes('location.drive_unknown_reason'), false, it.id);
   // A listing posted without a map location says so.
   const noMap = buildDailyFeed({ surplus: null, deals: { updated_at: '2026-11-16T12:00:00.000Z', deals: [{ ...camera(), drive: undefined }] }, config: confirmed(), nowMs: NOW }).items[0];
