@@ -1,6 +1,7 @@
 // The Market's filters and sort, kept apart from the page so they can be tested.
 // No network and no disk. Works on feed items and the cards cardFor makes from them.
 import { sortCards } from './dealCard.js';
+import { canonicalCategory } from './decision.js';
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 export const VERDICTS = ['all', 'buy', 'watch', 'skip'];
@@ -38,24 +39,30 @@ export function filtersToSearch(f) {
 }
 
 // The categories to offer: the rules' categories plus any a listing carries.
+// Aliases ("game consoles", "console") fold into the one name scoring uses, so a filter never misses one.
+export const categoryKey = (v) => canonicalCategory(v) || (v ? String(v).trim().toLowerCase() : null);
+
 export function categoriesOf(items, rules) {
-  const set = new Set((rules && rules.categories) || []);
-  for (const it of items) if (it.category) set.add(it.category);
+  const set = new Set();
+  for (const c of (rules && rules.categories) || []) { const k = categoryKey(c); if (k) set.add(k); }
+  for (const it of items) { const k = categoryKey(it.category); if (k) set.add(k); }
   return [...set].sort();
 }
 
 const later = (a, b) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : a - b);
 const closeTime = (item) => { const t = Date.parse((item.price && item.price.closes_at) || ''); return Number.isFinite(t) ? t : null; };
+// 0: still open, 1: close time unknown, 2: already closed.
+const closeRank = (item, nowMs) => { const t = closeTime(item); if (t == null) return 1; return nowMs != null && t <= nowMs ? 2 : 0; };
 
 // pairs: [{ item, card }]. Returns the pairs that pass the filters, in the chosen order.
 // An unknown price or drive time is kept when that filter is set, and counted, so nothing is hidden for
 // lack of data.
-export function applyFilters(pairs, f) {
+export function applyFilters(pairs, f, nowMs = null) {
   let unknownKept = 0;
   const kept = pairs.filter(({ item, card }) => {
     if (f.verdict !== 'all' && card.decision !== f.verdict) return false;
     if (f.source !== 'all' && item.kind !== f.source) return false;
-    if (f.category !== 'all' && item.category !== f.category) return false;
+    if (f.category !== 'all' && categoryKey(item.category) !== categoryKey(f.category)) return false;
     let unknown = false;
     if (f.maxPrice != null) {
       const p = num(item.price && item.price.current);
@@ -71,7 +78,7 @@ export function applyFilters(pairs, f) {
     return true;
   });
   let out;
-  if (f.sort === 'closing') out = [...kept].sort((a, b) => later(closeTime(a.item), closeTime(b.item)));
+  if (f.sort === 'closing') out = [...kept].sort((a, b) => (closeRank(a.item, nowMs) - closeRank(b.item, nowMs)) || later(closeTime(a.item), closeTime(b.item)));
   else if (f.sort === 'drive') out = [...kept].sort((a, b) => later(num(a.item.location.drive_minutes_round_trip), num(b.item.location.drive_minutes_round_trip)));
   else {
     const order = sortCards(kept.map((x) => x.card)).map((c) => c.id);

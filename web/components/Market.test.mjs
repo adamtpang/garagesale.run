@@ -8,7 +8,7 @@ import { buildDailyFeed } from '../lib/feed.js';
 import { cardFor } from '../lib/dealCard.js';
 import { cleanDeal } from '../lib/decision.js';
 import { withRules } from '../lib/scoutConfig.js';
-import { applyFilters, filtersToSearch, parseFilters, tileFor, DEFAULT_FILTERS } from '../lib/market.js';
+import { applyFilters, filtersToSearch, parseFilters, tileFor, DEFAULT_FILTERS, categoriesOf } from '../lib/market.js';
 import Market from './Market.js';
 
 const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
@@ -94,4 +94,35 @@ test('the Market page draws one tile per deal, honors starting filters, and offe
   assert.match(only, /Clear filters/);
   const none = renderToStaticMarkup(e(Market, { feed: f, now: NOW, failed: false, refreshFailed: false, loading: false, initialFilters: { ...DEFAULT_FILTERS, category: 'bikes' } }));
   assert.match(none, /Nothing passes these filters/);
+});
+
+test('closing soonest puts open lots first, then unknown close times, then closed lots', () => {
+  // Nov 17, 8:30 PM CT: the Schertz lots have just closed; TFC and the Hallettsville lots are still open.
+  const later = Date.parse('2026-11-18T02:30:00.000Z');
+  const f = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later });
+  const pairs = f.items.map((item) => ({ item, card: cardFor(item, later) }));
+  const order = applyFilters(pairs, { ...DEFAULT_FILTERS, sort: 'closing' }, later).pairs.map((p) => {
+    const t = Date.parse(p.item.price.closes_at || '');
+    return Number.isFinite(t) ? (t > later ? 'open' : 'closed') : 'unknown';
+  });
+  assert.ok(order.includes('open') && order.includes('closed'));
+  const rank = { open: 0, unknown: 1, closed: 2 };
+  assert.deepEqual(order, [...order].sort((a, b) => rank[a] - rank[b]));
+  const open = applyFilters(pairs, { ...DEFAULT_FILTERS, sort: 'closing' }, later).pairs.filter((p) => Date.parse(p.item.price.closes_at || '') > later).map((p) => Date.parse(p.item.price.closes_at));
+  assert.deepEqual(open, [...open].sort((a, b) => a - b));
+});
+
+test('a category alias never hides a deal, and the menu lists each category once', () => {
+  const f = buildDailyFeed({ surplus: null, deals: { updated_at: '2026-11-16T12:00:00.000Z', deals: [camera({ category: 'consoles', title: 'PS5', url: 'https://www.facebook.com/marketplace/item/777/' })] }, config: confirmed(), nowMs: NOW });
+  const pairs = pairsOf(f);
+  for (const pick of ['game consoles', 'consoles', 'console']) assert.equal(applyFilters(pairs, { ...DEFAULT_FILTERS, category: pick }).pairs.length, 1, pick);
+  const cats = categoriesOf(f.items, { categories: ['electronics', 'game consoles', 'tools'] });
+  assert.deepEqual(cats, ['consoles', 'electronics', 'tools']);
+});
+
+test('the number boxes keep what is typed, so a decimal or a zero can be entered', () => {
+  const src = fs.readFileSync(new URL('./Market.js', import.meta.url), 'utf8');
+  assert.match(src, /value: shownText\('maxPrice'\)/);
+  assert.match(src, /value: shownText\('maxDrive'\)/);
+  assert.equal(/Number\(ev\.target\.value\)\) \|\| null/.test(src), false);
 });
