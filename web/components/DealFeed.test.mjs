@@ -9,6 +9,10 @@ import { cardFor, sortCards, countdown } from '../lib/dealCard.js';
 import { cleanDeal } from '../lib/decision.js';
 import { withRules } from '../lib/scoutConfig.js';
 import DealFeed from './DealFeed.js';
+import { activeRules } from '../lib/rules.js';
+// Adam's real rules with work time set to 0, so these tests keep checking how the numbers are shown.
+// Work time is tested on its own in lib/workTime.test.mjs.
+const NO_WORK = activeRules({ work_minutes_per_unit: 0 });
 
 // These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
 // lib/listingPlan.test.mjs covers the plan.
@@ -26,8 +30,8 @@ const camera = (drive) => ({
   }),
 });
 const feedWith = (deals) => buildDailyFeed({
-  surplus: { ...assessSnapshot(seed, NOW), source: 'seed', updated_at: null },
-  deals: { updated_at: '2026-11-16T12:00:00.000Z', deals }, config: confirmed(), nowMs: NOW,
+  surplus: { ...assessSnapshot(seed, NOW, NO_WORK), source: 'seed', updated_at: null },
+  deals: { updated_at: '2026-11-16T12:00:00.000Z', deals }, config: confirmed(), nowMs: NOW, rules: NO_WORK,
 });
 
 test('a listing card says the profit in plain words, with the costs under it', () => {
@@ -153,7 +157,7 @@ test('the gas note shows the miles the gas cost was worked out on', () => {
   // A surplus lot with a routed drive pays gas on the routed miles, and the note says so.
   const routed = buildDailyFeed({
     surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => ({ ...l, drive: { minutes_round_trip: 40, miles_round_trip: 30.4, source: 'openrouteservice' } })) }, NOW), source: 'seed', updated_at: null },
-    deals: null, config: confirmed(), nowMs: NOW,
+    deals: null, config: confirmed(), nowMs: NOW, rules: NO_WORK,
   }).items.find((it) => it.id === 'ps-4123518');
   const g = cardFor(routed, NOW).costs.find((c) => c.key === 'gas');
   assert.deepEqual([routed.costs.gas_miles, g.value, g.note], [30.4, '$5.47', '30.4 mi round trip, routed']);
@@ -164,8 +168,8 @@ test('once the bid is over the max bid, the card shows profit at the bid, not at
   const zebra = feedWith([]).items.find((it) => it.id === 'ps-4123518');
   // The same lot with the bid pushed to $95, past the $79 max bid. The feed's own numbers for that bid are used.
   const bidUp = buildDailyFeed({
-    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 95 } : l)) }, NOW), source: 'seed', updated_at: null },
-    deals: null, config: confirmed(), nowMs: NOW,
+    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 95 } : l)) }, NOW, NO_WORK), source: 'seed', updated_at: null },
+    deals: null, config: confirmed(), nowMs: NOW, rules: NO_WORK,
   }).items.find((it) => it.id === 'ps-4123518');
   assert.equal(bidUp.max_bid, zebra.max_bid);
   const card = cardFor(bidUp, NOW);
@@ -177,8 +181,8 @@ test('once the bid is over the max bid, the card shows profit at the bid, not at
   assert.deepEqual(card.cases.map((c) => c.value), ['low', 'middle', 'high'].map((n) => `${bidUp.profit[n] < 0 ? '-' : ''}$${Math.abs(bidUp.profit[n]).toFixed(2)}`));
   // A bid exactly at the max bid can still win there.
   const atMax = buildDailyFeed({
-    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 79 } : l)) }, NOW), source: 'seed', updated_at: null },
-    deals: null, config: confirmed(), nowMs: NOW,
+    surplus: { ...assessSnapshot({ ...seed, lots: seed.lots.map((l) => (l.id === 'ps-4123518' ? { ...l, current_bid: 79 } : l)) }, NOW, NO_WORK), source: 'seed', updated_at: null },
+    deals: null, config: confirmed(), nowMs: NOW, rules: NO_WORK,
   }).items.find((it) => it.id === 'ps-4123518');
   assert.match(cardFor(atMax, NOW).basis, /If you win at your \$79\.00 max bid/);
 });
@@ -196,7 +200,7 @@ test('a failed refresh keeps the deals on screen and says so', () => {
 test('with every lot closed, the deals page says so instead of showing closed lots', () => {
   const later = Date.parse('2026-11-19T12:00:00.000Z');
   const onlyClosed = { ...seed, lots: seed.lots.filter((l) => l.closes_at && Date.parse(l.closes_at) <= later) };
-  const f = buildDailyFeed({ surplus: { ...assessSnapshot(onlyClosed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later });
+  const f = buildDailyFeed({ surplus: { ...assessSnapshot(onlyClosed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later, rules: NO_WORK });
   assert.equal(f.items.length, 0);
   const html = renderToStaticMarkup(e(DealFeed, { feed: f, now: later, failed: false, refreshFailed: false, loading: false }));
   assert.match(html, /No open deals right now/);

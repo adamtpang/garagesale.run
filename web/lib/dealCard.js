@@ -6,6 +6,8 @@ const round2 = (n) => Math.round(n * 100) / 100;
 export const money = (v) => (num(v) == null ? 'unknown' : `${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}`);
 const whole = (v) => `$${Math.round(Math.abs(v)).toLocaleString('en-US')}`;
 const LABEL = { buy: 'Buy', watch: 'Watch', skip: 'Skip' };
+// Adam's work time on a deal in plain words: "4 h" or "30 min".
+const workText = (m) => (num(m) == null ? 'the time' : (m >= 60 ? `${Math.round((m / 60) * 10) / 10} h` : `${m} min`));
 
 export function countdown(iso, nowMs) {
   const t = Date.parse(iso || '');
@@ -48,6 +50,7 @@ export function cardFor(item, nowMs = null) {
     where,
     profit == null ? null : (confirmed ? 'Confirmed from sold prices and stated costs.' : 'Middle case. An estimate, not confirmed.'),
     profit != null && num(c.time) == null ? 'Drive time is not counted yet.' : null,
+    num(c.work) > 0 ? `Counts ${workText(c.work_minutes)} of your work (${money(c.work)}).` : null,
   ].filter(Boolean).join(' ');
 
   // What it costs to buy on top of the price: the buyer's premium and tax. On a listing both are $0.

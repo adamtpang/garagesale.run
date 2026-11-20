@@ -1,6 +1,6 @@
 // Adam's flip rules. This is the one place they live.
 // Every page and API reads this file. Change a rule here, not in the code that applies it.
-// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md). Bankroll cap, hourly rate and drive cap: Adam, Nov 17, 2026. Pickup radius 20 miles: Adam, Nov 20, 2026.
+// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md). Bankroll cap, hourly rate and drive cap: Adam, Nov 17, 2026. Pickup radius 20 miles and 30 minutes of work a unit: Adam, Nov 20, 2026.
 export const RULES_CONFIG = Object.freeze({
   approved_on: '2026-11-03',
   home: 'New Braunfels, TX',
@@ -13,6 +13,9 @@ export const RULES_CONFIG = Object.freeze({
   min_profit: 100,
   // What an hour of Adam's driving costs. Profit is counted after it.
   hourly_rate: 20,
+  // Adam's own time per unit to test, photograph, list and pack it, at the hourly rate. Like drive time it
+  // comes off profit, not off the bankroll.
+  work_minutes_per_unit: 30,
   // Longest round-trip drive for one deal, in minutes, from home.
   max_drive_minutes: 45,
   // Pickup radius, measured from home.

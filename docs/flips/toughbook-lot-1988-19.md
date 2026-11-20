@@ -54,19 +54,24 @@ Assumptions, all stated:
 - eBay fee 13.6% plus $0.40 per sale. Shipping $15 a unit, paid by Adam (free shipping is the norm; buyer-paid shipping ran $10.16 to $16.50).
 - Gas: 30 miles round trip at $0.18 a mile, $5.40.
 - Drive time: $15 (about 45 minutes at $20 an hour). **Not routed yet.** Seguin may sit right at the 45-minute cap.
+- Your work: 30 minutes a Toughbook to test, photograph, list and pack it, at $20 an hour. That's $80 for 8 (Adam's rule, Nov 20).
 
 Net per Toughbook after fee and shipping: $10.52 low, $36.44 middle, $71.00 high. For 8 units: $84.16, $291.52, $568.00.
 
+Profit after the all-in cost, $15 of drive time and $80 of work:
+
 | Your bid | All-in | Profit low | Profit middle | Profit high |
 |---|---|---|---|---|
-| $10 | $17.58 | $52 | $259 | $535 |
-| $30 | $41.93 | $27 | $235 | $511 |
-| **$52** | **$68.73** | **$0** | **$208** | **$484** |
-| $76 | $97.95 | -$29 | $179 | $455 |
+| $10 | $17.58 | -$28 | $179 | $455 |
+| $30 | $41.93 | -$53 | $155 | $431 |
+| $52 | $68.73 | -$80 | $128 | $404 |
+| $74 | $95.52 | -$106 | $101 | $377 |
 
-- **Max bid: $52.** It's the highest bid where the low case still breaks even and the middle case still clears the $100 minimum, the same rule the app uses.
-- $76 is the bankroll ceiling ($100 all-in), but past $52 the low case loses money.
-- If the county says the units are CF-54 or CF-20 and unlocked, the low case rises and the max bid can go up. If they're locked, the max bid drops toward $20.
+**With work counted, the lock question decides the bid:**
+
+- **If the county says they're locked, don't bid.** The low case ($30 a unit) loses money at every bid, even $0, so no bid passes the rule the app uses (the low case must not lose money).
+- **If they're unlocked, bid up to $76.** With a $60 low case (an older unlocked CF-31) and a $100 middle case, every bid up to the $100 cash cap passes. $76 is $97.95 all-in.
+- **If the county doesn't know, or doesn't answer,** you're betting on the middle case. Up to $74 still clears $100 in the middle case, but a locked lot would lose up to about $106.
 
 ## After a win
 
@@ -82,3 +87,4 @@ Net per Toughbook after fee and shipping: $10.52 low, $36.44 middle, $71.00 high
 - **Missing chargers or batteries.** Most comps included at least a battery. Missing parts push units toward the low case.
 - **Slow sales.** 8 units means 8 listings. Expect a few weeks to sell through.
 - **Bidding war.** 3 watchers at $10 already. Stop at the max bid.
+- **Your time.** 8 units is about 4 hours of work, already counted above. Selling the 4 other laptops adds more.

@@ -7,7 +7,10 @@ import { RULES_CONFIG } from '../config/rules.js';
 
 // Rules wide enough to never trip. Tests about comps, fees and confirmation use these,
 // so they check that logic alone. The rule tests below use Adam's real rules.
-const LOOSE = activeRules({ min_profit: 0, max_pickup_miles: 100000, max_per_flip: 100000, bankroll: 100000 });
+// Adam's real rules with work time set to 0. The rule tests below check radius, cost and profit thresholds
+// on fixed numbers; work time is tested on its own in workTime.test.mjs.
+const NO_WORK = activeRules({ work_minutes_per_unit: 0 });
+const LOOSE = activeRules({ min_profit: 0, max_pickup_miles: 100000, max_per_flip: 100000, bankroll: 100000, work_minutes_per_unit: 0 });
 
 // These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
 // lib/listingPlan.test.mjs covers the plan.
@@ -386,8 +389,9 @@ test('GET is public, POST requires the worker key, and a local write does not ch
     }, NOW);
     assert.equal(written.source, 'stored');
     assert.equal(written.places_bids, false);
-    // A write goes through the same rules. $58.40 is under the $100 minimum, so the incoming buy mark does not stick.
-    assert.equal(written.lots[0].net, 58.4);
+    // A write goes through the same rules. $58.40 less $20 of work (2 units at 30 minutes) is $38.40, under the
+    // $100 minimum, so the incoming buy mark does not stick.
+    assert.equal(written.lots[0].net, 38.4);
     assert.equal(written.lots[0].status, 'skip');
     assert.match(written.lots[0].status_reason, /under the \$100\.00 minimum/);
     const again = await readSurplus(NOW);
@@ -428,7 +432,7 @@ test('the rules config holds the Nov 3 numbers and the proposed rules are off', 
 });
 
 test('a lot that passes every rule with confirmed profit keeps its buy mark', () => {
-  const lot = assessLot(ruleLot(), NOW);
+  const lot = assessLot(ruleLot(), NOW, NO_WORK);
   assert.equal(lot.net, 346.4);
   assert.equal(lot.status, BUY_STATUS);
   assert.equal(lot.rules_pass, true);
@@ -436,19 +440,19 @@ test('a lot that passes every rule with confirmed profit keeps its buy mark', ()
 });
 
 test('past the pickup radius is a skip, at the limit is not', () => {
-  const far = assessLot(ruleLot({ miles_from_home: 20.1 }), NOW);
+  const far = assessLot(ruleLot({ miles_from_home: 20.1 }), NOW, NO_WORK);
   assert.equal(far.status, 'skip');
   assert.equal(ruleOf(far, 'radius').result, 'fail');
   assert.match(far.status_reason, /20\.1 mi from New Braunfels, TX is past the 20-mile pickup limit/);
-  const edge = assessLot(ruleLot({ miles_from_home: 20 }), NOW);
+  const edge = assessLot(ruleLot({ miles_from_home: 20 }), NOW, NO_WORK);
   assert.equal(ruleOf(edge, 'radius').result, 'pass');
   assert.equal(edge.status, BUY_STATUS);
   // A watch lot is skipped too. The rule does not depend on the status that came in.
-  assert.equal(assessLot(ruleLot({ miles_from_home: 52, status: 'needs preview' }), NOW).status, 'skip');
+  assert.equal(assessLot(ruleLot({ miles_from_home: 52, status: 'needs preview' }), NOW, NO_WORK).status, 'skip');
 });
 
 test('an unknown distance is not a pass and cannot be a buy', () => {
-  const lot = assessLot(ruleLot({ miles_from_home: null }), NOW);
+  const lot = assessLot(ruleLot({ miles_from_home: null }), NOW, NO_WORK);
   assert.equal(ruleOf(lot, 'radius').result, 'unknown');
   assert.notEqual(lot.status, BUY_STATUS);
   assert.notEqual(lot.status, 'skip');
@@ -456,10 +460,10 @@ test('an unknown distance is not a pass and cannot be a buy', () => {
 
 test('all-in cost over $100 is a skip, and exactly $100 is not', () => {
   // Bid $96.40 with no premium or tax, plus $3.60 gas, is $100.00 all-in.
-  const edge = assessLot(ruleLot({ current_bid: 96.4, quantity: 20 }), NOW);
+  const edge = assessLot(ruleLot({ current_bid: 96.4, quantity: 20 }), NOW, NO_WORK);
   assert.equal(edge.all_in, 100);
   assert.equal(ruleOf(edge, 'max_cost').result, 'pass');
-  const over = assessLot(ruleLot({ current_bid: 96.41, quantity: 20 }), NOW);
+  const over = assessLot(ruleLot({ current_bid: 96.41, quantity: 20 }), NOW, NO_WORK);
   assert.equal(over.all_in, 100.01);
   assert.equal(over.status, 'skip');
   assert.match(over.status_reason, /All-in cost \$100\.01 is over the \$100\.00 max per flip/);
@@ -468,65 +472,65 @@ test('all-in cost over $100 is a skip, and exactly $100 is not', () => {
 });
 
 test('a bid over the cap is a skip even when the all-in cost is unknown', () => {
-  const lot = assessLot(ruleLot({ current_bid: 127.5, premium_pct: null }), NOW);
+  const lot = assessLot(ruleLot({ current_bid: 127.5, premium_pct: null }), NOW, NO_WORK);
   assert.equal(lot.all_in, null);
   assert.equal(lot.status, 'skip');
   assert.match(lot.status_reason, /The bid alone, \$127\.50, is over/);
-  const opening = assessLot(ruleLot({ current_bid: null, opening_bid: 150 }), NOW);
+  const opening = assessLot(ruleLot({ current_bid: null, opening_bid: 150 }), NOW, NO_WORK);
   assert.equal(opening.status, 'skip');
-  const unknown = assessLot(ruleLot({ current_bid: null }), NOW);
+  const unknown = assessLot(ruleLot({ current_bid: null }), NOW, NO_WORK);
   assert.equal(ruleOf(unknown, 'max_cost').result, 'unknown');
   assert.notEqual(unknown.status, 'skip');
 });
 
 test('profit under $100 is a skip, confirmed or estimated, and exactly $100 passes', () => {
   // 2 units at $40: gross $80, fee $8, all-in $13.60, net $58.40.
-  const low = assessLot(confirmedLot(), NOW);
+  const low = assessLot(confirmedLot(), NOW, NO_WORK);
   assert.equal(low.net, 58.4);
   assert.equal(low.status, 'skip');
   assert.match(low.status_reason, /Confirmed profit \$58\.40 is under the \$100\.00 minimum/);
-  const estLow = assessLot(confirmedLot({ fee_basis: 'assumption' }), NOW);
+  const estLow = assessLot(confirmedLot({ fee_basis: 'assumption' }), NOW, NO_WORK);
   assert.equal(estLow.net, null);
   assert.equal(estLow.net_estimate, 58.4);
   assert.equal(estLow.status, 'skip');
   assert.match(estLow.status_reason, /Even the high case, \$58\.40 at the current bid, is under the \$100\.00 minimum/);
   // Bid $10, gas $3.60, no fee: 3 units at $37.87 is $113.61 gross and $100.01 net; at $37.86 it is $99.98.
   const comp = (price) => [{ type: 'sold', price, url: 'https://www.ebay.com/itm/123456789012', title: 'Sold', marketplace: 'eBay' }];
-  const pass = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.87) }), NOW);
+  const pass = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.87) }), NOW, NO_WORK);
   assert.equal(pass.net, 100.01);
   assert.equal(ruleOf(pass, 'min_profit').result, 'pass');
-  const fail = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.86) }), NOW);
+  const fail = assessLot(confirmedLot({ quantity: 3, fee_rate: 0, comps: comp(37.86) }), NOW, NO_WORK);
   assert.equal(fail.net, 99.98);
   assert.equal(ruleOf(fail, 'min_profit').result, 'fail');
 });
 
 test('an estimate that clears $100 stays unknown, and unknown profit is not a skip', () => {
-  const est = assessLot(ruleLot({ fee_basis: 'assumption' }), NOW);
+  const est = assessLot(ruleLot({ fee_basis: 'assumption' }), NOW, NO_WORK);
   assert.equal(est.net, null);
   assert.equal(ruleOf(est, 'min_profit').result, 'unknown');
   assert.equal(est.status, 'watch');
-  const none = assessLot(ruleLot({ comps: ASKING_ONLY, status: 'needs preview' }), NOW);
+  const none = assessLot(ruleLot({ comps: ASKING_ONLY, status: 'needs preview' }), NOW, NO_WORK);
   assert.equal(ruleOf(none, 'min_profit').result, 'unknown');
   assert.equal(none.status, 'needs preview');
 });
 
 test('several broken rules are all named', () => {
-  const lot = assessLot(confirmedLot({ miles_from_home: 52, current_bid: 127.5 }), NOW);
+  const lot = assessLot(confirmedLot({ miles_from_home: 52, current_bid: 127.5 }), NOW, NO_WORK);
   assert.equal(lot.status, 'skip');
   assert.deepEqual(lot.rule_checks.filter((c) => c.result === 'fail').map((c) => c.rule), ['radius', 'max_cost', 'min_profit']);
 });
 
 test('the proposed rules do nothing until they are switched on', () => {
   const at40 = ruleLot({ miles_from_home: 40 });
-  assert.equal(assessLot(at40, NOW).status, 'skip');
+  assert.equal(assessLot(at40, NOW, NO_WORK).status, 'skip');
   const wide = activeRules({ optional: { surplus_radius: { enabled: true } } });
   assert.equal(wide.pickup_miles, 60);
   assert.equal(ruleOf(assessLot(at40, NOW, wide), 'radius').result, 'pass');
   // "enabled" has to be exactly true.
   assert.equal(activeRules({ optional: { surplus_radius: { enabled: 'yes' } } }).pickup_miles, 20);
 
-  assert.equal(ruleOf(assessLot(ruleLot(), NOW), 'lot_roi'), undefined);
-  const roiOn = activeRules({ optional: { lot_roi: { enabled: true } } });
+  assert.equal(ruleOf(assessLot(ruleLot(), NOW, NO_WORK), 'lot_roi'), undefined);
+  const roiOn = activeRules({ work_minutes_per_unit: 0, optional: { lot_roi: { enabled: true } } });
   // $80 bid, 10 units at $40: all-in $83.60, net $276.40, return about 3.31x.
   assert.equal(ruleOf(assessLot(ruleLot({ current_bid: 80 }), NOW, roiOn), 'lot_roi').result, 'pass');
   // $90 bid: all-in $93.60, net $266.40, return about 2.85x.
@@ -536,7 +540,7 @@ test('the proposed rules do nothing until they are switched on', () => {
 });
 
 test('the gas rate comes from the rules', () => {
-  assert.equal(assessLot(ruleLot(), NOW).haul_cost, 3.6);
+  assert.equal(assessLot(ruleLot(), NOW, NO_WORK).haul_cost, 3.6);
   assert.equal(assessLot(ruleLot(), NOW, activeRules({ gas_per_mile: 0.5 })).haul_cost, 10);
   assert.equal(checkLot({}, DEFAULT_RULES).all_pass, false);
 });
@@ -547,7 +551,7 @@ const sale = (price, extra = {}) => ({ type: 'sold', price, url: `https://www.eb
 const caseOf = (lot, name) => lot.cases.find((c) => c.name === name);
 
 test('the Zebra lot shows low, middle and high cases priced from battery-less sales', () => {
-  const lot = assessLot(seed.lots[0], NOW);
+  const lot = assessLot(seed.lots[0], NOW, NO_WORK);
   assert.equal(lot.batteries, 'none');
   assert.equal(lot.batteries_text, 'No batteries');
   assert.equal(lot.comps_lot_sales, 3);
@@ -566,7 +570,7 @@ test('the Zebra lot shows low, middle and high cases priced from battery-less sa
 });
 
 test('the Zebra max bid is $79, and profit is shown at that bid, not only at today\'s bid', () => {
-  const lot = assessLot(seed.lots[0], NOW);
+  const lot = assessLot(seed.lots[0], NOW, NO_WORK);
   // At $79: premium 8.5% = $6.72 (rounded), tax 8.25% of $85.72 = $7.07, gas $5.76. All-in $98.55.
   assert.equal(lot.max_bid, 79);
   assert.equal(lot.max_bid_all_in, 98.55);
@@ -580,7 +584,7 @@ test('the Zebra max bid is $79, and profit is shown at that bid, not only at tod
   assert.match(lot.max_bid_note, /low case does not lose money/);
   assert.match(lot.max_bid_note, /never bids/);
   assert.equal(lot.bid_past_max, false);
-  assert.equal(assessLot({ ...seed.lots[0], current_bid: 85 }, NOW).bid_past_max, true);
+  assert.equal(assessLot({ ...seed.lots[0], current_bid: 85 }, NOW, NO_WORK).bid_past_max, true);
   // The profit rule sees the range: the low case is under $100, so it is not a pass.
   const profit = lot.rule_checks.find((c) => c.rule === 'min_profit');
   assert.equal(profit.result, 'unknown');
@@ -620,29 +624,29 @@ test('lot sales set the middle case and single sales stay apart', () => {
 
 test('the max bid respects the cost cap, the minimum profit and the low case', () => {
   // 10 units at $40, no fee or tax surprises: left over $360. Gas $3.60. The cost cap is what binds: $96 + $3.60 = $99.60.
-  const capped = assessLot(confirmedLot({ quantity: 10 }), NOW);
+  const capped = assessLot(confirmedLot({ quantity: 10 }), NOW, NO_WORK);
   assert.equal(capped.max_bid, 96);
   assert.equal(capped.max_bid_all_in, 99.6);
   // 3 units at $40: left over $108. The $100 minimum binds: all-in must be $8 or less, so the bid is $4.
-  const thin = assessLot(confirmedLot({ quantity: 3 }), NOW);
+  const thin = assessLot(confirmedLot({ quantity: 3 }), NOW, NO_WORK);
   assert.equal(thin.max_bid, 4);
   assert.equal(caseOf(thin, 'middle').profit_at_max_bid, 100.4);
   // 2 units at $40: left over $72. No bid can make $100.
-  const none = assessLot(confirmedLot(), NOW);
+  const none = assessLot(confirmedLot(), NOW, NO_WORK);
   assert.equal(none.max_bid, null);
   assert.equal(none.max_bid_text, 'none');
   assert.match(none.max_bid_note, /No bid works\. Even at a \$1 bid the middle case makes \$67\.40/);
   // No bid on the lot yet: the max bid does not need one.
-  const noBid = assessLot(confirmedLot({ quantity: 10, current_bid: null }), NOW);
+  const noBid = assessLot(confirmedLot({ quantity: 10, current_bid: null }), NOW, NO_WORK);
   assert.equal(noBid.max_bid, 96);
   assert.equal(caseOf(noBid, 'middle').profit_at_current_bid, null);
   // Unknown shipping or premium: the max bid stays unknown.
-  assert.equal(assessLot(confirmedLot({ quantity: 10, shipping: null, shipping_basis: 'unknown' }), NOW).max_bid, null);
-  assert.match(assessLot(confirmedLot({ quantity: 10, premium_pct: null }), NOW).max_bid_note, /unknown until the buyer's premium/);
+  assert.equal(assessLot(confirmedLot({ quantity: 10, shipping: null, shipping_basis: 'unknown' }), NOW, NO_WORK).max_bid, null);
+  assert.match(assessLot(confirmedLot({ quantity: 10, premium_pct: null }), NOW, NO_WORK).max_bid_note, /unknown until the buyer's premium/);
 });
 
 test('a phone lot cannot reach $100 in any case, so it has no max bid', () => {
-  const phone = assessSnapshot(seed, NOW).lots.find((l) => l.id === 'ps-4123524');
+  const phone = assessSnapshot(seed, NOW, NO_WORK).lots.find((l) => l.id === 'ps-4123524');
   assert.equal(phone.cases.length, 3);
   assert.equal(phone.max_bid, null);
   assert.match(phone.max_bid_note, /No bid works/);
@@ -697,11 +701,11 @@ test('a comp set is shared by name, and a missing set is an error', () => {
 
 test('comps past the cap are counted, not dropped in silence', () => {
   const many = Array.from({ length: MAX_COMPS + 5 }, (_, i) => sale(10 + i));
-  const lot = assessLot(confirmedLot({ comps: many }), NOW);
+  const lot = assessLot(confirmedLot({ comps: many }), NOW, NO_WORK);
   assert.equal(lot.comps.length, MAX_COMPS);
   assert.equal(lot.comps_dropped, 5);
   assert.match(lot.comps_note, /5 more comps were sent than the 80 this board keeps/);
-  assert.equal(assessLot(confirmedLot(), NOW).comps_note, null);
+  assert.equal(assessLot(confirmedLot(), NOW, NO_WORK).comps_note, null);
   // The board cleans a snapshot and then cleans each lot again. The count has to survive both passes.
   const view = assessSnapshot({ lots: [confirmedLot({ comps: many })] }, NOW);
   assert.equal(view.lots[0].comps.length, MAX_COMPS);
@@ -711,11 +715,11 @@ test('comps past the cap are counted, not dropped in silence', () => {
 
 test('a fleet device gets the lock warning on its cases, whichever way it is priced', () => {
   // The Zebra lot is priced from battery-less lot sales, not from working and for-parts sales.
-  const zebra = assessSnapshot(seed, NOW).lots.find((l) => l.id === 'ps-4123518');
+  const zebra = assessSnapshot(seed, NOW, NO_WORK).lots.find((l) => l.id === 'ps-4123518');
   assert.equal(zebra.fleet_device, true);
   assert.match(zebra.case_caveats.join(' '), /No cited sale is of a locked unit/);
   assert.match(zebra.case_caveats.join(' '), /biggest cited lot sale was 5 units/);
-  const plain = assessLot(confirmedLot({ quantity: 10 }), NOW);
+  const plain = assessLot(confirmedLot({ quantity: 10 }), NOW, NO_WORK);
   assert.equal(plain.case_caveats.some((c) => /locked/.test(c)), false);
 });
 

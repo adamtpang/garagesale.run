@@ -5,6 +5,10 @@ import { assessSnapshot } from './surplus.js';
 import { buildDailyFeed, fromDeal } from './feed.js';
 import { withRules } from './scoutConfig.js';
 import { cleanDeal } from './decision.js';
+import { activeRules } from './rules.js';
+// Adam's real rules with work time set to 0, so these tests keep checking how the numbers are shown.
+// Work time is tested on its own in lib/workTime.test.mjs.
+const NO_WORK = activeRules({ work_minutes_per_unit: 0 });
 
 // These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
 // lib/listingPlan.test.mjs covers the plan.
@@ -19,11 +23,11 @@ const camera = ({ drive = { minutes_round_trip: 0, miles_round_trip: 16, source:
   distance_mi: 8, distance_from: 'New Braunfels', area: 'New Braunfels', category: 'cameras', condition: 'Used', model: 'EOS R',
   comps: [210, 220, 230, 240].map(sold), ...extra,
 }) });
-const surplus = () => ({ ...assessSnapshot(seed, NOW), source: 'seed', updated_at: null });
-const feed = (deals = [], config = confirmed()) => buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-11-16T12:00:00.000Z', deals }, config, nowMs: NOW });
+const surplus = () => ({ ...assessSnapshot(seed, NOW, NO_WORK), source: 'seed', updated_at: null });
+const feed = (deals = [], config = confirmed()) => buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-11-16T12:00:00.000Z', deals }, config, nowMs: NOW, rules: NO_WORK });
 
 test('a listing carries its costs, three resale cases, profit, ROI and the most to offer', () => {
-  const item = fromDeal(camera(), confirmed());
+  const item = fromDeal(camera(), confirmed(), NO_WORK);
   // Resale $225 (middle of four sold comps). eBay fee 13.6% + $0.40 = $31.00. Shipping $10. Gas 8 mi x 2 x $0.18 = $2.88.
   assert.deepEqual([item.resale.low, item.resale.middle, item.resale.high], [220, 225, 230]);
   assert.deepEqual([item.costs.fee, item.costs.shipping, item.costs.gas, item.costs.all_in], [31, 10, 2.88, 42.88]);
@@ -41,7 +45,7 @@ test('a listing carries its costs, three resale cases, profit, ROI and the most 
 });
 
 test('a listing that breaks a rule is a skip with the reason, and unknown values stay null', () => {
-  const far = fromDeal(camera({ area: 'Austin', distance_from: 'Austin' }), confirmed());
+  const far = fromDeal(camera({ area: 'Austin', distance_from: 'Austin' }), confirmed(), NO_WORK);
   assert.equal(far.decision.value, 'skip');
   assert.match(far.decision.reasons.join(' '), /Austin is not a pickup origin/);
   assert.equal(far.location.miles, null);
@@ -50,7 +54,7 @@ test('a listing that breaks a rule is a skip with the reason, and unknown values
   assert.equal(far.max_bid, null);
   assert.ok(far.unknown.includes('location.miles'));
   assert.ok(far.unknown.includes('costs.all_in'));
-  const pricey = fromDeal(camera({ ask: 150 }), confirmed());
+  const pricey = fromDeal(camera({ ask: 150 }), confirmed(), NO_WORK);
   assert.equal(pricey.decision.value, 'skip');
   // With the real config the fee is unconfirmed, so nothing is a buy.
   assert.notEqual(fromDeal(camera(), withRules(null)).decision.value, 'buy');
@@ -108,14 +112,14 @@ test('the feed puts buys first, counts each decision, and says when its data is 
   assert.equal(f.items[f.items.length - 1].profit.middle, null);
   assert.deepEqual([f.rules.max_cost, f.rules.min_profit, f.rules.pickup_miles], [100, 100, 20]);
   assert.match(f.stale.join(' '), /No surplus scan has been posted/);
-  const old = buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-10-23T12:00:00.000Z', deals: [] }, config: confirmed(), nowMs: NOW });
+  const old = buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-10-23T12:00:00.000Z', deals: [] }, config: confirmed(), nowMs: NOW, rules: NO_WORK });
   assert.match(old.stale.join(' '), /The listings feed is 24 days old/);
-  const none = buildDailyFeed({ surplus: surplus(), deals: null, config: confirmed(), nowMs: NOW });
+  const none = buildDailyFeed({ surplus: surplus(), deals: null, config: confirmed(), nowMs: NOW, rules: NO_WORK });
   assert.equal(none.sources.listings.deals, 0);
   assert.equal(none.items.length, 13);
   // A missing listings feed is said out loud, whether it was never posted or could not be read.
   assert.match(none.stale.join(' '), /No listings feed was found/);
-  assert.match(buildDailyFeed({ surplus: surplus(), deals: { deals: [] }, config: confirmed(), nowMs: NOW }).stale.join(' '), /No listings feed was found/);
+  assert.match(buildDailyFeed({ surplus: surplus(), deals: { deals: [] }, config: confirmed(), nowMs: NOW, rules: NO_WORK }).stale.join(' '), /No listings feed was found/);
   assert.equal(/No listings feed/.test(feed().stale.join(' ')), false);
 });
 
@@ -141,40 +145,40 @@ test('GET /api/feed is public, read-only and returns the feed', async () => {
 test('a listing is never a buy while its ask is above its own max offer', () => {
   // Ask $99 fits the $100 cap alone. With 8 miles of gas ($2.88) the cost is $101.88, which does not.
   const comps = [410, 420, 430, 440].map((price, i) => sold(price, i));
-  const near = fromDeal(camera({ ask: 99, comps }), confirmed());
+  const near = fromDeal(camera({ ask: 99, comps }), confirmed(), NO_WORK);
   assert.equal(near.costs.all_in, 101.88);
   assert.equal(near.decision.value, 'skip');
   assert.match(near.decision.reasons.join(' '), /Ask plus gas is \$101\.88, over the \$100\.00 max per flip/);
   assert.equal(near.max_bid, 97);
   // One that fits with gas stays a buy, and its ask is inside its max offer.
-  const fits = fromDeal(camera({ ask: 97, comps }), confirmed());
+  const fits = fromDeal(camera({ ask: 97, comps }), confirmed(), NO_WORK);
   assert.equal(fits.costs.all_in, 99.88);
   assert.equal(fits.decision.value, 'buy');
   assert.ok(fits.price.current <= fits.max_bid);
   // Across a spread of asks, a buy never sits above its max offer.
   for (let ask = 1; ask <= 120; ask += 1) {
-    const it = fromDeal(camera({ ask, comps }), confirmed());
+    const it = fromDeal(camera({ ask, comps }), confirmed(), NO_WORK);
     if (it.decision.value === 'buy') assert.ok(it.max_bid != null && ask <= it.max_bid, `ask ${ask}`);
   }
   // The same holds to the cent. The max offer is whole dollars, but an ask that fits is never above it.
   // $97.05 plus $2.88 gas is $99.93, inside the cap, while the whole-dollar ceiling is $97.
-  const cents = fromDeal(camera({ ask: 97.05, comps }), confirmed());
+  const cents = fromDeal(camera({ ask: 97.05, comps }), confirmed(), NO_WORK);
   assert.equal(cents.decision.value, 'buy');
   assert.equal(cents.max_bid, 97.05);
   // $97.13 plus gas is $100.01, over the cap: a skip, and the ceiling stays at whole dollars.
-  const over = fromDeal(camera({ ask: 97.13, comps }), confirmed());
+  const over = fromDeal(camera({ ask: 97.13, comps }), confirmed(), NO_WORK);
   assert.equal(over.decision.value, 'skip');
   assert.equal(over.max_bid, 97);
   let buys = 0;
   for (let c = 9000; c <= 10100; c += 1) {
-    const it = fromDeal(camera({ ask: c / 100, comps }), confirmed());
+    const it = fromDeal(camera({ ask: c / 100, comps }), confirmed(), NO_WORK);
     if (it.decision.value === 'buy') { buys += 1; assert.ok(it.max_bid != null && c / 100 <= it.max_bid, `ask ${c / 100}`); }
   }
   assert.ok(buys > 100);
   // The minimum-profit side, to the cent: with $225 resale the exact ceiling is $81.12.
   let thin = 0;
   for (let c = 7900; c <= 8300; c += 1) {
-    const it = fromDeal(camera({ ask: c / 100 }), confirmed());
+    const it = fromDeal(camera({ ask: c / 100 }), confirmed(), NO_WORK);
     if (it.decision.value === 'buy') { thin += 1; assert.ok(c / 100 <= it.max_bid, `ask ${c / 100}`); }
   }
   assert.ok(thin > 100);
@@ -185,7 +189,7 @@ test('closed lots and an old listings feed are left off the deals feed, and coun
   assert.ok(lots.length > 0);
   // The day after the Schertz lots closed (Tue Nov 17, 8 PM CT).
   const later = Date.parse('2026-11-19T12:00:00.000Z');
-  const out = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later), source: 'seed', updated_at: null }, deals: { updated_at: '2026-10-24T02:38:59.990Z', deals: [camera()] }, config: confirmed(), nowMs: later });
+  const out = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later, NO_WORK), source: 'seed', updated_at: null }, deals: { updated_at: '2026-10-24T02:38:59.990Z', deals: [camera()] }, config: confirmed(), nowMs: later, rules: NO_WORK });
   const closed = seed.lots.filter((l) => l.closes_at && Date.parse(l.closes_at) <= later).length;
   assert.equal(out.hidden.closed_lots, closed);
   assert.equal(out.items.filter((it) => it.kind === 'surplus').length, seed.lots.length - closed);

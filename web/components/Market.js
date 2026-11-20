@@ -89,7 +89,7 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
     e('div', { className: 'mb-4 flex flex-wrap items-end justify-between gap-3' },
       e('div', null,
         e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Market'),
-        e('p', { className: 'mt-2 max-w-2xl text-base text-foreground' }, 'Profit is after every fee, gas and your drive time. Tap a tile for the full breakdown. Nothing here bids, buys or messages a seller.')),
+        e('p', { className: 'mt-2 max-w-2xl text-base text-foreground' }, 'Profit is after every fee, gas, your drive time and your work. Tap a tile for the full breakdown. Nothing here bids, buys or messages a seller.')),
       e('a', { href: '/surplus', className: 'inline-flex h-9 items-center rounded-md border-2 border-border bg-secondary px-4 text-sm font-medium shadow-tag-sm' }, 'Surplus detail')),
 
     loading ? e('div', { role: 'status', className: 'rounded-lg border-2 border-border bg-card p-6 text-base' }, 'Loading deals…') : null,
@@ -102,7 +102,7 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
         'The last refresh failed, so these are the deals from the last load. It will try again.') : null,
       r ? e('p', { className: 'mb-3 text-sm', 'data-field': 'rules-line' },
         e('b', null, 'Your rules: '),
-        `max buy $${r.max_cost}, at least $${r.min_profit} profit, within ${r.pickup_miles} miles and ${r.max_drive_minutes} minutes round trip of ${String(r.home).split(',')[0]}, time at $${r.hourly_rate} an hour.`) : null,
+        `max buy $${r.max_cost}, at least $${r.min_profit} profit, within ${r.pickup_miles} miles and ${r.max_drive_minutes} minutes round trip of ${String(r.home).split(',')[0]}, time at $${r.hourly_rate} an hour${r.work_minutes_per_unit != null ? `, ${r.work_minutes_per_unit} minutes of your work per item` : ''}.`) : null,
       (feed.stale || []).length ? e('div', { role: 'status', className: 'mb-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm', 'data-field': 'stale' },
         feed.stale.map((s) => e('p', { key: s }, s))) : null,
 
