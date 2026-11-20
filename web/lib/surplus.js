@@ -31,6 +31,7 @@ export function rulesView(rules = DEFAULT_RULES) {
     pickup_miles: rules.pickup_miles,
     hourly_rate: rules.hourly_rate,
     hourly_rate_text: `${moneyText(rules.hourly_rate)} an hour`,
+    work_minutes_per_unit: rules.work_minutes_per_unit,
     max_drive_minutes: rules.max_drive_minutes,
     haul_per_mile: rules.gas_per_mile,
     haul_per_mile_text: moneyText(rules.gas_per_mile),
@@ -640,6 +641,10 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     time_cost_text: moneyOrUnknown(timeCost),
     work_cost: workCostAll,
     work_minutes: workCostAll != null ? lot.quantity * rules.work_minutes_per_unit : null,
+    work_cost_text: moneyOrUnknown(workCostAll),
+    work_note: workCostAll != null
+      ? `${lot.quantity} unit${lot.quantity === 1 ? '' : 's'} at ${rules.work_minutes_per_unit} minutes each, at ${moneyText(rules.hourly_rate)} an hour, to test, photograph, list and pack. It comes off profit, not off the bankroll.`
+      : 'The unit count is unknown, so your work time is left out.',
     time_note: timeCost != null
       ? `${drive.minutes} minutes at ${moneyText(rules.hourly_rate)} an hour. It comes off profit, not off the bankroll.`
       : 'Drive time is unknown, so the time cost is left out of every profit number on this lot.',

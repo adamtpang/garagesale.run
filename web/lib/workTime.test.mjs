@@ -70,3 +70,16 @@ test('a lot card says the hours, and the Market rules line names the work time',
   const html = renderToStaticMarkup(React.createElement(Market, { feed, now: NOW }));
   assert.match(html, /time at \$20 an hour, 30 minutes of your work per item\./);
 });
+
+test('the Surplus page shows the work cost, so the costs it lists add up to the profit', async () => {
+  const { default: SurplusBoard } = await import('../components/SurplusBoard.js');
+  const { withClock } = await import('./surplus.js');
+  const view = withClock(assessSnapshot(seed, NOW), NOW);
+  const zebra = view.lots.find((l) => l.id === 'ps-4123518');
+  assert.deepEqual([zebra.work_cost, zebra.work_cost_text], [80, '$80.00']);
+  assert.match(zebra.work_note, /^8 units at 30 minutes each, at \$20\.00 an hour/);
+  const html = renderToStaticMarkup(React.createElement(SurplusBoard, { view, failed: false, loading: false }));
+  assert.match(html, />Your work</);
+  assert.match(html, /\$80\.00 of your work/);
+  assert.match(html, /Drive time and 30 minutes of work a unit, off profit/);
+});

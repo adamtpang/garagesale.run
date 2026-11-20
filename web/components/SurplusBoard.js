@@ -126,7 +126,7 @@ function casesBlock(lot) {
         e('span', { className: 'tabular-nums' }, c.profit_at_current_bid_text)),
       e('p', { className: 'mt-1 text-xs leading-5 text-muted-foreground' }, c.basis)))),
     lot.case_caveats.length ? e('p', { className: 'mt-2 text-xs leading-5 text-foreground', 'data-field': 'case-caveats' }, lot.case_caveats.join(' ')) : null,
-    e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, `After the platform fee, shipping${lot.time_cost != null ? ` and ${lot.time_cost_text} of drive time` : ''}. ${lot.net_estimate_note || 'Not confirmed.'}`));
+    e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, `After ${[lot.time_cost != null ? `the platform fee, shipping, ${lot.time_cost_text} of drive time` : 'the platform fee, shipping', lot.work_cost ? `${lot.work_cost_text} of your work` : null].filter(Boolean).join(' and ')}. ${lot.net_estimate_note || 'Not confirmed.'}`));
 }
 
 function lotCard(lot) {
@@ -148,6 +148,7 @@ function lotCard(lot) {
       fact('Tax', lot.tax_text, `${lot.tax_rate_text}. ${lot.tax_label}`),
       fact('Drive', lot.drive_text, lot.drive_minutes == null ? 'No routed drive time yet.' : `From ${lot.drive_source === 'openrouteservice' ? 'OpenRouteService' : 'the posted lot'}. Typical time, no live traffic.`),
       fact('Your time', lot.time_cost_text, lot.time_note),
+      lot.work_cost ? fact('Your work', lot.work_cost_text, lot.work_note) : null,
       fact('Haul', lot.haul_text, lot.round_trip_miles == null ? 'Round trip unknown.' : `${lot.round_trip_miles} round-trip miles × ${lot.haul_rate_text}. ${lot.miles_note || ''}`.trim()),
       fact('Pickup', lot.pickup_address || 'unknown', [lot.pickup_terms, lot.pickup_deadline].filter(Boolean).join(' '), 'col-span-2'),
       fact('Quantity', lot.quantity == null ? 'unknown' : String(lot.quantity), lot.quantity_note),
@@ -248,7 +249,7 @@ export default function SurplusBoard({ view, failed, loading }) {
         ].filter(Boolean).join(' '))),
 
       e('div', { className: 'mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground lg:grid-cols-4', 'data-field': 'rules', 'aria-label': 'Flip rules' },
-        [['Max buy per flip', view.rules.max_cost_text, view.rules.max_cost_note], ['Min profit', `${view.rules.min_profit_text} after fees, gas and time`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Drive cap', view.rules.max_drive_minutes == null ? 'not set' : `${view.rules.max_drive_minutes} min round trip`], ['Gas', `${view.rules.haul_per_mile_text} a mile${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Your time', view.rules.hourly_rate == null ? 'not set' : view.rules.hourly_rate_text, 'Comes off profit'], ['Tax assumed', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v, note]) => e('div', { key: k, className: 'bg-card px-3 py-2' },
+        [['Max buy per flip', view.rules.max_cost_text, view.rules.max_cost_note], ['Min profit', `${view.rules.min_profit_text} after fees, gas and time`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Drive cap', view.rules.max_drive_minutes == null ? 'not set' : `${view.rules.max_drive_minutes} min round trip`], ['Gas', `${view.rules.haul_per_mile_text} a mile${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Your time', view.rules.hourly_rate == null ? 'not set' : view.rules.hourly_rate_text, view.rules.work_minutes_per_unit ? `Drive time and ${view.rules.work_minutes_per_unit} minutes of work a unit, off profit` : 'Comes off profit'], ['Tax assumed', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v, note]) => e('div', { key: k, className: 'bg-card px-3 py-2' },
           e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, k),
           e('div', { className: 'mt-0.5 text-sm font-medium' }, v),
           note ? e('div', { className: 'text-xs text-muted-foreground', 'data-field': 'max-buy-note' }, note) : null))),
