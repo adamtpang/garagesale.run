@@ -13,10 +13,21 @@ const paidFor = (it) => {
   return round2(it.buy_price + (num(c.gas) || 0) + (num(c.fees) || 0) + (num(c.repairs) || 0));
 };
 
+// Whole calendar days from one YYYY-MM-DD date to another. Null if either is not a date.
+export function calendarDaysBetween(from, to) {
+  const day = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; };
+  const a = day(from); const b = day(to);
+  return a == null || b == null ? null : Math.round((b - a) / 86400000);
+}
+
+// The viewer's own calendar day for a moment in time, the same way the listing date is saved.
+const localDate = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+// Days listed counts calendar days in the viewer's time zone, so it rolls over at their midnight.
 function daysSince(date, nowMs) {
-  const t = Date.parse(`${date || ''}T12:00:00Z`);
-  if (!Number.isFinite(t) || nowMs == null) return null;
-  return Math.max(0, Math.floor((nowMs - t) / 86400000));
+  if (nowMs == null) return null;
+  const n = calendarDaysBetween(date, localDate(nowMs));
+  return n == null ? null : Math.max(0, n);
 }
 
 // items: ledger items. Returns the ones on hand or listed, listed first, oldest listing first.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
-import { sellingRows, SLOW_DAYS } from './selling.js';
+import { sellingRows, SLOW_DAYS, calendarDaysBetween } from './selling.js';
 import { cleanItem, applyPatch, costOf, normalize } from './ledger.js';
 
 const NOW = Date.parse('2026-11-19T18:00:00Z');
@@ -70,4 +70,17 @@ test('the Selling page drops a ledger read that returns after the key changed, a
   // until the save is done.
   assert.equal((page.match(/disabled=\{busy\}/g) || []).length, 2);
   assert.match(page, /const ok = await onList\(r\.id, form\); if \(ok\) setOpen\(null\);/);
+});
+
+test('days listed counts calendar days, so it rolls over at midnight, not at noon UTC', () => {
+  assert.equal(calendarDaysBetween('2026-11-01', '2026-11-19'), 18);
+  assert.equal(calendarDaysBetween('2026-11-19', '2026-11-20'), 1);
+  // Across the end of daylight saving time, still whole days.
+  assert.equal(calendarDaysBetween('2026-10-31', '2026-11-02'), 2);
+  assert.equal(calendarDaysBetween('2026-11-01', 'soon'), null);
+  // Just after the viewer's midnight the new day already counts.
+  const d = new Date(2026, 10, 20, 0, 30);
+  const row = sellingRows([applyPatch(bought(), { status: 'listed', list_price: 90, date_listed: '2026-11-06' })], d.getTime())[0];
+  assert.equal(row.days_listed, 14);
+  assert.equal(row.slow, true);
 });
