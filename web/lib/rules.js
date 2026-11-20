@@ -36,6 +36,7 @@ export function activeRules(overrides) {
     max_per_flip: maxCost,
     min_profit: pick('min_profit'),
     hourly_rate: pick('hourly_rate'),
+    work_minutes_per_unit: pick('work_minutes_per_unit'),
     max_drive_minutes: pick('max_drive_minutes'),
     max_pickup_miles: baseMiles,
     // The radius in force. The wider surplus radius counts only when it is switched on.
@@ -113,7 +114,7 @@ export function checkLot(facts, rules = DEFAULT_RULES) {
 }
 
 // The rules in the shape the scout config uses. The deals API scores every deal against this.
-export const RULE_FIELDS = ['max_per_flip', 'bankroll', 'min_profit', 'max_pickup_miles', 'categories', 'gas_per_mile', 'gas_per_mile_note'];
+export const RULE_FIELDS = ['max_per_flip', 'bankroll', 'min_profit', 'max_pickup_miles', 'categories', 'gas_per_mile', 'gas_per_mile_note', 'work_minutes_per_unit'];
 export function rulesAsConfig(rules = DEFAULT_RULES) {
   return {
     max_per_flip: rules.max_per_flip,
@@ -121,6 +122,7 @@ export function rulesAsConfig(rules = DEFAULT_RULES) {
     bankroll_start: rules.bankroll_start,
     bankroll_source: rules.bankroll_source,
     hourly_rate: rules.hourly_rate,
+    work_minutes_per_unit: rules.work_minutes_per_unit,
     max_drive_minutes: rules.max_drive_minutes,
     categories: [...rules.categories],
     min_profit: rules.min_profit,
@@ -133,4 +135,12 @@ export function rulesAsConfig(rules = DEFAULT_RULES) {
     fees: Object.fromEntries(Object.entries(RULES_CONFIG.fees).map(([k, v]) => [k, { ...v }])),
     run_hours: RULES_CONFIG.run_hours,
   };
+}
+
+// What Adam's work on a number of units costs at his hourly rate. Null when either number is unknown.
+export function workCost(units, rules = DEFAULT_RULES) {
+  const m = num(rules.work_minutes_per_unit);
+  const h = num(rules.hourly_rate);
+  if (m == null || h == null || units == null || !(units > 0)) return null;
+  return Math.round((units * m / 60) * h * 100) / 100;
 }

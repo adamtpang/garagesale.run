@@ -3,7 +3,7 @@
 // A lot is a buy candidate only when profit is confirmed, every rule passes, and Adam's status says so.
 // The rules (max cost, minimum profit, pickup radius, gas rate) come from config/rules.js through lib/rules.js.
 import { money as parseMoney, moneyText, round2 } from './decision.js';
-import { DEFAULT_RULES, checkLot } from './rules.js';
+import { DEFAULT_RULES, checkLot, workCost } from './rules.js';
 import { cleanDrive, driveCosts, driveText } from './drive.js';
 import { cleanSpeed } from './tiers.js';
 
@@ -448,7 +448,10 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   // Adam's time for the drive. It is not cash, so it is not part of the all-in cost or the max buy.
   // It comes off profit. While the drive is unknown it is left out, and the lot says so and cannot be a buy.
   const timeCost = drive.time_cost;
-  const timeOff = timeCost != null ? timeCost : 0;
+  // Adam's work on every unit, at his hourly rate. Known whenever the unit count is. Like drive time it
+  // comes off profit and is not part of the cash cost.
+  const workCostAll = workCost(lot.quantity, rules);
+  const timeOff = round2((timeCost != null ? timeCost : 0) + (workCostAll != null ? workCostAll : 0));
   const milesExact = lot.miles_approximate === false || drive.miles != null;
   const taxKnown = lot.tax_rate != null && lot.tax_basis !== 'unknown';
   // What the lot costs to win and bring home at a given bid. Null while any part is unknown.
@@ -482,7 +485,7 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const ship = lot.shipping_basis !== 'unknown' && lot.shipping != null ? lot.shipping : null;
   const inputsConfirmed = unitResale != null && gross != null && fee != null && lot.fee_basis === 'stated'
     && ship != null && lot.shipping_basis === 'stated' && allIn != null && allInBasis === 'stated' && timeCost != null;
-  const net = inputsConfirmed ? round2(gross - fee - ship - allIn - timeCost) : null;
+  const net = inputsConfirmed ? round2(gross - fee - ship - allIn - timeOff) : null;
   const roi = net != null && allIn > 0 ? round4(net / allIn) : null;
   // An estimate needs every input present. It is shown apart from confirmed profit and never makes a lot a buy.
   const netEstimate = net == null && gross != null && fee != null && ship != null && allIn != null
@@ -635,6 +638,8 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     drive_source: lot.drive ? lot.drive.source : null,
     time_cost: timeCost,
     time_cost_text: moneyOrUnknown(timeCost),
+    work_cost: workCostAll,
+    work_minutes: workCostAll != null ? lot.quantity * rules.work_minutes_per_unit : null,
     time_note: timeCost != null
       ? `${drive.minutes} minutes at ${moneyText(rules.hourly_rate)} an hour. It comes off profit, not off the bankroll.`
       : 'Drive time is unknown, so the time cost is left out of every profit number on this lot.',

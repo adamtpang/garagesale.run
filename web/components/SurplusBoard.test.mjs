@@ -5,6 +5,10 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { assessSnapshot } from '../lib/surplus.js';
 import SurplusBoard from './SurplusBoard.js';
+import { activeRules } from '../lib/rules.js';
+// Adam's real rules with work time set to 0, so these tests keep checking how the numbers are shown.
+// Work time is tested on its own in lib/workTime.test.mjs.
+const NO_WORK = activeRules({ work_minutes_per_unit: 0 });
 
 // These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
 // lib/listingPlan.test.mjs covers the plan.
@@ -13,7 +17,7 @@ const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 const e = React.createElement;
 
 test('the board shows buy and sell side by side and keeps unknown resale unknown', () => {
-  const view = { ...assessSnapshot(seed, NOW), source: 'seed' };
+  const view = { ...assessSnapshot(seed, NOW, NO_WORK), source: 'seed' };
   const html = renderToStaticMarkup(e(SurplusBoard, { view, loading: false, failed: false }));
   assert.match(html, /Surplus arbitrage/);
   assert.match(html, /does not place bids/);
@@ -106,7 +110,7 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
 test('closed lots are hidden on the surplus board until asked for, and the count says so', async () => {
   const { withClock } = await import('../lib/surplus.js');
   const later = Date.parse('2026-11-19T12:00:00.000Z');
-  const view = withClock(assessSnapshot(seed, later), later);
+  const view = withClock(assessSnapshot(seed, later, NO_WORK), later);
   const closed = view.lots.filter((l) => l.closed === true).length;
   assert.ok(closed > 0);
   const html = renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false }));
@@ -116,20 +120,20 @@ test('closed lots are hidden on the surplus board until asked for, and the count
   const open = view.lots.length - closed;
   assert.match(html, new RegExp(`All ${open}<`));
   // Before the close nothing is hidden.
-  const early = renderToStaticMarkup(e(SurplusBoard, { view: withClock(assessSnapshot(seed, NOW), NOW), failed: false, loading: false }));
+  const early = renderToStaticMarkup(e(SurplusBoard, { view: withClock(assessSnapshot(seed, NOW, NO_WORK), NOW), failed: false, loading: false }));
   assert.equal(early.includes('closed-hidden'), false);
 });
 
 test('combined trips leave out closed lots unless closed lots are shown', async () => {
   const { withClock } = await import('../lib/surplus.js');
-  const early = withClock(assessSnapshot(seed, NOW), NOW);
+  const early = withClock(assessSnapshot(seed, NOW, NO_WORK), NOW);
   assert.ok(early.trips.length > 0);
   const tripHtml = (view) => (renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false })).match(/data-field="trips"[\s\S]*?<\/details>/) || [''])[0];
   // Before the close the shared pickup shows.
   assert.match(tripHtml(early), /Combine trips/);
   // After the close every lot in the shared pickup is closed, so no trip is offered.
   const later = Date.parse('2026-11-19T12:00:00.000Z');
-  const after = withClock(assessSnapshot(seed, later), later);
+  const after = withClock(assessSnapshot(seed, later, NO_WORK), later);
   const closedIds = new Set(after.lots.filter((l) => l.closed === true).map((l) => l.id));
   const html = tripHtml(after);
   for (const trip of after.trips) {
