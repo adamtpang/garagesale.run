@@ -178,12 +178,15 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   const id = str(raw.id, 40);
   if (!id || !/^[a-z0-9-]+$/i.test(id)) return null;
   const miles = money(raw.miles_from_home);
-  const taxBasis = raw.tax_basis === 'stated' || raw.tax_basis === 'assumption' ? raw.tax_basis : 'unknown';
+  // A rate that reads as a percent is dropped, and its basis becomes unknown, so a second clean of the
+  // same lot cannot fill in the assumed rate.
   const taxPercent = rateLooksLikePercent(raw.tax_rate);
-  let taxRate = taxBasis === 'unknown' || taxPercent ? null : rate(raw.tax_rate);
-  if (taxBasis === 'assumption' && taxRate == null && !taxPercent) taxRate = rules.tax_assumption_rate;
-  const feeBasis = raw.fee_basis === 'stated' || raw.fee_basis === 'assumption' ? raw.fee_basis : 'unknown';
-  const feeRate = feeBasis === 'unknown' || rateLooksLikePercent(raw.fee_rate) ? null : rate(raw.fee_rate);
+  const taxBasis = !taxPercent && (raw.tax_basis === 'stated' || raw.tax_basis === 'assumption') ? raw.tax_basis : 'unknown';
+  let taxRate = taxBasis === 'unknown' ? null : rate(raw.tax_rate);
+  if (taxBasis === 'assumption' && taxRate == null) taxRate = rules.tax_assumption_rate;
+  const feePercent = rateLooksLikePercent(raw.fee_rate);
+  const feeBasis = !feePercent && (raw.fee_basis === 'stated' || raw.fee_basis === 'assumption') ? raw.fee_basis : 'unknown';
+  const feeRate = feeBasis === 'unknown' ? null : rate(raw.fee_rate);
   const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
   const shipping = shippingBasis === 'unknown' ? null : money(raw.shipping);
   const status = STATUSES.includes(raw.status) ? raw.status : 'watch';
@@ -258,7 +261,9 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   };
 }
 
-export function cleanSnapshot(input) {
+// A post (write or dry run) passes refusePercentRates, so a rate sent as a percent is refused with a 400.
+// Reading a stored scan does not, so a bad stored rate reads as unknown instead of taking the board down.
+export function cleanSnapshot(input, { refusePercentRates = false } = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('body must be {lots:[...]}');
   if (!Array.isArray(input.lots)) throw new Error('body must be {lots:[...]}');
   if (input.lots.length > 100) throw new Error('too many lots');
@@ -268,7 +273,7 @@ export function cleanSnapshot(input) {
     const name = lot && typeof lot.comp_set === 'string' ? lot.comp_set : null;
     const own = lot && Array.isArray(lot.comps) ? lot.comps : [];
     if (name && !Array.isArray(sets[name])) throw new Error(`lot ${i} names comp set ${name}, which is not in comp_sets`);
-    const percentError = percentRateError(lot, i);
+    const percentError = refusePercentRates ? percentRateError(lot, i) : null;
     if (percentError) throw new Error(percentError);
     const cleaned = cleanLot(name ? { ...lot, comps: [...sets[name], ...own] } : lot);
     if (!cleaned) throw new Error(`lot ${i} is missing a usable id`);
