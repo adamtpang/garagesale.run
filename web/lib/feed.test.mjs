@@ -6,7 +6,9 @@ import { buildDailyFeed, fromDeal } from './feed.js';
 import { withRules } from './scoutConfig.js';
 import { cleanDeal } from './decision.js';
 
-const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
+// These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
+// lib/listingPlan.test.mjs covers the plan.
+const seed = (({ lots, ...rest }) => ({ ...rest, lots: lots.map(({ listing_plan, ...lot }) => lot) }))(JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8')));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 // The rules file, with the fee sign-off a buy needs. Adam has not given it in the real config.
 const confirmed = () => { const c = withRules(null); c.fees = Object.fromEntries(Object.entries(c.fees).map(([k, v]) => [k, { ...v, confirmed: true }])); return c; };
@@ -176,4 +178,26 @@ test('a listing is never a buy while its ask is above its own max offer', () => 
     if (it.decision.value === 'buy') { thin += 1; assert.ok(c / 100 <= it.max_bid, `ask ${c / 100}`); }
   }
   assert.ok(thin > 100);
+});
+
+test('closed lots and an old listings feed are left off the deals feed, and counted', () => {
+  const lots = seed.lots.filter((l) => l.closes_at);
+  assert.ok(lots.length > 0);
+  // The day after the Schertz lots closed (Tue Nov 17, 8 PM CT).
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const out = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later), source: 'seed', updated_at: null }, deals: { updated_at: '2026-10-24T02:38:59.990Z', deals: [camera()] }, config: confirmed(), nowMs: later });
+  const closed = seed.lots.filter((l) => l.closes_at && Date.parse(l.closes_at) <= later).length;
+  assert.equal(out.hidden.closed_lots, closed);
+  assert.equal(out.items.filter((it) => it.kind === 'surplus').length, seed.lots.length - closed);
+  for (const it of out.items) assert.ok(!it.price.closes_at || Date.parse(it.price.closes_at) > later, it.id);
+  // The listings feed is 26 days old, past the 7-day limit, so its listing is hidden and said so.
+  assert.equal(out.hidden.old_listings, 1);
+  assert.equal(out.items.some((it) => it.kind === 'listing'), false);
+  assert.ok(out.stale.some((s) => /closed and (is|are) hidden/.test(s)));
+  assert.ok(out.stale.some((s) => /over 7 days old/.test(s)));
+  // A lot with no close time is kept: its close is unknown, not past.
+  assert.ok(out.items.every((it) => it.kind !== 'surplus' || !it.price.closes_at || Date.parse(it.price.closes_at) > later));
+  // Before the close, nothing is hidden.
+  const before = feed([camera()]);
+  assert.deepEqual(before.hidden, { closed_lots: 0, old_listings: 0 });
 });

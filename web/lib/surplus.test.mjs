@@ -9,7 +9,9 @@ import { RULES_CONFIG } from '../config/rules.js';
 // so they check that logic alone. The rule tests below use Adam's real rules.
 const LOOSE = activeRules({ min_profit: 0, max_pickup_miles: 100000, max_per_flip: 100000, bankroll: 100000 });
 
-const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
+// These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
+// lib/listingPlan.test.mjs covers the plan.
+const seed = (({ lots, ...rest }) => ({ ...rest, lots: lots.map(({ listing_plan, ...lot }) => lot) }))(JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8')));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 
 // The fixture carries a drive that takes no time and matches its stated miles, so the older tests keep

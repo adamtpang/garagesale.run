@@ -16,7 +16,7 @@ function chip(on, children, onClick) {
   }, children);
 }
 
-function PhotoBox({ src, title }) {
+export function PhotoBox({ src, title }) {
   const [bad, setBad] = useState(false);
   const box = 'flex aspect-[16/10] w-full items-center justify-center overflow-hidden bg-secondary md:aspect-auto md:h-full md:min-h-[220px]';
   if (!src || bad) return e('div', { className: `${box} text-5xl font-bold text-muted-foreground`, 'aria-label': 'No photo' }, String(title || '?').trim().charAt(0).toUpperCase());
@@ -27,7 +27,7 @@ function extLink(href, text) {
   return e('a', { href, target: '_blank', rel: 'noopener', className: 'font-medium text-link underline underline-offset-4' }, text);
 }
 
-function dealCard(card) {
+export function dealCard(card) {
   return e('article', {
     key: card.id,
     className: 'overflow-hidden rounded-2xl border border-border bg-card shadow-tag md:grid md:grid-cols-[240px_1fr]',
@@ -47,7 +47,8 @@ function dealCard(card) {
       e('p', { className: 'mt-3 text-2xl font-bold leading-tight sm:text-3xl', 'data-field': 'headline' },
         card.headline,
         card.amount ? e(React.Fragment, null, ' ', e('span', { className: 'whitespace-nowrap font-marker text-3xl font-normal text-price sm:text-4xl', 'data-field': 'amount' }, card.amount)) : null),
-      e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'basis' }, card.basis)),
+      e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'basis' }, card.basis),
+      card.plan_note ? e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'plan-note' }, card.plan_note) : null),
 
     // Right under it: what it costs.
     e('dl', { className: 'grid grid-cols-2 gap-[2px] border-y border-border bg-foreground lg:grid-cols-4', 'data-field': 'costs' },
@@ -85,7 +86,7 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
   return e('section', null,
     e('div', { className: 'mb-4 flex flex-wrap items-end justify-between gap-3' },
       e('div', null,
-        e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Deals'),
+        e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Market'),
         e('p', { className: 'mt-2 max-w-2xl text-base text-foreground' }, 'Best profit first. Profit is after every fee, gas and your drive time. Nothing here bids, buys or messages a seller.')),
       e('div', { className: 'flex flex-wrap gap-2 text-sm' },
         e('a', { href: '/surplus', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium shadow-tag-sm' }, 'Surplus detail'),
@@ -112,7 +113,7 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
         chip(show === 'watch', `Watch ${counts.watch}`, () => setShow('watch')),
         chip(show === 'skip', `Skip ${counts.skip}`, () => setShow('skip'))),
 
-      cards.length === 0 ? e('p', { className: 'rounded-2xl border border-border bg-card p-6 text-base' }, 'No deals in the feed yet.') : null,
+      cards.length === 0 ? e('p', { className: 'rounded-2xl border border-border bg-card p-6 text-base' }, (feed.hidden && (feed.hidden.closed_lots || feed.hidden.old_listings)) ? 'No open deals right now. Everything in the last scan has closed or is too old. A new scan has not been posted.' : 'No deals in the feed yet.') : null,
       cards.length > 0 && shown.length === 0 ? e('p', { className: 'text-base' }, `Nothing is marked ${show} right now.`) : null,
       e('div', { className: 'grid gap-5' }, shown.map(dealCard))) : null);
 }

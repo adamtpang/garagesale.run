@@ -484,7 +484,12 @@
       "batteries": "none",
       "battery_cost": null,
       "battery_cost_note": "No battery price is cited, so the one sale that included a battery is not adjusted. It only sets the low case.",
-      "fleet_device": true
+      "fleet_device": true,
+      "listing_plan": {
+        "ask": 280,
+        "floor": 200,
+        "source": "docs/listings/zebra-tc700k-lot.md"
+      }
     },
     {
       "id": "ps-4123530",

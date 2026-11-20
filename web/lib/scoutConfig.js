@@ -153,11 +153,13 @@ export function ignoredRuleFields(input) {
   return RULE_FIELDS.filter((key) => key !== 'gas_per_mile_note' && sent[key] != null && !same(sent[key], rules[key]));
 }
 
-export async function writeConfig(input, rules) {
+// dryRun: check the body and return what would be stored, without storing it.
+export async function writeConfig(input, rules, { dryRun = false } = {}) {
   const cleaned = cleanConfig(input);
   const stored = { updated_at: new Date().toISOString() };
   for (const key of STORED_FIELDS) stored[key] = cleaned[key];
-  if (blobOn()) await saveVersioned('scout-config/', stored);
+  if (dryRun) { /* nothing is stored */ }
+  else if (blobOn()) await saveVersioned('scout-config/', stored);
   else {
     fs.mkdirSync(path.dirname(FILE), { recursive: true });
     fs.writeFileSync(FILE, JSON.stringify(stored, null, 1));
@@ -167,6 +169,7 @@ export async function writeConfig(input, rules) {
     ...present(stored, rules),
     ignored,
     ignored_note: ignored.length ? `These are Adam's rules and come from ${RULES_SOURCE}. They were not changed: ${ignored.join(', ')}.` : null,
+    ...(dryRun ? { dry_run: true, saved: false } : {}),
   };
 }
 

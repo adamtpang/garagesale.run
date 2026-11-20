@@ -1,3 +1,3 @@
 'use client';
-import Home from '../page';
-export default function P() { return <Home mode="sell" />; }
+import SellHome from '../../components/SellHome';
+export default function P() { return <SellHome mode="sell" />; }

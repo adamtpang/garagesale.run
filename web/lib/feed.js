@@ -17,8 +17,17 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: { ...item.resale, listing_plan: undefined, comps_say: undefined }, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
+}
+
+// Why a drive time is unknown, in a few words. Left out (undefined) when it is known, so it is never
+// listed as a missing value. A lot is routed by its street
+// address and a listing by its map location; with those, it is only waiting for the drive refresh.
+export function driveUnknownReason(minutes, hasPlace, kind) {
+  if (typeof minutes === 'number' && Number.isFinite(minutes)) return undefined;
+  if (!hasPlace) return kind === 'surplus' ? 'no pickup address' : 'no map location';
+  return 'not looked up yet';
 }
 
 // One surplus lot, as assessLot returns it.
@@ -35,11 +44,14 @@ export function fromLot(lot) {
     kind: 'surplus',
     id: lot.id,
     title: lot.title,
+    // Surplus scans do not record a category yet.
+    category: lot.category || null,
     photo_url: lot.photo_url || null,
     source: { site: lot.source_site, url: lot.url, seller: lot.seller, auction_id: lot.auction_id },
     location: {
       place: lot.city, pickup_address: lot.pickup_address, miles: lot.miles_from_home, miles_approximate: lot.miles_from_home == null ? null : lot.miles_approximate,
       drive_minutes_round_trip: lot.drive_minutes, drive_miles_round_trip: lot.drive_miles, drive_source: lot.drive_source,
+      drive_unknown_reason: driveUnknownReason(lot.drive_minutes, !!lot.pickup_address, 'surplus'),
     },
     price: {
       kind: 'bid',
@@ -78,6 +90,9 @@ export function fromLot(lot) {
       basis: (lot.cases || []).map((c) => `${c.name}: ${c.basis}`),
       caveats: lot.case_caveats || [],
       sell_on: lot.marketplaces,
+      // Adam's listing draft, when it set the cases, and what the comps alone said.
+      listing_plan: lot.listing_plan || undefined,
+      comps_say: lot.comps_say || undefined,
     },
     comps: lot.comps.map((c) => ({
       type: c.type, url: c.url, price: c.price, sold_on: c.type === 'sold' ? c.sold_on : null,
@@ -157,11 +172,13 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     kind: 'listing',
     id: deal.url,
     title: v.title,
+    category: deal.category || null,
     photo_url: deal.photo_url || null,
     source: { site: v.sourceLabel, url: v.buyUrl, seller: null, auction_id: null },
     location: {
       place: v.area || null, pickup_address: null, miles: v.pickup && v.pickup.known ? round2(v.pickup.miles) : null, miles_approximate: v.pickup && v.pickup.known ? false : null,
       drive_minutes_round_trip: drive.minutes, drive_miles_round_trip: drive.miles, drive_source: deal.drive && drive.minutes != null ? (deal.drive.source || 'posted') : null,
+      drive_unknown_reason: driveUnknownReason(drive.minutes, typeof deal.lat === 'number' && typeof deal.lng === 'number', 'listing'),
     },
     price: { kind: 'ask', current: v.ask, opening: null, bid_count: null, closes_at: null, closes_text: null },
     costs: {
@@ -204,10 +221,25 @@ function ageDays(iso, nowMs) {
   return Math.max(0, Math.floor((nowMs - t) / 86400000));
 }
 
+// A listings feed older than this is left off the deals page. Local listings sell fast, so most are gone by then.
+export const LISTING_MAX_AGE_DAYS = 7;
+
+// True when the lot has a close time and it has passed. A lot with no close time is kept.
+export function lotClosed(lot, nowMs) {
+  const t = Date.parse((lot && lot.closes_at) || '');
+  return nowMs != null && Number.isFinite(t) && t <= nowMs;
+}
+
 // surplus: an assessed snapshot (assessSnapshot output plus source and updated_at). deals: the stored deals feed.
 export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = DEFAULT_RULES }) {
-  const lots = surplus && Array.isArray(surplus.lots) ? surplus.lots : [];
-  const listings = deals && Array.isArray(deals.deals) ? deals.deals.filter((d) => d && d.url) : [];
+  const allLots = surplus && Array.isArray(surplus.lots) ? surplus.lots : [];
+  const allListings = deals && Array.isArray(deals.deals) ? deals.deals.filter((d) => d && d.url) : [];
+  const dealsAge = ageDays(deals && deals.updated_at, nowMs);
+  // A closed lot can no longer be bought, and an old listing is most likely sold. Both are left off, and counted.
+  const lots = allLots.filter((lot) => !lotClosed(lot, nowMs));
+  const listingsTooOld = dealsAge != null && dealsAge > LISTING_MAX_AGE_DAYS;
+  const listings = listingsTooOld ? [] : allListings;
+  const hidden = { closed_lots: allLots.length - lots.length, old_listings: allListings.length - listings.length };
   const items = [...lots.map(fromLot), ...listings.map((d) => fromDeal(d, config, rules))];
   items.sort((a, b) => {
     const x = rank(a); const y = rank(b);
@@ -217,8 +249,9 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
   const counts = { buy: 0, watch: 0, skip: 0 };
   for (const it of items) counts[it.decision.value] += 1;
   const surplusAge = ageDays(surplus && (surplus.updated_at || (surplus.scanned_on ? `${surplus.scanned_on}T12:00:00Z` : null)), nowMs);
-  const dealsAge = ageDays(deals && deals.updated_at, nowMs);
   const stale = [
+    hidden.closed_lots ? `${hidden.closed_lots} surplus lot${hidden.closed_lots === 1 ? ' has' : 's have'} closed and ${hidden.closed_lots === 1 ? 'is' : 'are'} hidden.` : null,
+    hidden.old_listings ? `${hidden.old_listings} listing${hidden.old_listings === 1 ? ' is' : 's are'} hidden because the listings feed is over ${LISTING_MAX_AGE_DAYS} days old.` : null,
     surplusAge != null && surplusAge >= 2 ? `The surplus scan is ${surplusAge} days old.` : null,
     surplus && surplus.source === 'seed' ? 'No surplus scan has been posted. These lots are the Nov 15, 2026 scan file.' : null,
     dealsAge != null && dealsAge >= 2 ? `The listings feed is ${dealsAge} days old.` : null,
@@ -236,9 +269,10 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
       gas_per_mile: rules.gas_per_mile, hourly_rate: rules.hourly_rate, max_drive_minutes: rules.max_drive_minutes, bankroll: rules.bankroll, bankroll_source: rules.bankroll_source, categories: rules.categories, source: 'web/config/rules.js',
     },
     sources: {
-      surplus: { from: surplus ? surplus.source || null : null, scanned_on: surplus ? surplus.scanned_on || null : null, updated_at: surplus ? surplus.updated_at || null : null, age_days: surplusAge, lots: lots.length },
-      listings: { updated_at: deals ? deals.updated_at || null : null, age_days: dealsAge, deals: listings.length },
+      surplus: { from: surplus ? surplus.source || null : null, scanned_on: surplus ? surplus.scanned_on || null : null, updated_at: surplus ? surplus.updated_at || null : null, age_days: surplusAge, lots: lots.length, closed_hidden: hidden.closed_lots },
+      listings: { updated_at: deals ? deals.updated_at || null : null, age_days: dealsAge, deals: listings.length, old_hidden: hidden.old_listings, max_age_days: LISTING_MAX_AGE_DAYS },
     },
+    hidden,
     stale,
     counts,
     items,

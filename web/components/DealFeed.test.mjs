@@ -10,7 +10,9 @@ import { cleanDeal } from '../lib/decision.js';
 import { withRules } from '../lib/scoutConfig.js';
 import DealFeed from './DealFeed.js';
 
-const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
+// These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
+// lib/listingPlan.test.mjs covers the plan.
+const seed = (({ lots, ...rest }) => ({ ...rest, lots: lots.map(({ listing_plan, ...lot }) => lot) }))(JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8')));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 const e = React.createElement;
 const confirmed = () => { const c = withRules(null); c.fees = Object.fromEntries(Object.entries(c.fees).map(([k, v]) => [k, { ...v, confirmed: true }])); return c; };
@@ -71,7 +73,7 @@ test('a surplus card uses the max bid, counts the buyer fees, and never shows an
   // Buyer's premium and tax at $79, plus the selling fee and shipping.
   const buyFees = Math.round((zebra.costs.all_in_at_max_bid - 79 - zebra.costs.gas) * 100) / 100;
   assert.equal(cost.fees.value, `$${(buyFees + zebra.costs.fee + zebra.costs.shipping).toFixed(2)}`);
-  assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet']);
+  assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet: not looked up yet']);
   assert.equal(cost.gas.note, 'About 32 mi round trip, from the stated miles');
   assert.deepEqual(card.cases.map((c) => c.value), ['$0.40', '$152.53', '$152.53']);
   assert.match(card.reason, /past the 15-mile pickup limit/);
@@ -188,4 +190,14 @@ test('a failed refresh keeps the deals on screen and says so', () => {
   assert.equal((html.match(/data-card=/g) || []).length, feed.items.length);
   assert.equal(html.includes('Could not load the deals feed'), false);
   assert.equal(renderToStaticMarkup(e(DealFeed, { feed, now: NOW, failed: false, refreshFailed: false, loading: false })).includes('refresh-failed'), false);
+});
+
+test('with every lot closed, the deals page says so instead of showing closed lots', () => {
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const onlyClosed = { ...seed, lots: seed.lots.filter((l) => l.closes_at && Date.parse(l.closes_at) <= later) };
+  const f = buildDailyFeed({ surplus: { ...assessSnapshot(onlyClosed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later });
+  assert.equal(f.items.length, 0);
+  const html = renderToStaticMarkup(e(DealFeed, { feed: f, now: later, failed: false, refreshFailed: false, loading: false }));
+  assert.match(html, /No open deals right now/);
+  assert.equal((html.match(/data-card=/g) || []).length, 0);
 });

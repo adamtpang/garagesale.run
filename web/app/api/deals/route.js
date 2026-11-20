@@ -1,4 +1,4 @@
-import { saveVersioned, readLatest, workerCheck, now, json } from '../../../lib/store.js';
+import { saveVersioned, readLatest, workerCheck, now, json, isDryRun, DRY_RUN_NOTE } from '../../../lib/store.js';
 import { readConfig } from '../../../lib/scoutConfig.js';
 import { buildFeed } from '../../../lib/deals.js';
 import { keepPhotos } from '../../../lib/dealPhotos.js';
@@ -23,6 +23,8 @@ export async function POST(req) {
   const config = await readConfig(await liveRules());
   const built = buildFeed(body.deals, config);
   const area = typeof body.area === 'string' ? body.area.trim().slice(0, 80) : null;
+  // A dry run returns the feed as it would be stored. No photos are copied and nothing is saved.
+  if (isDryRun(req)) return json({ updated_at: null, area: area || null, test: !!body.test, filters_set: built.filters_set, photos_kept: null, deals: built.deals, dry_run: true, saved: false, note: DRY_RUN_NOTE });
   // Listing photo links expire within days. With Blob storage set, keep a copy so the feed still has photos later.
   let deals = built.deals;
   let photos = null;

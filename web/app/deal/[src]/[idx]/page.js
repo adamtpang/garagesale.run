@@ -34,12 +34,12 @@ export default function Deal({ params }) {
     return () => { dead = true; };
   }, [src, idx]);
   if (d === undefined) return <main className="wrap py-16"><p className="text-sm text-muted-foreground">Loading deal…</p></main>;
-  if (failed) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Could not load this deal.</h1><p className="mt-3 text-sm text-muted-foreground">The page did not invent a price.</p><p className="mt-4"><a href="/dashboard" className="underline">Back to dashboard</a></p></main>;
-  if (!d) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Deal not found</h1><p className="mt-4"><a href="/dashboard" className="underline">Back to dashboard</a></p></main>;
+  if (failed) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Could not load this deal.</h1><p className="mt-3 text-sm text-muted-foreground">The page did not invent a price.</p><p className="mt-4"><a href="/" className="underline">Back to the Market</a></p></main>;
+  if (!d) return <main className="wrap py-16"><h1 className="text-3xl font-semibold">Deal not found</h1><p className="mt-4"><a href="/" className="underline">Back to the Market</a></p></main>;
   const view = assessDeal(d, config || {});
   const photo = d.photo_url || d.image_url || d.image;
   return <main className="wrap max-w-3xl py-10 md:py-16">
-    <p className="mb-4 text-sm text-muted-foreground"><a href="/dashboard" className="text-link">Dashboard</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
+    <p className="mb-4 text-sm text-muted-foreground"><a href="/" className="text-link">Market</a> · {src === 'feed' ? 'Stored scout feed' : 'Buy search result'}</p>
     {(photo || d.fb_url || d.url) && <div className="overflow-hidden rounded-2xl border border-border bg-secondary shadow-tag">
       <Photo src={photo} title={view.title} fb={d.fb_url || d.url} />
     </div>}

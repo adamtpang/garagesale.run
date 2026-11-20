@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import DealFeed from '@/components/DealFeed';
+import Market from '@/components/Market';
 
 // Loads the daily feed and keeps the countdowns moving.
 export default function DealFeedScreen() {
@@ -30,5 +30,5 @@ export default function DealFeedScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  return <DealFeed feed={feed} now={now} failed={failed} refreshFailed={refreshFailed} loading={feed === undefined && !failed} />;
+  return <Market feed={feed} now={now} failed={failed} refreshFailed={refreshFailed} loading={feed === undefined && !failed} />;
 }

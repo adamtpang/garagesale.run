@@ -6,7 +6,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { assessSnapshot } from '../lib/surplus.js';
 import SurplusBoard from './SurplusBoard.js';
 
-const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
+// These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
+// lib/listingPlan.test.mjs covers the plan.
+const seed = (({ lots, ...rest }) => ({ ...rest, lots: lots.map(({ listing_plan, ...lot }) => lot) }))(JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8')));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 const e = React.createElement;
 
@@ -97,4 +99,39 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
     assert.equal(/Max bid<\/span><span[^>]*>(none|unknown)</.exec(one)?.[1] ?? lot.max_bid_text, lot.max_bid_text, lot.id);
   }
   assert.ok(view.lots.some((l) => l.max_bid == null && /^Max bid is unknown/.test(l.max_bid_note)));
+});
+
+test('closed lots are hidden on the surplus board until asked for, and the count says so', async () => {
+  const { withClock } = await import('../lib/surplus.js');
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const view = withClock(assessSnapshot(seed, later), later);
+  const closed = view.lots.filter((l) => l.closed === true).length;
+  assert.ok(closed > 0);
+  const html = renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false }));
+  assert.match(html, /data-field="closed-hidden"/);
+  assert.match(html, new RegExp(`${closed} lots have closed and are hidden`));
+  // Only lots that are still open, or have no close time, get a card.
+  const open = view.lots.length - closed;
+  assert.match(html, new RegExp(`All ${open}<`));
+  // Before the close nothing is hidden.
+  const early = renderToStaticMarkup(e(SurplusBoard, { view: withClock(assessSnapshot(seed, NOW), NOW), failed: false, loading: false }));
+  assert.equal(early.includes('closed-hidden'), false);
+});
+
+test('combined trips leave out closed lots unless closed lots are shown', async () => {
+  const { withClock } = await import('../lib/surplus.js');
+  const early = withClock(assessSnapshot(seed, NOW), NOW);
+  assert.ok(early.trips.length > 0);
+  const tripHtml = (view) => (renderToStaticMarkup(e(SurplusBoard, { view, failed: false, loading: false })).match(/data-field="trips"[\s\S]*?<\/details>/) || [''])[0];
+  // Before the close the shared pickup shows.
+  assert.match(tripHtml(early), /Combine trips/);
+  // After the close every lot in the shared pickup is closed, so no trip is offered.
+  const later = Date.parse('2026-11-19T12:00:00.000Z');
+  const after = withClock(assessSnapshot(seed, later), later);
+  const closedIds = new Set(after.lots.filter((l) => l.closed === true).map((l) => l.id));
+  const html = tripHtml(after);
+  for (const trip of after.trips) {
+    const open = trip.lot_ids.filter((id) => !closedIds.has(id));
+    if (open.length < 2) assert.equal(html.includes(trip.address), false, trip.address);
+  }
 });
