@@ -7,7 +7,10 @@ import { sellingRows, SLOW_DAYS } from '@/lib/selling';
 
 const KEY = 'gs_ledger_key';
 const $ = (v) => (v == null ? 'unknown' : `${v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}`);
-const today = () => new Date().toISOString().slice(0, 10);
+// Today in the viewer's own time zone, like the date picker. toISOString would give the UTC date, a day ahead
+// on a US evening.
+export const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const today = () => localDay();
 const FIELD = 'h-10 w-28 rounded-md border-2 border-border bg-card px-2 text-sm';
 
 export function SellingTable({ rows, onList }) {
@@ -56,6 +59,12 @@ export default function SellingScreen() {
   }, [key]);
   useEffect(() => { load(); }, [load]);
 
+  // Clears the key from this tab, so a wrong key can be replaced.
+  function forget() {
+    try { sessionStorage.removeItem(KEY); } catch {}
+    setKey(''); setDraft(''); setDoc(null); setErr('');
+  }
+
   async function onList(id, form) {
     setErr('');
     const res = await fetch(`/api/ledger/${encodeURIComponent(id)}`, { method: 'PATCH', cache: 'no-store', headers: { 'content-type': 'application/json', 'x-ledger-key': key }, body: JSON.stringify({ status: 'listed', list_price: form.list_price, floor_price: form.floor_price || null, date_listed: form.date_listed || today() }) });
@@ -72,6 +81,7 @@ export default function SellingScreen() {
       <p className="basis-full text-xs text-muted-foreground">The same key as the Ledger page. It stays in this tab only.</p>
     </form>}
     {err && <p role="alert" className="mt-4 border-l-4 border-red-400 bg-red-50 px-3 py-2 text-sm">{err}</p>}
+    {key && <p className="mt-4"><button type="button" className="text-sm font-medium underline underline-offset-4" data-field="forget-key" onClick={forget}>{doc ? 'Forget key' : 'Use a different key'}</button></p>}
     {key && !doc && !err && <p role="status" className="mt-6">Opening the ledger…</p>}
     {doc && <SellingTable rows={sellingRows(doc.items, Date.now())} onList={onList} />}
   </section>;

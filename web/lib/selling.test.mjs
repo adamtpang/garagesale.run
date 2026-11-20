@@ -45,3 +45,17 @@ test('the Selling page is browser-safe and only talks to the ledger API', () => 
   for (const u of urls) assert.match(u, /\/api\/ledger/);
   assert.match(page, /gs_ledger_key/);
 });
+
+test('the Selling page dates a listing in local time and can forget a wrong key', async () => {
+  const page = fs.readFileSync(new URL('../app/selling/SellingScreen.js', import.meta.url), 'utf8');
+  assert.equal(/toISOString\(\)\.slice\(0, 10\)/.test(page), false);
+  // A US evening: 9 PM on Nov 19 in Austin is already Nov 20 in UTC.
+  const m = page.match(/export const localDay = [^;]+;/);
+  assert.ok(m);
+  const localDay = new Function(`${m[0].replace('export const localDay', 'const f')} return f;`)();
+  const evening = { getFullYear: () => 2026, getMonth: () => 10, getDate: () => 19 };
+  assert.equal(localDay(evening), '2026-11-19');
+  assert.match(page, /function forget\(\)/);
+  assert.match(page, /sessionStorage\.removeItem\(KEY\)/);
+  assert.match(page, /Use a different key/);
+});
