@@ -8,7 +8,7 @@ test('the nav leads with the Market and keeps the listing tools in the footer', 
   const layout = src('../app/layout.js');
   const nav = layout.slice(layout.indexOf('<nav'), layout.indexOf('</nav>'));
   const links = [...nav.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(links, [['/', 'Market'], ['/surplus', 'Surplus'], ['/ladder', 'Bankroll'], ['/ledger', 'Ledger']]);
+  assert.deepEqual(links, [['/', 'Market'], ['/targets', 'Targets'], ['/surplus', 'Surplus'], ['/ladder', 'Bankroll'], ['/ledger', 'Ledger']]);
   const foot = layout.slice(layout.indexOf('<footer'));
   for (const href of ['/buy', '/sell', '/about']) assert.ok(foot.includes(`href="${href}"`), href);
   assert.ok(foot.includes('<NavMsgs />'));
