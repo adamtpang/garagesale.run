@@ -128,3 +128,9 @@ test('the number boxes keep what is typed, so a decimal or a zero can be entered
   assert.match(src, /value: shownText\('maxDrive'\)/);
   assert.equal(/Number\(ev\.target\.value\)\) \|\| null/.test(src), false);
 });
+
+test('a category alias in a link selects the menu option it filters by', () => {
+  for (const alias of ['game%20consoles', 'console', 'Consoles']) assert.equal(parseFilters(`?category=${alias}`).category, 'consoles', alias);
+  assert.equal(parseFilters('?category=cameras').category, 'cameras');
+  assert.equal(parseFilters('?category=').category, 'all');
+});
