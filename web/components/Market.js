@@ -4,10 +4,11 @@
 import React, { useEffect, useState } from 'react';
 import { cardFor } from '../lib/dealCard.js';
 import { applyFilters, categoriesOf, DEFAULT_FILTERS, filtersToSearch, parseFilters, tileFor } from '../lib/market.js';
+import TargetStar from './TargetStar.js';
 
 const e = React.createElement;
 // A solid fill and a word, so the verdict never rests on color alone.
-const TONE = { buy: 'bg-[#9be8b8] text-foreground', watch: 'bg-amber-200 text-amber-950', skip: 'bg-red-200 text-red-900' };
+const TONE = { buy: 'bg-[#9be8b8] text-foreground', watch: 'bg-amber-200 text-amber-950', skip: 'bg-red-200 text-red-900', gone: 'bg-secondary text-foreground' };
 const LABEL = { all: 'All', buy: 'Buy', watch: 'Watch', skip: 'Skip' };
 const FIELD = 'h-10 rounded-md border-2 border-border bg-card px-2 text-sm';
 
@@ -27,13 +28,19 @@ function TilePhoto({ src, title }) {
   return e('div', { className: box }, e('img', { src, alt: '', loading: 'lazy', className: 'h-full w-full object-cover', onError: () => setBad(true) }));
 }
 
+// The star sits beside the link, not inside it, so it is its own button.
 export function tile(t) {
-  return e('a', {
-    key: t.id,
-    href: t.href,
+  return e('div', { key: t.id, className: 'relative' }, e(TargetStar, { tile: t }), tileLink(t));
+}
+
+// A tile with no page to open (a gone target with no listing link) is not a link.
+function tileLink(t) {
+  return e(t.href ? 'a' : 'div', {
+    href: t.href || undefined,
+    ...(t.external ? { target: '_blank', rel: 'noopener' } : {}),
     'data-tile': t.id,
     'data-decision': t.decision,
-    className: 'flex flex-col overflow-hidden rounded-lg border-2 border-border bg-card shadow-tag outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-brand',
+    className: 'flex h-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card shadow-tag outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-brand',
   },
   e(TilePhoto, { src: t.photo_url, title: t.title }),
   e('div', { className: 'flex flex-1 flex-col gap-1 p-3' },
