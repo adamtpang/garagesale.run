@@ -24,11 +24,11 @@ const feed = () => buildDailyFeed({ surplus: { ...assessSnapshot(seed, NOW), sou
 const pairsOf = (f) => f.items.map((item) => ({ item, card: cardFor(item, NOW) }));
 
 test('filters round-trip through the address bar, and odd values fall back to the defaults', () => {
-  const f = { verdict: 'buy', source: 'listing', category: 'cameras', maxPrice: 80, maxDrive: 45, sort: 'drive' };
-  assert.equal(filtersToSearch(f), '?verdict=buy&source=listing&category=cameras&max_price=80&max_drive=45&sort=drive');
+  const f = { tier: 'B', verdict: 'buy', source: 'listing', category: 'cameras', maxPrice: 80, maxDrive: 45, sort: 'drive' };
+  assert.equal(filtersToSearch(f), '?tier=B&verdict=buy&source=listing&category=cameras&max_price=80&max_drive=45&sort=drive');
   assert.deepEqual(parseFilters(filtersToSearch(f)), f);
   assert.equal(filtersToSearch(DEFAULT_FILTERS), '');
-  assert.deepEqual(parseFilters('?verdict=steal&source=x&max_price=-4&max_drive=abc&sort=random'), { ...DEFAULT_FILTERS });
+  assert.deepEqual(parseFilters('?tier=Z&verdict=steal&source=x&max_price=-4&max_drive=abc&sort=random'), { ...DEFAULT_FILTERS });
 });
 
 test('each filter narrows the deals, and an unknown price or drive is kept and counted', () => {
@@ -51,9 +51,9 @@ test('each filter narrows the deals, and an unknown price or drive is kept and c
   assert.equal(near.unknownKept, near.pairs.length);
 });
 
-test('sort by profit, closing soonest or shortest drive', () => {
+test('sort by tier, profit, closing soonest or shortest drive', () => {
   const pairs = pairsOf(feed());
-  const byProfit = applyFilters(pairs, DEFAULT_FILTERS).pairs.map((p) => p.card.profit);
+  const byProfit = applyFilters(pairs, { ...DEFAULT_FILTERS, sort: 'profit' }).pairs.map((p) => p.card.profit);
   const known = byProfit.filter((p) => p != null);
   assert.deepEqual(known, [...known].sort((a, b) => b - a));
   assert.ok(byProfit.indexOf(null) === -1 || byProfit.slice(byProfit.indexOf(null)).every((p) => p == null));
@@ -166,4 +166,20 @@ test('a tile keeps the listing link, and a tile with no page is not a link', asy
   assert.equal(/<a[^>]*data-tile=/.test(none), false);
   const ext = renderToStaticMarkup(tile({ id: 'y', href: 'https://example.com/a', external: true, title: 'Old lot', decision: 'gone', label: 'Gone', price: 'Bid $1.00', max_bid: 'Max bid unknown', closes: 'No longer in the feed', drive: 'Drive unknown' }));
   assert.match(ext, /<a href="https:\/\/example\.com\/a" target="_blank" rel="noopener"/);
+});
+
+test('the Market opens as a tier list: tier chips with counts, a tier badge on each tile, A first', () => {
+  const f = feed();
+  const html = renderToStaticMarkup(e(Market, { feed: f, now: NOW }));
+  for (const [t, word] of [['A', 'A · Buy'], ['B', 'B · Strong watch'], ['C', 'C · Long shot'], ['skip', 'Skip']]) {
+    assert.match(html, new RegExp(`${word} ${f.tiers[t]}<`), t);
+  }
+  assert.match(html, /aria-label="Tier"/);
+  assert.match(html, /<option value="tier"[^>]*>Tier, best first</);
+  // The camera listing is the one Buy, so it is the first tile and wears tier A.
+  const first = html.match(/data-tile="([^"]+)" data-decision="([a-z]+)" data-tier="([A-Cskip]+)"/);
+  assert.deepEqual([first[2], first[3]], ['buy', 'A']);
+  assert.ok((html.match(/data-tier="/g) || []).length === f.items.length);
+  // No speed was posted for these, so tiles say so instead of guessing.
+  assert.match(html, /Sell speed unknown/);
 });

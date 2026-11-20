@@ -5,6 +5,7 @@
 import { money as parseMoney, moneyText, round2 } from './decision.js';
 import { DEFAULT_RULES, checkLot } from './rules.js';
 import { cleanDrive, driveCosts, driveText } from './drive.js';
+import { cleanSpeed } from './tiers.js';
 
 export const HAUL_PER_MILE = DEFAULT_RULES.gas_per_mile;
 export const TAX_ASSUMPTION_RATE = DEFAULT_RULES.tax_assumption_rate;
@@ -255,6 +256,12 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     // What one battery costs, only when a source is cited. Without it, a sale that included a battery cannot be adjusted.
     battery_cost: (() => { const n = money(raw.battery_cost); return n != null && n >= 0 ? n : null; })(),
     battery_cost_note: str(raw.battery_cost_note, 240),
+    // How fast this kind of item sells, as the scout saw it, with its evidence. Null when not sent.
+    sell_speed: cleanSpeed(raw.sell_speed),
+    // Watchers on the auction page, when the site shows them. A sign of how high the bidding may go.
+    watchers: intOrNull(raw.watchers),
+    // What the auction page warns about: locks, missing parts, removal terms.
+    caveats: str(raw.caveats, 500),
     status,
     risks,
     scan_notes: str(raw.scan_notes, 500),

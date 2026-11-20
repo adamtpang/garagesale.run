@@ -5,6 +5,7 @@ import { assessDeal, feeAmount, moneyText, round2 } from './decision.js';
 import { BUY_STATUS } from './surplus.js';
 import { DEFAULT_RULES } from './rules.js';
 import { driveCosts } from './drive.js';
+import { tierFor } from './tiers.js';
 
 const ORDER = { buy: 0, watch: 1, skip: 2 };
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -58,6 +59,8 @@ export function fromLot(lot) {
       current: lot.current_bid,
       opening: lot.opening_bid,
       bid_count: lot.bid_count,
+      // Left out when the page doesn't show watchers, so it isn't listed as a missing number.
+      watchers: lot.watchers ?? undefined,
       closes_at: lot.closes_at,
       closes_text: lot.closes_at ? lot.close_text : null,
     },
@@ -112,6 +115,8 @@ export function fromLot(lot) {
     roi_basis: lot.roi != null ? 'confirmed' : 'middle case estimate',
     max_bid: lot.max_bid,
     max_bid_note: lot.max_bid_note,
+    sell_speed: lot.sell_speed || null,
+    caveats: lot.caveats || null,
     risks: [...lot.risks, ...(lot.lock_flag ? [lot.lock_flag] : [])],
     decision: { value: decision, reasons, needs_adam_yes: true },
   };
@@ -248,6 +253,9 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
   });
   const counts = { buy: 0, watch: 0, skip: 0 };
   for (const it of items) counts[it.decision.value] += 1;
+  // A, B, C or Skip. Tier A is exactly the Buys; B and C sort the Watch items by proof and sell speed.
+  const tiers = { A: 0, B: 0, C: 0, skip: 0 };
+  for (const it of items) { it.tier = tierFor(it, rules); tiers[it.tier.value] += 1; }
   const surplusAge = ageDays(surplus && (surplus.updated_at || (surplus.scanned_on ? `${surplus.scanned_on}T12:00:00Z` : null)), nowMs);
   const stale = [
     hidden.closed_lots ? `${hidden.closed_lots} surplus lot${hidden.closed_lots === 1 ? ' has' : 's have'} closed and ${hidden.closed_lots === 1 ? 'is' : 'are'} hidden.` : null,
@@ -275,6 +283,7 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
     hidden,
     stale,
     counts,
+    tiers,
     items,
   };
 }

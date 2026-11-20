@@ -38,6 +38,9 @@ A lot that breaks a rule is a Skip. Don't argue for exceptions in the report. If
    - Rates: `premium_pct` is a percent (`12.5`). `tax_rate` and `fee_rate` are fractions (`0.0825`, `0.136`). A rate of 1 or more is refused with a `400`.
    - `pickup_address` is a street address from the lot page. Without it, no drive time can be looked up and the lot can't be a Buy.
    - `closes_at` in UTC. Auction pages usually show Central or Eastern time; convert carefully.
+   - `sell_speed`: `{ "label": "fast" | "medium" | "slow" | "unknown", "evidence": "...", "sold_90d": n, "active_competitors": n }`. The label is your call, and the evidence line says what you saw: confirmed sales in the last 90 days, "N sold" counters, how many competing listings. No evidence means `"unknown"`.
+   - `watchers` when the auction page shows them, and `caveats` for what the page warns about (locks, missing parts, removal terms).
+   - The Market tiers each lot from these: A is a Buy, B has at least 3 sold comps with links and sells fast or medium, C is everything else that isn't a Skip.
 5. **Dry run, then post.** `POST /api/surplus?dry_run=1`, fix any `400`, then the same body without `?dry_run=1`. The post replaces the stored scan, so include every lot still worth watching, not just today's new ones.
 6. **Refresh drive times.** `POST /api/drive/refresh`. Repeat while `unknown` drops. A `503` means the routing key isn't set; tell Adam.
 7. **Read the result.** `GET /api/feed`. This is exactly what Adam sees on the Market.
