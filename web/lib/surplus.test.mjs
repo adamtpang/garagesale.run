@@ -708,3 +708,39 @@ test('a fleet device gets the lock warning on its cases, whichever way it is pri
   const plain = assessLot(confirmedLot({ quantity: 10 }), NOW);
   assert.equal(plain.case_caveats.some((c) => /locked/.test(c)), false);
 });
+
+test('a tax or fee rate sent as a percent is refused on write, naming the lot and the fix', () => {
+  const POST = { refusePercentRates: true };
+  const lot = (extra) => ({ id: 'gd-1988-19', title: 'Laptops', current_bid: 10, premium_pct: 12.5, ...extra });
+  assert.throws(() => cleanSnapshot({ lots: [lot({ tax_rate: 8.25, tax_basis: 'assumption' })] }, POST),
+    /lot 0 \(gd-1988-19\): tax_rate 8\.25 reads as 825%\. Send rates as fractions, like 0\.0825 for 8\.25%\./);
+  assert.throws(() => cleanSnapshot({ lots: [lot({ tax_rate: '8.25%', tax_basis: 'stated' })] }, POST), /tax_rate 8\.25/);
+  assert.throws(() => cleanSnapshot({ lots: [lot({ fee_rate: 13.6, fee_basis: 'assumption' })] }, POST), /fee_rate 13\.6 .*0\.136/);
+  // A whole 100% is no tax rate either.
+  assert.throws(() => cleanSnapshot({ lots: [lot({ tax_rate: 1, tax_basis: 'stated' })] }, POST), /tax_rate 1 /);
+  // Fractions pass, and the premium stays a percent.
+  const ok = cleanSnapshot({ lots: [lot({ tax_rate: 0.0825, tax_basis: 'assumption', fee_rate: 0.136, fee_basis: 'assumption' })] }, POST);
+  assert.equal(ok.lots[0].tax_rate, 0.0825);
+  assert.equal(ok.lots[0].fee_rate, 0.136);
+  assert.equal(ok.lots[0].premium_pct, 12.5);
+});
+
+test('a stored percent rate reads as unknown, never as a 100x tax or the assumed rate', () => {
+  const view = assessLot(confirmedLot({ tax_rate: 8.25, tax_basis: 'assumption', fee_rate: 13.6 }), NOW, LOOSE);
+  assert.equal(view.tax_rate_text, 'unknown');
+  assert.equal(view.all_in, null);
+  assert.equal(view.fee_amount, null);
+  assert.equal(view.fee_text, 'unknown');
+});
+
+test('a stored scan with a percent rate still loads, and that lot reads as unknown', () => {
+  const lots = [confirmedLot({ id: 'bad-rate', tax_rate: 8.25, tax_basis: 'assumption' }), confirmedLot({ id: 'good-rate' })];
+  let view;
+  assert.doesNotThrow(() => { view = assessSnapshot({ lots }, NOW, LOOSE); });
+  const bad = view.lots.find((l) => l.id === 'bad-rate');
+  assert.equal(bad.tax_rate_text, 'unknown');
+  assert.equal(bad.all_in, null);
+  assert.notEqual(view.lots.find((l) => l.id === 'good-rate').all_in, null);
+  // Without the post flag, cleaning a stored scan never throws on a rate.
+  assert.doesNotThrow(() => cleanSnapshot({ lots }));
+});

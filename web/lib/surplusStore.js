@@ -62,13 +62,13 @@ export async function surplusPlaces() {
 // A dry run: the body checked and scored exactly as a write would, with drive times from the cache only.
 // Nothing is saved.
 export async function previewSurplus(body, nowMs = null, rules = undefined) {
-  const doc = cleanSnapshot(body);
+  const doc = cleanSnapshot(body, { refusePercentRates: true });
   return { ...stamp(assessSnapshot(await withDrives(doc, cachedDrives), nowMs, rules), 'dry run', null), dry_run: true, saved: false };
 }
 
 // Writing needs the worker key, so it may look up drive times for the lots it stores.
 export async function writeSurplus(body, nowMs = null, rules = undefined) {
-  const doc = cleanSnapshot(body);
+  const doc = cleanSnapshot(body, { refusePercentRates: true });
   doc.updated_at = new Date().toISOString();
   if (blobOn()) await saveVersioned('surplus/', doc);
   else {

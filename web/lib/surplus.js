@@ -84,6 +84,20 @@ function rate(v) {
   if (!Number.isFinite(n)) return null;
   return round4(n);
 }
+// A tax or fee rate of 1 or more is 100% or more, so it was almost surely sent as a percent (8.25 for
+// 8.25%). Guessing would be wrong either way, so a write is refused and a stored one reads as unknown.
+const RATE_FIELDS = ['tax_rate', 'fee_rate'];
+function rateLooksLikePercent(v) {
+  const n = rate(v);
+  return n != null && n >= 1;
+}
+function percentRateError(raw, i) {
+  if (!raw || typeof raw !== 'object') return null;
+  const field = RATE_FIELDS.find((f) => rateLooksLikePercent(raw[f]));
+  if (!field) return null;
+  const n = rate(raw[field]);
+  return `lot ${i}${raw.id ? ` (${raw.id})` : ''}: ${field} ${n} reads as ${round2(n * 100)}%. Send rates as fractions, like ${round4(n / 100)} for ${n}%.`;
+}
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
@@ -164,10 +178,14 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   const id = str(raw.id, 40);
   if (!id || !/^[a-z0-9-]+$/i.test(id)) return null;
   const miles = money(raw.miles_from_home);
-  const taxBasis = raw.tax_basis === 'stated' || raw.tax_basis === 'assumption' ? raw.tax_basis : 'unknown';
+  // A rate that reads as a percent is dropped, and its basis becomes unknown, so a second clean of the
+  // same lot cannot fill in the assumed rate.
+  const taxPercent = rateLooksLikePercent(raw.tax_rate);
+  const taxBasis = !taxPercent && (raw.tax_basis === 'stated' || raw.tax_basis === 'assumption') ? raw.tax_basis : 'unknown';
   let taxRate = taxBasis === 'unknown' ? null : rate(raw.tax_rate);
   if (taxBasis === 'assumption' && taxRate == null) taxRate = rules.tax_assumption_rate;
-  const feeBasis = raw.fee_basis === 'stated' || raw.fee_basis === 'assumption' ? raw.fee_basis : 'unknown';
+  const feePercent = rateLooksLikePercent(raw.fee_rate);
+  const feeBasis = !feePercent && (raw.fee_basis === 'stated' || raw.fee_basis === 'assumption') ? raw.fee_basis : 'unknown';
   const feeRate = feeBasis === 'unknown' ? null : rate(raw.fee_rate);
   const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
   const shipping = shippingBasis === 'unknown' ? null : money(raw.shipping);
@@ -243,7 +261,9 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   };
 }
 
-export function cleanSnapshot(input) {
+// A post (write or dry run) passes refusePercentRates, so a rate sent as a percent is refused with a 400.
+// Reading a stored scan does not, so a bad stored rate reads as unknown instead of taking the board down.
+export function cleanSnapshot(input, { refusePercentRates = false } = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('body must be {lots:[...]}');
   if (!Array.isArray(input.lots)) throw new Error('body must be {lots:[...]}');
   if (input.lots.length > 100) throw new Error('too many lots');
@@ -253,6 +273,8 @@ export function cleanSnapshot(input) {
     const name = lot && typeof lot.comp_set === 'string' ? lot.comp_set : null;
     const own = lot && Array.isArray(lot.comps) ? lot.comps : [];
     if (name && !Array.isArray(sets[name])) throw new Error(`lot ${i} names comp set ${name}, which is not in comp_sets`);
+    const percentError = refusePercentRates ? percentRateError(lot, i) : null;
+    if (percentError) throw new Error(percentError);
     const cleaned = cleanLot(name ? { ...lot, comps: [...sets[name], ...own] } : lot);
     if (!cleaned) throw new Error(`lot ${i} is missing a usable id`);
     return cleaned;

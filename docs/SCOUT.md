@@ -250,7 +250,7 @@ Rules for the body:
 - `current_bid` is a real bid. If nobody has bid, leave it out and send `opening_bid`.
 - `miles_from_home` is measured from New Braunfels. Send `miles_approximate: false` only for a measured distance.
 - `*_basis` fields say where a number came from: `stated` (on the page), `assumption` (a labeled guess) or leave it out for unknown. Profit is only "confirmed" when every input is `stated`.
-- `premium_pct` is a percent (8.5). `tax_rate` and `fee_rate` are fractions (0.0825).
+- `premium_pct` is a percent (8.5). `tax_rate` and `fee_rate` are fractions (0.0825). A `tax_rate` or `fee_rate` of 1 or more reads as a percent, and the whole post is refused with a `400` that names the lot.
 - A comp is `type: "sold"` or `"asking"`. Asking comps are shown but never used for resale. **A sold comp must carry its `url`.** One sold comp without a URL blocks resale for the whole lot.
 - `price` on a comp is always per unit. For a lot sale also send `lot_size` and `lot_price`.
 - `battery` on a comp is `none`, `included` or left out. `condition` is `working`, `parts` or left out. `sold_on` is the sale date as text.
