@@ -2,7 +2,7 @@
 // Selling: what Adam bought and is selling, from the private ledger. Needs the ledger key, like /ledger,
 // and shares it through the same sessionStorage slot. Nothing here posts a listing anywhere: "Mark
 // listed" only records in the ledger that Adam listed it himself.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sellingRows, SLOW_DAYS } from '@/lib/selling';
 
 const KEY = 'gs_ledger_key';
@@ -13,7 +13,7 @@ export const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMo
 const today = () => localDay();
 const FIELD = 'h-10 w-28 rounded-md border-2 border-border bg-card px-2 text-sm';
 
-export function SellingTable({ rows, onList }) {
+export function SellingTable({ rows, onList, busy = false }) {
   const [open, setOpen] = useState(null);
   const [form, setForm] = useState({ list_price: '', floor_price: '', date_listed: today() });
   if (rows.length === 0) return <p className="mt-6 rounded-lg border-2 border-border bg-card p-6 text-base">Nothing on hand or listed. Buys show up here once they are in the <a className="underline" href="/ledger">ledger</a>.</p>;
@@ -31,14 +31,14 @@ export function SellingTable({ rows, onList }) {
     </dl>
     {r.slow ? <p className="mt-2 text-sm" data-field="slow-note">Up {r.days_listed} days, past the {SLOW_DAYS}-day mark.{r.profit_at_floor != null ? ` At your floor you would make ${$(r.profit_at_floor)} before fees.` : ''}</p> : null}
     {r.status === 'on_hand' && onList ? (open === r.id
-      ? <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={(ev) => { ev.preventDefault(); onList(r.id, form); setOpen(null); }}>
+      ? <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={async (ev) => { ev.preventDefault(); if (busy) return; const ok = await onList(r.id, form); if (ok) setOpen(null); }}>
         <label className="grid gap-1 text-xs font-semibold">List price ($)<input className={FIELD} inputMode="decimal" required value={form.list_price} onChange={(ev) => setForm((f) => ({ ...f, list_price: ev.target.value }))} /></label>
         <label className="grid gap-1 text-xs font-semibold">Floor ($)<input className={FIELD} inputMode="decimal" value={form.floor_price} onChange={(ev) => setForm((f) => ({ ...f, floor_price: ev.target.value }))} /></label>
         <label className="grid gap-1 text-xs font-semibold">Listed on<input className={`${FIELD} w-40`} type="date" value={form.date_listed} onChange={(ev) => setForm((f) => ({ ...f, date_listed: ev.target.value }))} /></label>
-        <button type="submit" className="h-10 rounded-md border-2 border-border bg-brand px-4 text-sm font-semibold text-white">Save</button>
+        <button type="submit" disabled={busy} className="h-10 rounded-md border-2 border-border bg-brand px-4 text-sm font-semibold text-white disabled:opacity-60">{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" className="h-10 px-2 text-sm underline" onClick={() => setOpen(null)}>Cancel</button>
       </form>
-      : <button type="button" className="mt-3 text-sm font-semibold underline underline-offset-4" onClick={() => { setOpen(r.id); setForm({ list_price: '', floor_price: '', date_listed: today() }); }}>I listed it</button>) : null}
+      : <button type="button" disabled={busy} className="mt-3 text-sm font-semibold underline underline-offset-4 disabled:opacity-60" onClick={() => { setOpen(r.id); setForm({ list_price: '', floor_price: '', date_listed: today() }); }}>I listed it</button>) : null}
   </article>)}</div>;
 }
 
@@ -47,14 +47,21 @@ export default function SellingScreen() {
   const [draft, setDraft] = useState('');
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  // The key the page is using now. A ledger read that comes back after the key was changed or forgotten is
+  // dropped, so the ledger never shows without its key.
+  const live = useRef('');
+  useEffect(() => { live.current = key; }, [key]);
 
   useEffect(() => { let s = ''; try { s = sessionStorage.getItem(KEY) || ''; } catch {} setKey(s); setDraft(s); }, []);
   const load = useCallback(async () => {
     if (!key) return;
     setErr('');
-    const res = await fetch('/api/ledger', { cache: 'no-store', headers: { 'x-ledger-key': key } });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { setDoc(null); setErr(data.error || 'Could not open the ledger.'); return; }
+    const asked = key;
+    const res = await fetch('/api/ledger', { cache: 'no-store', headers: { 'x-ledger-key': asked } }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : {};
+    if (live.current !== asked) return;
+    if (!res || !res.ok) { setDoc(null); setErr(data.error || 'Could not open the ledger.'); return; }
     setDoc(data);
   }, [key]);
   useEffect(() => { load(); }, [load]);
@@ -62,14 +69,21 @@ export default function SellingScreen() {
   // Clears the key from this tab, so a wrong key can be replaced.
   function forget() {
     try { sessionStorage.removeItem(KEY); } catch {}
+    live.current = '';
     setKey(''); setDraft(''); setDoc(null); setErr('');
   }
 
+  // Returns true once saved. Only one save runs at a time.
   async function onList(id, form) {
+    if (busy) return false;
+    setBusy(true);
     setErr('');
+    try {
     const res = await fetch(`/api/ledger/${encodeURIComponent(id)}`, { method: 'PATCH', cache: 'no-store', headers: { 'content-type': 'application/json', 'x-ledger-key': key }, body: JSON.stringify({ status: 'listed', list_price: form.list_price, floor_price: form.floor_price || null, date_listed: form.date_listed || today() }) });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || 'Could not save.'); return; }
-    load();
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || 'Could not save.'); return false; }
+    await load();
+    return true;
+    } catch { setErr('Could not save.'); return false; } finally { setBusy(false); }
   }
 
   return <section>
@@ -83,6 +97,6 @@ export default function SellingScreen() {
     {err && <p role="alert" className="mt-4 border-l-4 border-red-400 bg-red-50 px-3 py-2 text-sm">{err}</p>}
     {key && <p className="mt-4"><button type="button" className="text-sm font-medium underline underline-offset-4" data-field="forget-key" onClick={forget}>{doc ? 'Forget key' : 'Use a different key'}</button></p>}
     {key && !doc && !err && <p role="status" className="mt-6">Opening the ledger…</p>}
-    {doc && <SellingTable rows={sellingRows(doc.items, Date.now())} onList={onList} />}
+    {key && doc && <SellingTable rows={sellingRows(doc.items, Date.now())} onList={onList} busy={busy} />}
   </section>;
 }

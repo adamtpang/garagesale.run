@@ -59,3 +59,15 @@ test('the Selling page dates a listing in local time and can forget a wrong key'
   assert.match(page, /sessionStorage\.removeItem\(KEY\)/);
   assert.match(page, /Use a different key/);
 });
+
+test('the Selling page drops a ledger read that returns after the key changed, and saves one at a time', async () => {
+  // The page is JSX, which this test runner cannot load, so its source is checked.
+  const page = fs.readFileSync(new URL('../app/selling/SellingScreen.js', import.meta.url), 'utf8');
+  assert.match(page, /if \(live\.current !== asked\) return;/);
+  assert.match(page, /\{key && doc && <SellingTable/);
+  assert.match(page, /if \(busy\) return false;/);
+  // While a save runs, the Save button and every "I listed it" button are disabled, and the form stays open
+  // until the save is done.
+  assert.equal((page.match(/disabled=\{busy\}/g) || []).length, 2);
+  assert.match(page, /const ok = await onList\(r\.id, form\); if \(ok\) setOpen\(null\);/);
+});
