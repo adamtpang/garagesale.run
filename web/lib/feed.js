@@ -218,10 +218,25 @@ function ageDays(iso, nowMs) {
   return Math.max(0, Math.floor((nowMs - t) / 86400000));
 }
 
+// A listings feed older than this is left off the deals page. Local listings sell fast, so most are gone by then.
+export const LISTING_MAX_AGE_DAYS = 7;
+
+// True when the lot has a close time and it has passed. A lot with no close time is kept.
+export function lotClosed(lot, nowMs) {
+  const t = Date.parse((lot && lot.closes_at) || '');
+  return nowMs != null && Number.isFinite(t) && t <= nowMs;
+}
+
 // surplus: an assessed snapshot (assessSnapshot output plus source and updated_at). deals: the stored deals feed.
 export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = DEFAULT_RULES }) {
-  const lots = surplus && Array.isArray(surplus.lots) ? surplus.lots : [];
-  const listings = deals && Array.isArray(deals.deals) ? deals.deals.filter((d) => d && d.url) : [];
+  const allLots = surplus && Array.isArray(surplus.lots) ? surplus.lots : [];
+  const allListings = deals && Array.isArray(deals.deals) ? deals.deals.filter((d) => d && d.url) : [];
+  const dealsAge = ageDays(deals && deals.updated_at, nowMs);
+  // A closed lot can no longer be bought, and an old listing is most likely sold. Both are left off, and counted.
+  const lots = allLots.filter((lot) => !lotClosed(lot, nowMs));
+  const listingsTooOld = dealsAge != null && dealsAge > LISTING_MAX_AGE_DAYS;
+  const listings = listingsTooOld ? [] : allListings;
+  const hidden = { closed_lots: allLots.length - lots.length, old_listings: allListings.length - listings.length };
   const items = [...lots.map(fromLot), ...listings.map((d) => fromDeal(d, config, rules))];
   items.sort((a, b) => {
     const x = rank(a); const y = rank(b);
@@ -231,8 +246,9 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
   const counts = { buy: 0, watch: 0, skip: 0 };
   for (const it of items) counts[it.decision.value] += 1;
   const surplusAge = ageDays(surplus && (surplus.updated_at || (surplus.scanned_on ? `${surplus.scanned_on}T12:00:00Z` : null)), nowMs);
-  const dealsAge = ageDays(deals && deals.updated_at, nowMs);
   const stale = [
+    hidden.closed_lots ? `${hidden.closed_lots} surplus lot${hidden.closed_lots === 1 ? ' has' : 's have'} closed and ${hidden.closed_lots === 1 ? 'is' : 'are'} hidden.` : null,
+    hidden.old_listings ? `${hidden.old_listings} listing${hidden.old_listings === 1 ? ' is' : 's are'} hidden because the listings feed is over ${LISTING_MAX_AGE_DAYS} days old.` : null,
     surplusAge != null && surplusAge >= 2 ? `The surplus scan is ${surplusAge} days old.` : null,
     surplus && surplus.source === 'seed' ? 'No surplus scan has been posted. These lots are the Nov 15, 2026 scan file.' : null,
     dealsAge != null && dealsAge >= 2 ? `The listings feed is ${dealsAge} days old.` : null,
@@ -250,9 +266,10 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
       gas_per_mile: rules.gas_per_mile, hourly_rate: rules.hourly_rate, max_drive_minutes: rules.max_drive_minutes, bankroll: rules.bankroll, bankroll_source: rules.bankroll_source, categories: rules.categories, source: 'web/config/rules.js',
     },
     sources: {
-      surplus: { from: surplus ? surplus.source || null : null, scanned_on: surplus ? surplus.scanned_on || null : null, updated_at: surplus ? surplus.updated_at || null : null, age_days: surplusAge, lots: lots.length },
-      listings: { updated_at: deals ? deals.updated_at || null : null, age_days: dealsAge, deals: listings.length },
+      surplus: { from: surplus ? surplus.source || null : null, scanned_on: surplus ? surplus.scanned_on || null : null, updated_at: surplus ? surplus.updated_at || null : null, age_days: surplusAge, lots: lots.length, closed_hidden: hidden.closed_lots },
+      listings: { updated_at: deals ? deals.updated_at || null : null, age_days: dealsAge, deals: listings.length, old_hidden: hidden.old_listings, max_age_days: LISTING_MAX_AGE_DAYS },
     },
+    hidden,
     stale,
     counts,
     items,
