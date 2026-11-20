@@ -99,7 +99,9 @@ test('the Market page draws one tile per deal, honors starting filters, and offe
 test('closing soonest puts open lots first, then unknown close times, then closed lots', () => {
   // Nov 17, 8:30 PM CT: the Schertz lots have just closed; TFC and the Hallettsville lots are still open.
   const later = Date.parse('2026-11-18T02:30:00.000Z');
-  const f = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: later });
+  // The feed is built without a clock, so closed lots stay in it (the live feed hides them); the sort is
+  // then checked against the later time.
+  const f = buildDailyFeed({ surplus: { ...assessSnapshot(seed, later), source: 'seed', updated_at: null }, deals: null, config: confirmed(), nowMs: null });
   const pairs = f.items.map((item) => ({ item, card: cardFor(item, later) }));
   const order = applyFilters(pairs, { ...DEFAULT_FILTERS, sort: 'closing' }, later).pairs.map((p) => {
     const t = Date.parse(p.item.price.closes_at || '');
