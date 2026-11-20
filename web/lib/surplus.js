@@ -570,7 +570,9 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   // the cases. They are replaced with what does.
   const planNotes = resale && resale.plan ? {
     resale_note: `Priced at your listing draft: ${moneyText(resale.plan.ask)} Buy It Now${resale.plan.floor != null ? `, ${moneyText(resale.plan.floor)} lowest offer` : ''} for the lot. The comps alone said ${moneyText(resale.comps_say.middle)} a unit.`,
-    battery_cost_note: lot.battery_cost_note ? 'The listing draft sets the cases, so no battery sale does.' : lot.battery_cost_note,
+    // With a floor, the draft sets every case. Without one, the low case still comes from the cited sales, so
+    // the scan's battery note still holds.
+    battery_cost_note: lot.battery_cost_note && resale.plan.floor != null ? 'The listing draft sets the cases, so no battery sale does.' : lot.battery_cost_note,
   } : {};
   return {
     ...lot,

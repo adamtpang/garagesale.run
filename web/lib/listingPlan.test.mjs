@@ -80,3 +80,10 @@ test('a plan with no floor or source is never listed as unknown', () => {
   assert.deepEqual(item.resale.listing_plan, { ask: 280, floor: null, source: null });
   assert.equal(item.unknown.some((u) => u.startsWith('resale.listing_plan') || u.startsWith('resale.comps_say')), false);
 });
+
+test('without a floor, the battery note is kept, since the low case still comes from the sales', () => {
+  const base = seed.lots.find((l) => l.id === 'ps-4123518');
+  const lot = assessSnapshot({ ...seed, lots: [{ ...base, listing_plan: { ask: 280 } }] }, NOW).lots[0];
+  assert.equal(lot.battery_cost_note, base.battery_cost_note);
+  assert.match(lot.resale_note, /^Priced at your listing draft: \$280\.00 Buy It Now for the lot\./);
+});
