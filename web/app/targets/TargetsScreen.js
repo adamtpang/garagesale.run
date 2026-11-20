@@ -28,7 +28,8 @@ export default function TargetsScreen() {
     return () => window.removeEventListener(TARGETS_EVENT, sync);
   }, []);
 
-  const rows = targetRows(targets, live || []);
+  // Until the feed has loaded (or failed), live and gone can't be told apart, so no rows are drawn.
+  const rows = live === null ? [] : targetRows(targets, live);
   return <section>
     <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Targets</h1>
     <p className="mt-2 max-w-2xl text-base">The deals you starred on the Market. They are kept in this browser only. A deal that closes stays here with its last known numbers.</p>

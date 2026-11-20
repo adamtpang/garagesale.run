@@ -42,3 +42,21 @@ test('broken or blocked storage never throws', () => {
   junk.setItem(TARGETS_KEY, '[1,2]');
   assert.deepEqual(readTargets(junk), {});
 });
+
+test('last seen is the last day the deal was in the feed, not the day it was starred', () => {
+  const s = memory();
+  toggleTarget(tileA, s, Date.parse('2026-11-10T12:00:00Z'));
+  refreshTargets([tileA], s, Date.parse('2026-11-18T09:00:00Z'));
+  const rows = targetRows(readTargets(s), []);
+  assert.equal(rows[0].gone, true);
+  assert.match(rows[0].reason, /Last seen 2026-11-18/);
+  assert.equal(readTargets(s)['ps-1'].saved_at, '2026-11-10T12:00:00.000Z');
+});
+
+test('the Targets page draws no rows until the feed has loaded or failed', async () => {
+  const fs = await import('fs');
+  const src = fs.readFileSync(new URL('../app/targets/TargetsScreen.js', import.meta.url), 'utf8');
+  assert.match(src, /const rows = live === null \? \[\] : targetRows\(targets, live\);/);
+  // A failed load sets live to [], so every target then shows its last known numbers.
+  assert.match(src, /setFailed\(true\); setLive\(\[\]\)/);
+});
