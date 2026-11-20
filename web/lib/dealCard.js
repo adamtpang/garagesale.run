@@ -72,7 +72,7 @@ export function cardFor(item, nowMs = null) {
     { key: 'price', label: atMax ? 'Your max bid' : (lot ? 'Current bid' : 'Asking price'), value: money(pay), note: priceNote },
     { key: 'fees', label: 'Fees', value: money(fees), note: `${feeParts}.` },
     { key: 'gas', label: 'Gas', value: money(c.gas), note: milesNote },
-    { key: 'drive', label: 'Drive time', value: num(mins) != null ? `${mins} min` : 'unknown', note: num(c.time) != null ? `${money(c.time)} of your time` : 'Not counted in profit yet' },
+    { key: 'drive', label: 'Drive time', value: num(mins) != null ? `${mins} min` : 'unknown', note: num(c.time) != null ? `${money(c.time)} of your time` : `Not counted in profit yet${item.location.drive_unknown_reason ? `: ${item.location.drive_unknown_reason}` : ''}` },
   ];
 
   const sold = (item.comps || []).filter((x) => x.type === 'sold' && x.url);

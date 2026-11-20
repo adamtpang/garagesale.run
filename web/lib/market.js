@@ -98,6 +98,8 @@ export function tileFor(item, card) {
   return {
     id: card.id,
     href: `/item?id=${encodeURIComponent(card.id)}`,
+    // Kept in a Target's snapshot, so a deal that leaves the feed can still be opened at its source.
+    listing_url: card.listing_url || null,
     title: card.title,
     photo_url: card.photo_url,
     decision: card.decision,
@@ -106,7 +108,7 @@ export function tileFor(item, card) {
     price: `${lot ? 'Bid' : 'Ask'} ${cur != null ? dollars(cur) : 'unknown'}`,
     max_bid: `Max ${lot ? 'bid' : 'offer'} ${num(item.max_bid) != null ? dollars(item.max_bid) : 'unknown'}`,
     closes: card.countdown || (lot ? 'Close time unknown' : 'No close time'),
-    drive: mins != null ? `${mins} min round trip` : 'Drive unknown',
+    drive: mins != null ? `${mins} min round trip` : `Drive unknown${item.location.drive_unknown_reason ? `: ${item.location.drive_unknown_reason}` : ''}`,
     reason: card.reason || card.risk || null,
   };
 }

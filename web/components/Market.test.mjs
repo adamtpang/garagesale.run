@@ -76,7 +76,7 @@ test('a tile shows only the deciding lines, every number from the feed, and link
   const zebra = f.items.find((it) => it.id === 'ps-4123518');
   const z = tileFor(zebra, cardFor(zebra, NOW));
   assert.equal(z.price, `Bid $${zebra.price.current.toFixed(2)}`);
-  assert.equal(z.drive, 'Drive unknown');
+  assert.equal(z.drive, 'Drive unknown: not looked up yet');
   assert.match(z.closes, /^Closes in/);
   // An unknown profit says so instead of a number.
   const noProfit = f.items.find((it) => cardFor(it, NOW).amount == null);
@@ -94,6 +94,28 @@ test('the Market page draws one tile per deal, honors starting filters, and offe
   assert.match(only, /Clear filters/);
   const none = renderToStaticMarkup(e(Market, { feed: f, now: NOW, failed: false, refreshFailed: false, loading: false, initialFilters: { ...DEFAULT_FILTERS, category: 'bikes' } }));
   assert.match(none, /Nothing passes these filters/);
+});
+
+test('a tile and the full card say why a drive time is unknown', async () => {
+  const { driveUnknownReason } = await import('../lib/feed.js');
+  assert.equal(driveUnknownReason(30, false, 'surplus'), undefined);
+  assert.equal(driveUnknownReason(null, false, 'surplus'), 'no pickup address');
+  assert.equal(driveUnknownReason(null, false, 'listing'), 'no map location');
+  assert.equal(driveUnknownReason(null, true, 'surplus'), 'not looked up yet');
+  const f = feed();
+  const withAddress = f.items.find((it) => it.kind === 'surplus' && it.location.pickup_address);
+  const noAddress = f.items.find((it) => it.kind === 'surplus' && !it.location.pickup_address);
+  assert.ok(withAddress && noAddress);
+  assert.equal(tileFor(withAddress, cardFor(withAddress, NOW)).drive, 'Drive unknown: not looked up yet');
+  assert.equal(tileFor(noAddress, cardFor(noAddress, NOW)).drive, 'Drive unknown: no pickup address');
+  assert.equal(cardFor(noAddress, NOW).costs.find((c) => c.key === 'drive').note, 'Not counted in profit yet: no pickup address');
+  // The fixture listing has a drive, so it has no reason, and the reason is never listed as an unknown value.
+  const listing = f.items.find((it) => it.kind === 'listing');
+  assert.equal(listing.location.drive_unknown_reason, undefined);
+  for (const it of f.items) assert.equal(it.unknown.includes('location.drive_unknown_reason'), false, it.id);
+  // A listing posted without a map location says so.
+  const noMap = buildDailyFeed({ surplus: null, deals: { updated_at: '2026-11-16T12:00:00.000Z', deals: [{ ...camera(), drive: undefined }] }, config: confirmed(), nowMs: NOW }).items[0];
+  assert.equal(noMap.location.drive_unknown_reason, 'no map location');
 });
 
 test('closing soonest puts open lots first, then unknown close times, then closed lots', () => {
@@ -133,4 +155,15 @@ test('a category alias in a link selects the menu option it filters by', () => {
   for (const alias of ['game%20consoles', 'console', 'Consoles']) assert.equal(parseFilters(`?category=${alias}`).category, 'consoles', alias);
   assert.equal(parseFilters('?category=cameras').category, 'cameras');
   assert.equal(parseFilters('?category=').category, 'all');
+});
+
+test('a tile keeps the listing link, and a tile with no page is not a link', async () => {
+  const { tile } = await import('./Market.js');
+  const f = feed();
+  const item = f.items.find((it) => it.kind === 'listing');
+  assert.equal(tileFor(item, cardFor(item, NOW)).listing_url, 'https://www.facebook.com/marketplace/item/555/');
+  const none = renderToStaticMarkup(tile({ id: 'x', href: null, title: 'Old lot', decision: 'gone', label: 'Gone', price: 'Bid $1.00', max_bid: 'Max bid unknown', closes: 'No longer in the feed', drive: 'Drive unknown' }));
+  assert.equal(/<a[^>]*data-tile=/.test(none), false);
+  const ext = renderToStaticMarkup(tile({ id: 'y', href: 'https://example.com/a', external: true, title: 'Old lot', decision: 'gone', label: 'Gone', price: 'Bid $1.00', max_bid: 'Max bid unknown', closes: 'No longer in the feed', drive: 'Drive unknown' }));
+  assert.match(ext, /<a href="https:\/\/example\.com\/a" target="_blank" rel="noopener"/);
 });

@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { cardFor } from '@/lib/dealCard';
 import { dealCard } from '@/components/DealFeed';
+import { tileFor } from '@/lib/market';
+import TargetStar from '@/components/TargetStar';
 
 export default function ItemScreen() {
   const [state, setState] = useState({ loading: true });
@@ -22,5 +24,6 @@ export default function ItemScreen() {
   if (state.loading) return <p role="status" className="text-base">Loading the deal…</p>;
   if (state.failed) return <div><p className="text-base font-semibold">Could not load the deals feed.</p><p className="mt-3">{back}</p></div>;
   if (!state.item) return <div><h1 className="text-2xl font-semibold">This deal is not in the feed</h1><p className="mt-2 text-base">It may have closed or been left off as too old. The page does not guess its numbers.</p><p className="mt-3">{back}</p></div>;
-  return <div><p className="mb-4">{back}</p>{dealCard(cardFor(state.item, state.now))}</div>;
+  const card = cardFor(state.item, state.now);
+  return <div><div className="mb-4 flex flex-wrap items-center justify-between gap-3">{back}<TargetStar tile={tileFor(state.item, card)} big /></div>{dealCard(card)}</div>;
 }

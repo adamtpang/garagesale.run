@@ -222,6 +222,8 @@ export function cleanItem(input, id) {
     source_link: httpUrl(input.source_link), costs: costsFrom(input), status,
     sell_date: status === 'sold' ? dateStr(input.sell_date) : null,
     sell_price, platform: str(input.platform, 40), saved_deal_id: dealId(input.saved_deal_id),
+    // Set when Adam lists it for sale: the asking price, the lowest he would take, and the day it went up.
+    list_price: money(input.list_price), floor_price: money(input.floor_price), date_listed: dateStr(input.date_listed),
   });
 }
 
@@ -245,6 +247,9 @@ export function applyPatch(existing, patch) {
   if ('source_link' in p) next.source_link = httpUrl(p.source_link);
   if ('platform' in p) next.platform = str(p.platform, 40);
   if ('saved_deal_id' in p) next.saved_deal_id = dealId(p.saved_deal_id);
+  if ('list_price' in p) next.list_price = money(p.list_price);
+  if ('floor_price' in p) next.floor_price = money(p.floor_price);
+  if ('date_listed' in p) next.date_listed = dateStr(p.date_listed);
   if ('status' in p) {
     if (!STATUSES.includes(p.status)) throw new Error('bad status');
     next.status = p.status;
@@ -272,6 +277,9 @@ export function normalize(doc) {
     sell_price: money(it.sell_price),
     platform: str(it.platform, 40),
     saved_deal_id: dealId(it.saved_deal_id),
+    list_price: money(it.list_price),
+    floor_price: money(it.floor_price),
+    date_listed: dateStr(it.date_listed),
   }));
   const decisions = (Array.isArray(base.decisions) ? base.decisions : []).filter((d) => d && d.id && DECISIONS.includes(d.decision)).map((d) => {
     const approved = d.decision === 'approved';
