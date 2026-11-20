@@ -156,3 +156,14 @@ test('a category alias in a link selects the menu option it filters by', () => {
   assert.equal(parseFilters('?category=cameras').category, 'cameras');
   assert.equal(parseFilters('?category=').category, 'all');
 });
+
+test('a tile keeps the listing link, and a tile with no page is not a link', async () => {
+  const { tile } = await import('./Market.js');
+  const f = feed();
+  const item = f.items.find((it) => it.kind === 'listing');
+  assert.equal(tileFor(item, cardFor(item, NOW)).listing_url, 'https://www.facebook.com/marketplace/item/555/');
+  const none = renderToStaticMarkup(tile({ id: 'x', href: null, title: 'Old lot', decision: 'gone', label: 'Gone', price: 'Bid $1.00', max_bid: 'Max bid unknown', closes: 'No longer in the feed', drive: 'Drive unknown' }));
+  assert.equal(/<a[^>]*data-tile=/.test(none), false);
+  const ext = renderToStaticMarkup(tile({ id: 'y', href: 'https://example.com/a', external: true, title: 'Old lot', decision: 'gone', label: 'Gone', price: 'Bid $1.00', max_bid: 'Max bid unknown', closes: 'No longer in the feed', drive: 'Drive unknown' }));
+  assert.match(ext, /<a href="https:\/\/example\.com\/a" target="_blank" rel="noopener"/);
+});
