@@ -63,3 +63,20 @@ test('the deal card says when the listing draft set the price', async () => {
   const html = renderToStaticMarkup(React.createElement(DealFeed, { feed, now: NOW, failed: false, refreshFailed: false, loading: false }));
   assert.equal((html.match(/data-field="plan-note"/g) || []).length, 1);
 });
+
+test('with a plan, the lot notes describe the draft, not the comp math', () => {
+  const lot = assessSnapshot(seed, NOW).lots.find((l) => l.id === 'ps-4123518');
+  assert.equal(lot.resale_note, 'Priced at your listing draft: $280.00 Buy It Now, $200.00 lowest offer for the lot. The comps alone said $40.00 a unit.');
+  assert.equal(lot.battery_cost_note, 'The listing draft sets the cases, so no battery sale does.');
+  // A lot without a plan keeps the scan's own notes.
+  const plain = assessSnapshot({ ...seed, lots: seed.lots.map(({ listing_plan, ...l }) => l) }, NOW).lots.find((l) => l.id === 'ps-4123518');
+  assert.match(plain.resale_note, /Priced from cited sales/);
+});
+
+test('a plan with no floor or source is never listed as unknown', () => {
+  const base = seed.lots.find((l) => l.id === 'ps-4123518');
+  const surplus = { ...assessSnapshot({ ...seed, lots: [{ ...base, listing_plan: { ask: 280 } }] }, NOW), source: 'seed', updated_at: null };
+  const item = buildDailyFeed({ surplus, deals: null, config: withRules(null), nowMs: NOW }).items[0];
+  assert.deepEqual(item.resale.listing_plan, { ask: 280, floor: null, source: null });
+  assert.equal(item.unknown.some((u) => u.startsWith('resale.listing_plan') || u.startsWith('resale.comps_say')), false);
+});

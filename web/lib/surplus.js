@@ -566,8 +566,15 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
     ? `${moneyText(lot.bid_scan_low)}–${moneyText(lot.bid_scan_high)}`
     : null;
 
+  // With a listing plan, the scan's resale and battery notes describe the comp math, which no longer sets
+  // the cases. They are replaced with what does.
+  const planNotes = resale && resale.plan ? {
+    resale_note: `Priced at your listing draft: ${moneyText(resale.plan.ask)} Buy It Now${resale.plan.floor != null ? `, ${moneyText(resale.plan.floor)} lowest offer` : ''} for the lot. The comps alone said ${moneyText(resale.comps_say.middle)} a unit.`,
+    battery_cost_note: lot.battery_cost_note ? 'The listing draft sets the cases, so no battery sale does.' : lot.battery_cost_note,
+  } : {};
   return {
     ...lot,
+    ...planNotes,
     ...formatClose(lot.closes_at, nowMs),
     miles_text: milesText,
     current_bid_text: moneyOrUnknown(bid),
