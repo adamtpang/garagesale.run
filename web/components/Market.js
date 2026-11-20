@@ -48,6 +48,14 @@ export function tile(t) {
 
 export default function Market({ feed, now, failed, refreshFailed, loading, initialFilters = null }) {
   const [f, setF] = useState(initialFilters || DEFAULT_FILTERS);
+  // What is typed in the number boxes, kept as text so "12." or "0" can be typed. The filter takes the number.
+  const [typed, setTyped] = useState({ maxPrice: null, maxDrive: null });
+  const shownText = (k) => (typed[k] != null ? typed[k] : (f[k] ?? ''));
+  const typeNumber = (k, text) => {
+    setTyped((t) => ({ ...t, [k]: text }));
+    const n = Number(text);
+    set({ [k]: text.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null });
+  };
   // Filters live in the address bar, so a refresh or a shared link keeps them.
   useEffect(() => { if (!initialFilters && typeof window !== 'undefined') setF(parseFilters(window.location.search)); }, [initialFilters]);
   const set = (patch) => {
@@ -60,7 +68,7 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
   const pairs = items.map((item) => ({ item, card: cardFor(item, now) }));
   const counts = { all: pairs.length, buy: 0, watch: 0, skip: 0 };
   for (const p of pairs) counts[p.card.decision] += 1;
-  const { pairs: shown, unknownKept } = applyFilters(pairs, f);
+  const { pairs: shown, unknownKept } = applyFilters(pairs, f, now);
   const cats = categoriesOf(items, feed && feed.rules);
   const r = feed && feed.rules;
   const filtered = filtersToSearch({ ...f, sort: 'profit' }) !== '';
@@ -97,13 +105,13 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
           e('select', { className: FIELD, value: f.category, onChange: (ev) => set({ category: ev.target.value }) },
             e('option', { value: 'all' }, 'Any'), ...cats.map((c) => e('option', { key: c, value: c }, c)))),
         e('label', { className: 'grid gap-1 text-xs font-semibold' }, 'Max price ($)',
-          e('input', { className: `${FIELD} w-full sm:w-28`, type: 'number', inputMode: 'decimal', min: 1, value: f.maxPrice ?? '', placeholder: 'Any', onChange: (ev) => set({ maxPrice: ev.target.value === '' ? null : Math.max(0, Number(ev.target.value)) || null }) })),
+          e('input', { className: `${FIELD} w-full sm:w-28`, type: 'number', inputMode: 'decimal', min: 1, value: shownText('maxPrice'), placeholder: 'Any', onChange: (ev) => typeNumber('maxPrice', ev.target.value) })),
         e('label', { className: 'grid gap-1 text-xs font-semibold' }, 'Max drive (min)',
-          e('input', { className: `${FIELD} w-full sm:w-28`, type: 'number', inputMode: 'numeric', min: 1, value: f.maxDrive ?? '', placeholder: 'Any', onChange: (ev) => set({ maxDrive: ev.target.value === '' ? null : Math.max(0, Number(ev.target.value)) || null }) })),
+          e('input', { className: `${FIELD} w-full sm:w-28`, type: 'number', inputMode: 'numeric', min: 1, value: shownText('maxDrive'), placeholder: 'Any', onChange: (ev) => typeNumber('maxDrive', ev.target.value) })),
         e('label', { className: 'col-span-2 grid gap-1 text-xs font-semibold sm:col-span-1' }, 'Sort',
           e('select', { className: FIELD, value: f.sort, onChange: (ev) => set({ sort: ev.target.value }) },
             e('option', { value: 'profit' }, 'Profit, best first'), e('option', { value: 'closing' }, 'Closing soonest'), e('option', { value: 'drive' }, 'Shortest drive'))),
-        filtered ? e('button', { type: 'button', className: 'col-span-2 h-10 text-sm font-medium underline underline-offset-4 sm:col-span-1', onClick: () => set({ ...DEFAULT_FILTERS, sort: f.sort }) }, 'Clear filters') : null),
+        filtered ? e('button', { type: 'button', className: 'col-span-2 h-10 text-sm font-medium underline underline-offset-4 sm:col-span-1', onClick: () => { setTyped({ maxPrice: null, maxDrive: null }); set({ ...DEFAULT_FILTERS, sort: f.sort }); } }, 'Clear filters') : null),
       unknownKept ? e('p', { className: 'mb-3 text-sm text-muted-foreground', 'data-field': 'unknown-kept' }, `${unknownKept} deal${unknownKept === 1 ? '' : 's'} with an unknown price or drive time ${unknownKept === 1 ? 'is' : 'are'} kept in, since they can't be ruled out.`) : null,
 
       pairs.length === 0 ? e('p', { className: 'rounded-lg border-2 border-border bg-card p-6 text-base' }, (feed.hidden && (feed.hidden.closed_lots || feed.hidden.old_listings)) ? 'No open deals right now. Everything in the last scan has closed or is too old. A new scan has not been posted.' : 'No deals in the feed yet. Flipping has not posted a scan.') : null,
