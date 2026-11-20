@@ -102,6 +102,11 @@ export function cardFor(item, nowMs = null) {
     comps_none: sold.length === 0 ? 'No sold comps with a link.' : null,
     countdown: countdown(item.price.closes_at, nowMs),
     closes_text: item.price.closes_text || null,
+    // When Adam's listing draft set the price, say so, and what the comps alone said.
+    plan_note: item.resale && item.resale.listing_plan ? [
+      `Priced at your listing draft: ${money(item.resale.listing_plan.ask)} Buy It Now${item.resale.listing_plan.floor != null ? `, ${money(item.resale.listing_plan.floor)} lowest offer` : ''}.`,
+      item.resale.comps_say && item.resale.comps_say.middle != null ? `Comps say ${money(item.resale.comps_say.middle)} a unit.` : null,
+    ].filter(Boolean).join(' ') : null,
   };
 }
 

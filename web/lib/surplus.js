@@ -225,6 +225,7 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
     shipping_basis: shipping != null && shipping >= 0 ? shippingBasis : 'unknown',
     shipping_note: str(raw.shipping_note, 240),
     resale_note: str(raw.resale_note, 300),
+    listing_plan: cleanPlan(raw.listing_plan),
     // A snapshot is cleaned once when stored and again when shown. Carry the count forward so the second pass keeps it.
     comps_dropped: (intOrNull(raw.comps_dropped) || 0) + (allComps.length - comps.length),
     // Whether the units work. Unknown is the honest value for a phone nobody has powered on.
@@ -294,6 +295,42 @@ function presentComp(c) {
 // A fleet device may be locked. No cited sale tells us what a locked one sells for.
 function lockCaveat(lot) {
   return lot.fleet_device ? ['No cited sale is of a locked unit. If these are locked, the price is unknown and may be under the low case.'] : [];
+}
+
+// Adam's own listing draft for the lot: the Buy It Now price for the whole lot and the lowest offer he
+// would take. When there is one, it sets the cases, because the lot will be listed at that price, not at
+// the comps. The comps are kept beside it.
+function cleanPlan(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const ask = money(raw.ask);
+  const floor = money(raw.floor);
+  if (ask == null || ask <= 0) return null;
+  return { ask, floor: floor != null && floor > 0 && floor <= ask ? floor : null, source: str(raw.source, 200) };
+}
+
+// The cases from a listing plan. Middle: the asking price. Low: the floor, or the comps' low with no floor.
+// High: the asking price, since Buy It Now caps the sale there. Prices are per unit, like the comps.
+export function planCases(resale, plan, quantity) {
+  if (!resale || !plan || !quantity) return resale;
+  const ask = round2(plan.ask / quantity);
+  const floor = plan.floor == null ? null : round2(plan.floor / quantity);
+  const from = plan.source ? ` (${plan.source})` : '';
+  const comps = Object.fromEntries(resale.cases.map((c) => [c.name, c.unit]));
+  const low = floor == null ? Math.min(comps.low, ask) : floor;
+  return {
+    ...resale,
+    cases: [
+      { name: 'low', unit: low, basis: floor == null ? `No floor in the listing draft, so the lowest cited sale, capped at the asking price.` : `The lowest offer to take in the listing draft: ${moneyText(plan.floor)} for the lot${from}.` },
+      { name: 'middle', unit: ask, basis: `The Buy It Now price in the listing draft: ${moneyText(plan.ask)} for the lot${from}.` },
+      { name: 'high', unit: ask, basis: 'Buy It Now caps the sale at the asking price.' },
+    ],
+    comps_say: comps,
+    plan: { ask: plan.ask, floor: plan.floor, source: plan.source },
+    caveats: [
+      `The comps say ${moneyText(comps.middle)} a unit in the middle case. The listing draft asks ${moneyText(ask)} a unit, so the cases use the draft.`,
+      ...resale.caveats,
+    ],
+  };
 }
 
 export function resaleCases(lot, soldCited) {
@@ -405,7 +442,9 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
   const soldCited = sold.filter((c) => c.url);
   const asking = comps.filter((c) => c.type === 'asking');
   // One sold comp without a URL blocks resale for the whole lot.
-  const resale = sold.length > 0 && soldCited.length === sold.length ? resaleCases(lot, soldCited) : null;
+  const fromComps = sold.length > 0 && soldCited.length === sold.length ? resaleCases(lot, soldCited) : null;
+  // A listing plan sets the cases only when cited sales back the lot. With no comps, resale stays unknown.
+  const resale = lot.listing_plan ? planCases(fromComps, lot.listing_plan, lot.quantity) : fromComps;
   const unitResale = resale ? resale.cases[1].unit : null;
   const quantity = lot.quantity;
   const gross = unitResale != null && quantity != null ? round2(unitResale * quantity) : null;
@@ -592,6 +631,9 @@ export function assessLot(raw, nowMs = null, rules = DEFAULT_RULES) {
       : `Estimate, not confirmed. Assumed: ${estimateAssumptions.join(', ') || 'none'}. This is the middle case at the current bid, and it assumes every unit sells.`,
     cases,
     case_caveats: resale ? resale.caveats : [],
+    // Set when Adam's listing draft priced the lot. comps_say keeps the comp-based cases beside it.
+    listing_plan: resale && resale.plan ? resale.plan : null,
+    comps_say: resale && resale.comps_say ? resale.comps_say : null,
     comps_lot_sales: resale ? resale.lot_sales : 0,
     comps_single_sales: resale ? resale.single_sales : 0,
     comps_working_sales: resale ? (resale.working_sales || 0) : 0,

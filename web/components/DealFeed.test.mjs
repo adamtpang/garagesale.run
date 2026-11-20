@@ -10,7 +10,9 @@ import { cleanDeal } from '../lib/decision.js';
 import { withRules } from '../lib/scoutConfig.js';
 import DealFeed from './DealFeed.js';
 
-const seed = JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8'));
+// These tests pin the comp math, so they read the scan without Adam's listing plan for the Zebra lot.
+// lib/listingPlan.test.mjs covers the plan.
+const seed = (({ lots, ...rest }) => ({ ...rest, lots: lots.map(({ listing_plan, ...lot }) => lot) }))(JSON.parse(fs.readFileSync(new URL('../config/surplus-scan-2026-11-15.json', import.meta.url), 'utf8')));
 const NOW = Date.parse('2026-11-16T18:00:00.000Z');
 const e = React.createElement;
 const confirmed = () => { const c = withRules(null); c.fees = Object.fromEntries(Object.entries(c.fees).map(([k, v]) => [k, { ...v, confirmed: true }])); return c; };

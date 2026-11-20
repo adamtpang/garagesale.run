@@ -47,7 +47,8 @@ function dealCard(card) {
       e('p', { className: 'mt-3 text-2xl font-bold leading-tight sm:text-3xl', 'data-field': 'headline' },
         card.headline,
         card.amount ? e(React.Fragment, null, ' ', e('span', { className: 'whitespace-nowrap font-marker text-3xl font-normal text-price sm:text-4xl', 'data-field': 'amount' }, card.amount)) : null),
-      e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'basis' }, card.basis)),
+      e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'basis' }, card.basis),
+      card.plan_note ? e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'plan-note' }, card.plan_note) : null),
 
     // Right under it: what it costs.
     e('dl', { className: 'grid grid-cols-2 gap-[2px] border-y border-border bg-foreground lg:grid-cols-4', 'data-field': 'costs' },

@@ -78,6 +78,9 @@ export function fromLot(lot) {
       basis: (lot.cases || []).map((c) => `${c.name}: ${c.basis}`),
       caveats: lot.case_caveats || [],
       sell_on: lot.marketplaces,
+      // Adam's listing draft, when it set the cases, and what the comps alone said.
+      listing_plan: lot.listing_plan || undefined,
+      comps_say: lot.comps_say || undefined,
     },
     comps: lot.comps.map((c) => ({
       type: c.type, url: c.url, price: c.price, sold_on: c.type === 'sold' ? c.sold_on : null,
