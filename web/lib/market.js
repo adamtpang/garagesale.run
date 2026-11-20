@@ -2,12 +2,15 @@
 // No network and no disk. Works on feed items and the cards cardFor makes from them.
 import { sortCards } from './dealCard.js';
 import { canonicalCategory } from './decision.js';
+import { speedText, tierRank, TIER_LABEL, TIERS } from './tiers.js';
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 export const VERDICTS = ['all', 'buy', 'watch', 'skip'];
 export const SOURCES = ['all', 'surplus', 'listing'];
-export const SORTS = ['profit', 'closing', 'drive'];
-export const DEFAULT_FILTERS = Object.freeze({ verdict: 'all', source: 'all', category: 'all', maxPrice: null, maxDrive: null, sort: 'profit' });
+export const TIER_FILTERS = ['all', ...TIERS];
+export const SORTS = ['tier', 'profit', 'closing', 'drive'];
+// The Market opens as a tier list: A, then B, then C, then Skip, best profit first inside each tier.
+export const DEFAULT_FILTERS = Object.freeze({ tier: 'all', verdict: 'all', source: 'all', category: 'all', maxPrice: null, maxDrive: null, sort: 'tier' });
 
 const pick = (v, allowed, dflt) => (allowed.includes(v) ? v : dflt);
 const posNum = (v) => { const n = Number(v); return v != null && v !== '' && Number.isFinite(n) && n > 0 ? n : null; };
@@ -16,25 +19,28 @@ const posNum = (v) => { const n = Number(v); return v != null && v !== '' && Num
 export function parseFilters(search) {
   const q = new URLSearchParams(search || '');
   return {
+    tier: pick(q.get('tier'), TIER_FILTERS, 'all'),
+    // Older links filter by verdict. They still work; the chips now filter by tier.
     verdict: pick(q.get('verdict'), VERDICTS, 'all'),
     source: pick(q.get('source'), SOURCES, 'all'),
     // An alias in a link ("game consoles") is folded to the menu's name, so the menu shows what is filtered.
     category: q.get('category') ? (categoryKey(q.get('category').slice(0, 40)) || 'all') : 'all',
     maxPrice: posNum(q.get('max_price')),
     maxDrive: posNum(q.get('max_drive')),
-    sort: pick(q.get('sort'), SORTS, 'profit'),
+    sort: pick(q.get('sort'), SORTS, 'tier'),
   };
 }
 
 // The query string for a set of filters. Defaults are left out, so the plain Market is just "/".
 export function filtersToSearch(f) {
   const q = new URLSearchParams();
+  if (f.tier && f.tier !== 'all') q.set('tier', f.tier);
   if (f.verdict !== 'all') q.set('verdict', f.verdict);
   if (f.source !== 'all') q.set('source', f.source);
   if (f.category && f.category !== 'all') q.set('category', f.category);
   if (f.maxPrice != null) q.set('max_price', String(f.maxPrice));
   if (f.maxDrive != null) q.set('max_drive', String(f.maxDrive));
-  if (f.sort !== 'profit') q.set('sort', f.sort);
+  if (f.sort !== 'tier') q.set('sort', f.sort);
   const s = q.toString();
   return s ? `?${s}` : '';
 }
@@ -50,6 +56,9 @@ export function categoriesOf(items, rules) {
   return [...set].sort();
 }
 
+// An item from an older feed has no tier. It reads as C, never as better than it is.
+export const tierOf = (item) => (item && item.tier && TIERS.includes(item.tier.value) ? item.tier.value : (item && item.decision && item.decision.value === 'skip' ? 'skip' : 'C'));
+
 const later = (a, b) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : a - b);
 const closeTime = (item) => { const t = Date.parse((item.price && item.price.closes_at) || ''); return Number.isFinite(t) ? t : null; };
 // 0: still open, 1: close time unknown, 2: already closed.
@@ -61,6 +70,7 @@ const closeRank = (item, nowMs) => { const t = closeTime(item); if (t == null) r
 export function applyFilters(pairs, f, nowMs = null) {
   let unknownKept = 0;
   const kept = pairs.filter(({ item, card }) => {
+    if (f.tier && f.tier !== 'all' && tierOf(item) !== f.tier) return false;
     if (f.verdict !== 'all' && card.decision !== f.verdict) return false;
     if (f.source !== 'all' && item.kind !== f.source) return false;
     if (f.category !== 'all' && categoryKey(item.category) !== categoryKey(f.category)) return false;
@@ -83,7 +93,9 @@ export function applyFilters(pairs, f, nowMs = null) {
   else if (f.sort === 'drive') out = [...kept].sort((a, b) => later(num(a.item.location.drive_minutes_round_trip), num(b.item.location.drive_minutes_round_trip)));
   else {
     const order = sortCards(kept.map((x) => x.card)).map((c) => c.id);
-    out = [...kept].sort((a, b) => order.indexOf(a.card.id) - order.indexOf(b.card.id));
+    const byProfit = (a, b) => order.indexOf(a.card.id) - order.indexOf(b.card.id);
+    out = f.sort === 'profit' ? [...kept].sort(byProfit)
+      : [...kept].sort((a, b) => (tierRank(tierOf(a.item)) - tierRank(tierOf(b.item))) || byProfit(a, b));
   }
   return { pairs: out, unknownKept };
 }
@@ -104,6 +116,11 @@ export function tileFor(item, card) {
     photo_url: card.photo_url,
     decision: card.decision,
     label: card.label,
+    tier: tierOf(item),
+    tier_label: TIER_LABEL[tierOf(item)],
+    tier_why: item.tier ? item.tier.why : null,
+    speed: speedText(item.sell_speed),
+    watchers: num(item.price.watchers) != null ? `${item.price.watchers} watching` : null,
     profit: card.amount ? `${card.loss ? '-' : '+'}${card.amount}` : null,
     price: `${lot ? 'Bid' : 'Ask'} ${cur != null ? dollars(cur) : 'unknown'}`,
     max_bid: `Max ${lot ? 'bid' : 'offer'} ${num(item.max_bid) != null ? dollars(item.max_bid) : 'unknown'}`,

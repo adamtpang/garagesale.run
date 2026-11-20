@@ -99,6 +99,7 @@ What matters most:
 - **`pickup_address`**, a street address. Without it the lot gets no drive time and cannot be a Buy. A city alone is not routed.
 - **`comps`** with `"type": "sold"` and a `url`. A sold comp with no link can't set the resale price. An asking price is `"type": "asking"` and is never counted as resale.
 - **Rates.** `premium_pct` is a percent (`8.5`). `tax_rate` and `fee_rate` are fractions (`0.0825`, `0.136`). A `tax_rate` or `fee_rate` of 1 or more is refused with a `400` such as `lot 0 (gd-1988-19): tax_rate 8.25 reads as 825%. Send rates as fractions, like 0.0825 for 8.25%.` The dry run catches it first.
+- **Tier fields.** `sell_speed` (`label` of `fast`, `medium`, `slow` or `unknown`, plus `evidence`, `sold_90d`, `active_competitors`), `watchers` and `caveats`. They decide the lot's Market tier (`A`, `B`, `C` or `skip`, under `tier` on each feed item) and show on the item page. An odd `label` reads as `unknown`.
 - Lots that share comps can name a set once: `"comp_sets": { "s20": [ ... ] }` and `"comp_set": "s20"` on each lot.
 
 ```bash

@@ -3,13 +3,16 @@
 // deal. The long card is on the item page. See docs/TRANSFER-MARKET-SPEC.md.
 import React, { useEffect, useState } from 'react';
 import { cardFor } from '../lib/dealCard.js';
-import { applyFilters, categoriesOf, DEFAULT_FILTERS, filtersToSearch, parseFilters, tileFor } from '../lib/market.js';
+import { applyFilters, categoriesOf, DEFAULT_FILTERS, filtersToSearch, parseFilters, tierOf, tileFor } from '../lib/market.js';
+import { TIER_LABEL } from '../lib/tiers.js';
 import TargetStar from './TargetStar.js';
 
 const e = React.createElement;
 // A solid fill and a word, so the verdict never rests on color alone.
 const TONE = { buy: 'bg-[#9be8b8] text-foreground', watch: 'bg-amber-200 text-amber-950', skip: 'bg-red-200 text-red-900', gone: 'bg-secondary text-foreground' };
-const LABEL = { all: 'All', buy: 'Buy', watch: 'Watch', skip: 'Skip' };
+// Tiers carry a letter and a word as well as a fill, for the same reason.
+const TIER_TONE = { A: 'bg-[#9be8b8] text-foreground', B: 'bg-amber-200 text-amber-950', C: 'bg-sky-100 text-sky-950', skip: 'bg-red-200 text-red-900' };
+const tierChip = (t) => (t === 'all' ? 'All' : t === 'skip' ? 'Skip' : `${t} · ${TIER_LABEL[t]}`);
 const FIELD = 'h-10 rounded-md border-2 border-border bg-card px-2 text-sm';
 
 function chip(on, children, onClick) {
@@ -40,17 +43,19 @@ function tileLink(t) {
     ...(t.external ? { target: '_blank', rel: 'noopener' } : {}),
     'data-tile': t.id,
     'data-decision': t.decision,
+    'data-tier': t.tier || undefined,
     className: 'flex h-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card shadow-tag outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-brand',
   },
   e(TilePhoto, { src: t.photo_url, title: t.title }),
   e('div', { className: 'flex flex-1 flex-col gap-1 p-3' },
     e('div', { className: 'flex items-start justify-between gap-2' },
-      e('span', { className: `rounded-md border-2 border-border px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${TONE[t.decision]}`, 'data-field': 'label' }, t.label),
+      e('span', { className: `rounded-md border-2 border-border px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${t.tier ? TIER_TONE[t.tier] : TONE[t.decision]}`, 'data-field': 'label', title: t.tier_why || undefined }, t.tier ? tierChip(t.tier) : t.label),
       e('span', { className: 'font-marker text-2xl leading-none text-price', 'data-field': 'profit' }, t.profit || e('span', { className: 'font-sans text-sm font-semibold text-muted-foreground' }, 'Profit unknown'))),
     e('h2', { className: 'line-clamp-2 text-sm font-semibold leading-snug' }, t.title),
     e('p', { className: 'text-sm tabular-nums', 'data-field': 'price' }, `${t.price} · ${t.max_bid}`),
     e('p', { className: 'text-sm', 'data-field': 'when' }, `${t.closes} · ${t.drive}`),
-    t.reason ? e('p', { className: 'line-clamp-2 text-xs leading-5 text-muted-foreground', 'data-field': 'reason' }, t.reason) : null));
+    t.speed ? e('p', { className: 'text-sm', 'data-field': 'speed' }, [t.speed, t.watchers].filter(Boolean).join(' · ')) : null,
+    (t.tier_why || t.reason) ? e('p', { className: 'line-clamp-2 text-xs leading-5 text-muted-foreground', 'data-field': 'reason' }, t.tier_why || t.reason) : null));
 }
 
 export default function Market({ feed, now, failed, refreshFailed, loading, initialFilters = null }) {
@@ -73,12 +78,12 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
 
   const items = (feed && feed.items) || [];
   const pairs = items.map((item) => ({ item, card: cardFor(item, now) }));
-  const counts = { all: pairs.length, buy: 0, watch: 0, skip: 0 };
-  for (const p of pairs) counts[p.card.decision] += 1;
+  const counts = { all: pairs.length, A: 0, B: 0, C: 0, skip: 0 };
+  for (const p of pairs) counts[tierOf(p.item)] += 1;
   const { pairs: shown, unknownKept } = applyFilters(pairs, f, now);
   const cats = categoriesOf(items, feed && feed.rules);
   const r = feed && feed.rules;
-  const filtered = filtersToSearch({ ...f, sort: 'profit' }) !== '';
+  const filtered = filtersToSearch({ ...f, sort: 'tier' }) !== '';
 
   return e('section', null,
     e('div', { className: 'mb-4 flex flex-wrap items-end justify-between gap-3' },
@@ -102,8 +107,8 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
         feed.stale.map((s) => e('p', { key: s }, s))) : null,
 
       // The filter bar.
-      e('div', { className: 'mb-3 flex flex-wrap gap-2', 'aria-label': 'Verdict' },
-        ...['all', 'buy', 'watch', 'skip'].map((v) => chip(f.verdict === v, `${LABEL[v]} ${counts[v]}`, () => set({ verdict: v })))),
+      e('div', { className: 'mb-3 flex flex-wrap gap-2', 'aria-label': 'Tier' },
+        ...['all', 'A', 'B', 'C', 'skip'].map((v) => chip(f.tier === v, `${tierChip(v)} ${counts[v]}`, () => set({ tier: v, verdict: 'all' })))),
       e('div', { className: 'mb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end', 'data-field': 'filters' },
         e('label', { className: 'grid gap-1 text-xs font-semibold' }, 'Source',
           e('select', { className: FIELD, value: f.source, onChange: (ev) => set({ source: ev.target.value }) },
@@ -117,7 +122,7 @@ export default function Market({ feed, now, failed, refreshFailed, loading, init
           e('input', { className: `${FIELD} w-full sm:w-28`, type: 'number', inputMode: 'numeric', min: 1, value: shownText('maxDrive'), placeholder: 'Any', onChange: (ev) => typeNumber('maxDrive', ev.target.value) })),
         e('label', { className: 'col-span-2 grid gap-1 text-xs font-semibold sm:col-span-1' }, 'Sort',
           e('select', { className: FIELD, value: f.sort, onChange: (ev) => set({ sort: ev.target.value }) },
-            e('option', { value: 'profit' }, 'Profit, best first'), e('option', { value: 'closing' }, 'Closing soonest'), e('option', { value: 'drive' }, 'Shortest drive'))),
+            e('option', { value: 'tier' }, 'Tier, best first'), e('option', { value: 'profit' }, 'Profit, best first'), e('option', { value: 'closing' }, 'Closing soonest'), e('option', { value: 'drive' }, 'Shortest drive'))),
         filtered ? e('button', { type: 'button', className: 'col-span-2 h-10 text-sm font-medium underline underline-offset-4 sm:col-span-1', onClick: () => { setTyped({ maxPrice: null, maxDrive: null }); set({ ...DEFAULT_FILTERS, sort: f.sort }); } }, 'Clear filters') : null),
       unknownKept ? e('p', { className: 'mb-3 text-sm text-muted-foreground', 'data-field': 'unknown-kept' }, `${unknownKept} deal${unknownKept === 1 ? '' : 's'} with an unknown price or drive time ${unknownKept === 1 ? 'is' : 'are'} kept in, since they can't be ruled out.`) : null,
 
