@@ -33,9 +33,11 @@ export function tile(t) {
   return e('div', { key: t.id, className: 'relative' }, e(TargetStar, { tile: t }), tileLink(t));
 }
 
+// A tile with no page to open (a gone target with no listing link) is not a link.
 function tileLink(t) {
-  return e('a', {
-    href: t.href,
+  return e(t.href ? 'a' : 'div', {
+    href: t.href || undefined,
+    ...(t.external ? { target: '_blank', rel: 'noopener' } : {}),
     'data-tile': t.id,
     'data-decision': t.decision,
     className: 'flex h-full flex-col overflow-hidden rounded-lg border-2 border-border bg-card shadow-tag outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-brand',
