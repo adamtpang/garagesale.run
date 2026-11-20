@@ -2,7 +2,7 @@
 
 AI agents that find Marketplace deals, price them, and draft listings. The app is Next.js 14 in [`web/`](web/). It stores jobs, photos, the scout feed, and the ledger in Vercel Blob.
 
-Live site: [https://grokbothackathon.vercel.app](https://grokbothackathon.vercel.app)
+Live site: [https://garagesale.run](https://garagesale.run)
 
 Repo: [https://github.com/adamtpang/garagesale.run](https://github.com/adamtpang/garagesale.run)
 
@@ -19,7 +19,7 @@ The contract is [docs/SCOUT.md](docs/SCOUT.md).
 Adam's rule numbers (max per flip, bankroll, minimum profit, pickup radius, categories, gas rate) live in one file, `web/config/rules.js`, and nothing sent to the API can change them. `GET /api/scout/config` is public and returns those rules plus where the scout looks. `PUT /api/scout/config` requires the `x-worker-key` header (`GST_WORKER_KEY`) and stores only `sites`, `areas`, `fees` and `run_hours`. If the body carries a rule field that differs from the rules file, the reply lists it under `ignored`. With no `BLOB_READ_WRITE_TOKEN`, the stored part is `web/.data/scout-config.json`. `web/config/scout-config.seed.json` is the Nov 3 seed, and a test keeps its rule numbers equal to the rules file.
 
 ```bash
-GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node scripts/seed-scout-config.mjs
+GST_WORKER_KEY=... GARAGESALE_BASE_URL=https://garagesale.run node scripts/seed-scout-config.mjs
 ```
 
 `POST /api/deals` also requires `x-worker-key`. The body is `{ area?, deals: [...] }`. `source` is `fb`, `craigslist`, `ebay`, or `offerup`. A seller name or a client-supplied profit is dropped. `GET /api/deals` returns the stored feed. The deals page shows it, and says `Filters not set` when ranking did not run.
@@ -69,7 +69,7 @@ The bankroll ladder at `/ladder` shows the same ledger as steps: the starting ba
 `net_profit` is `sell_price - buy_price - gas - fees - repairs`, and it stays null until the item is sold. Bankroll is `starting_bankroll` minus money spent plus sales.
 
 ```bash
-GS_LEDGER_KEY=... GARAGESALE_BASE_URL=https://grokbothackathon.vercel.app node scripts/ledger.mjs list
+GS_LEDGER_KEY=... GARAGESALE_BASE_URL=https://garagesale.run node scripts/ledger.mjs list
 ```
 
 `scripts/ledger-rekey.mjs` decrypts with the old key and writes with the new one. A decrypt failure throws before any write.
