@@ -46,11 +46,16 @@ export function refreshTargets(liveTiles, storage, nowMs = Date.now()) {
 }
 
 // The Targets page rows: live deals first, best profit first by feed order, then the gone ones.
+// liveTiles null means the feed could not be loaded: nothing can be called gone, so every target shows its
+// last known numbers and says the feed is out.
 export function targetRows(targets, liveTiles) {
+  if (liveTiles == null) {
+    return Object.values(targets).map((saved) => ({ ...saved, gone: false, stale: true, closes: 'Feed not loaded', reason: `Could not load today's feed, so these are the numbers from ${String(saved.seen_at || saved.saved_at || '').slice(0, 10) || 'earlier'}.` }));
+  }
   const live = new Map(liveTiles.map((t) => [t.id, t]));
   const rows = Object.values(targets).map((saved) => (live.has(saved.id)
     ? { ...live.get(saved.id), gone: false }
-    : { ...saved, gone: true, label: 'Gone', decision: 'gone', closes: 'No longer in the feed', reason: `Last seen ${String(saved.seen_at || saved.saved_at || '').slice(0, 10) || 'earlier'}. It closed or was left off. These are its last known numbers.` }));
+    : { ...saved, gone: true, label: 'Gone', decision: 'gone', closes: 'No longer in the feed', href: saved.listing_url || null, external: !!saved.listing_url, reason: `Last seen ${String(saved.seen_at || saved.saved_at || '').slice(0, 10) || 'earlier'}. It closed or was left off. These are its last known numbers.` }));
   const order = new Map(liveTiles.map((t, i) => [t.id, i]));
   return rows.sort((a, b) => (a.gone === b.gone ? (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) : a.gone ? 1 : -1));
 }

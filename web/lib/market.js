@@ -98,6 +98,8 @@ export function tileFor(item, card) {
   return {
     id: card.id,
     href: `/item?id=${encodeURIComponent(card.id)}`,
+    // Kept in a Target's snapshot, so a deal that leaves the feed can still be opened at its source.
+    listing_url: card.listing_url || null,
     title: card.title,
     photo_url: card.photo_url,
     decision: card.decision,

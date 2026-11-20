@@ -16,6 +16,7 @@ export default function TargetsScreen() {
     const sync = () => setTargets(readTargets());
     sync();
     window.addEventListener(TARGETS_EVENT, sync);
+    window.addEventListener('storage', sync);
     fetch('/api/feed', { cache: 'no-store', signal: AbortSignal.timeout(20000) })
       .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then((feed) => {
@@ -25,11 +26,12 @@ export default function TargetsScreen() {
         setLive(tiles);
       })
       .catch(() => { setFailed(true); setLive([]); });
-    return () => window.removeEventListener(TARGETS_EVENT, sync);
+    return () => { window.removeEventListener(TARGETS_EVENT, sync); window.removeEventListener('storage', sync); };
   }, []);
 
-  // Until the feed has loaded (or failed), live and gone can't be told apart, so no rows are drawn.
-  const rows = live === null ? [] : targetRows(targets, live);
+  // Until the feed has loaded, live and gone can't be told apart, so no rows are drawn. If it failed, every
+  // target shows its last known numbers and none is called gone.
+  const rows = failed ? targetRows(targets, null) : live === null ? [] : targetRows(targets, live);
   return <section>
     <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Targets</h1>
     <p className="mt-2 max-w-2xl text-base">The deals you starred on the Market. They are kept in this browser only. A deal that closes stays here with its last known numbers.</p>

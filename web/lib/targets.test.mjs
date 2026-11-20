@@ -56,7 +56,27 @@ test('last seen is the last day the deal was in the feed, not the day it was sta
 test('the Targets page draws no rows until the feed has loaded or failed', async () => {
   const fs = await import('fs');
   const src = fs.readFileSync(new URL('../app/targets/TargetsScreen.js', import.meta.url), 'utf8');
-  assert.match(src, /const rows = live === null \? \[\] : targetRows\(targets, live\);/);
+  assert.match(src, /const rows = failed \? targetRows\(targets, null\) : live === null \? \[\] : targetRows\(targets, live\);/);
+  assert.match(src, /addEventListener\('storage', sync\)/);
   // A failed load sets live to [], so every target then shows its last known numbers.
   assert.match(src, /setFailed\(true\); setLive\(\[\]\)/);
+});
+
+test('when the feed fails, no target is called gone', () => {
+  const s = memory();
+  toggleTarget(tileA, s, Date.parse('2026-11-18T12:00:00Z'));
+  const rows = targetRows(readTargets(s), null);
+  assert.deepEqual(rows.map((r) => [r.gone, r.stale, r.label, r.closes]), [[false, true, 'Buy', 'Feed not loaded']]);
+  assert.match(rows[0].reason, /Could not load today's feed/);
+});
+
+test('a gone target opens its original listing, or is not a link at all', () => {
+  const s = memory();
+  toggleTarget({ ...tileA, listing_url: 'https://www.publicsurplus.com/sms/all,tx/auction/view?auc=1' }, s);
+  toggleTarget(tileB, s);
+  const rows = targetRows(readTargets(s), []);
+  const a = rows.find((r) => r.id === 'ps-1');
+  const b = rows.find((r) => r.id === 'ps-2');
+  assert.deepEqual([a.href, a.external], ['https://www.publicsurplus.com/sms/all,tx/auction/view?auc=1', true]);
+  assert.deepEqual([b.href, b.external], [null, false]);
 });
