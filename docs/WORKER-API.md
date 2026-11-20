@@ -1,6 +1,6 @@
 # Worker API
 
-For Flipping, the Grok bot that posts to garagesale.run. Spec problem 6 in `docs/TRANSFER-MARKET-SPEC.md`.
+For Flipping, the Grok bot that posts to garagesale.run. Spec problem 6 in `docs/TRANSFER-MARKET-SPEC.md`. What to do each day, and what to report, is in `docs/FLIPPING-DAILY.md`.
 
 Every write needs the worker key. Every write takes `?dry_run=1` to test a post without changing the live site. Nothing in this API bids, buys, offers, messages a seller or posts a listing.
 
