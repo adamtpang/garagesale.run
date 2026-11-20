@@ -17,8 +17,16 @@ function unknownFields(item) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, path ? `${path}.${k}` : k);
     }
   };
-  walk({ location: { ...item.location, drive_source: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
+  walk({ location: { ...item.location, drive_source: undefined, drive_unknown_reason: undefined }, price: item.price, costs: { ...item.costs, all_in_at_max_bid: undefined, gas_miles: undefined }, resale: item.resale, profit: item.profit, roi: item.roi, max_bid: item.max_bid }, '');
   return out;
+}
+
+// Why a drive time is unknown, in a few words, or null when it is known. A lot is routed by its street
+// address and a listing by its map location; with those, it is only waiting for the drive refresh.
+export function driveUnknownReason(minutes, hasPlace, kind) {
+  if (typeof minutes === 'number' && Number.isFinite(minutes)) return null;
+  if (!hasPlace) return kind === 'surplus' ? 'no pickup address' : 'no map location';
+  return 'not looked up yet';
 }
 
 // One surplus lot, as assessLot returns it.
@@ -42,6 +50,7 @@ export function fromLot(lot) {
     location: {
       place: lot.city, pickup_address: lot.pickup_address, miles: lot.miles_from_home, miles_approximate: lot.miles_from_home == null ? null : lot.miles_approximate,
       drive_minutes_round_trip: lot.drive_minutes, drive_miles_round_trip: lot.drive_miles, drive_source: lot.drive_source,
+      drive_unknown_reason: driveUnknownReason(lot.drive_minutes, !!lot.pickup_address, 'surplus'),
     },
     price: {
       kind: 'bid',
@@ -165,6 +174,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     location: {
       place: v.area || null, pickup_address: null, miles: v.pickup && v.pickup.known ? round2(v.pickup.miles) : null, miles_approximate: v.pickup && v.pickup.known ? false : null,
       drive_minutes_round_trip: drive.minutes, drive_miles_round_trip: drive.miles, drive_source: deal.drive && drive.minutes != null ? (deal.drive.source || 'posted') : null,
+      drive_unknown_reason: driveUnknownReason(drive.minutes, typeof deal.lat === 'number' && typeof deal.lng === 'number', 'listing'),
     },
     price: { kind: 'ask', current: v.ask, opening: null, bid_count: null, closes_at: null, closes_text: null },
     costs: {

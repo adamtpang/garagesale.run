@@ -98,7 +98,7 @@ export function tileFor(item, card) {
     price: `${lot ? 'Bid' : 'Ask'} ${cur != null ? dollars(cur) : 'unknown'}`,
     max_bid: `Max ${lot ? 'bid' : 'offer'} ${num(item.max_bid) != null ? dollars(item.max_bid) : 'unknown'}`,
     closes: card.countdown || (lot ? 'Close time unknown' : 'No close time'),
-    drive: mins != null ? `${mins} min round trip` : 'Drive unknown',
+    drive: mins != null ? `${mins} min round trip` : `Drive unknown${item.location.drive_unknown_reason ? `: ${item.location.drive_unknown_reason}` : ''}`,
     reason: card.reason || card.risk || null,
   };
 }
