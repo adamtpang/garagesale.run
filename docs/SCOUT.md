@@ -15,7 +15,7 @@ The routine and the seed script need:
 
 ## Worker key
 
-The key is a secret. It lives in the Vercel project `grokbothackathon` and in the worker's own secret store. It is never written in this repo, a PR, a log or a chat.
+The key is a secret. It lives in the Vercel project `garagesale.run` and in the worker's own secret store. It is never written in this repo, a PR, a log or a chat.
 
 **Test a key without writing anything:**
 
@@ -77,7 +77,7 @@ The times come from OpenRouteService. They are typical times with no live traffi
 To switch it on, Adam does this once. No agent sees the key.
 
 1. Sign up at openrouteservice.org and create an API key (free plan).
-2. In Vercel, project `grokbothackathon`, add the environment variable `ORS_API_KEY` for Production.
+2. In Vercel, project `garagesale.run`, add the environment variable `ORS_API_KEY` for Production.
 3. Redeploy.
 
 Until that is done every drive time is unknown.

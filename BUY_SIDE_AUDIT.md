@@ -59,3 +59,4 @@ None of the search, pricing or ranking logic is in this repo. It all lives in th
 - Vercel project `grokbothackathon` (`prj_KBgBZZE06QYZsYSm7tZO0r7URsc9`, team `team_94z2L2r0X8hywHS0hi2ahkW7`) serves `garagesale.run`, `www.garagesale.run` (308 to apex) and `grokbothackathon.vercel.app`. Root directory is `web/`, framework Next.js 14.
 - `web/.vercel/project.json` now links this folder to that project (gitignored).
 - The GitHub repo is still `adamtpang/grokbothackathon`. Renaming it to `garagesale.run` (and the Vercel project to match the one-to-one rule) is Adam's call.
+  - Update, Nov 20, 2026: both are done. The repo is `adamtpang/garagesale.run` and the Vercel project is `garagesale.run`. `grokbothackathon.vercel.app` still serves the site, so the relay keeps working.
