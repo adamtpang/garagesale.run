@@ -35,6 +35,8 @@ export function fromLot(lot) {
     kind: 'surplus',
     id: lot.id,
     title: lot.title,
+    // Surplus scans do not record a category yet.
+    category: lot.category || null,
     photo_url: lot.photo_url || null,
     source: { site: lot.source_site, url: lot.url, seller: lot.seller, auction_id: lot.auction_id },
     location: {
@@ -157,6 +159,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     kind: 'listing',
     id: deal.url,
     title: v.title,
+    category: deal.category || null,
     photo_url: deal.photo_url || null,
     source: { site: v.sourceLabel, url: v.buyUrl, seller: null, auction_id: null },
     location: {

@@ -16,7 +16,7 @@ function chip(on, children, onClick) {
   }, children);
 }
 
-function PhotoBox({ src, title }) {
+export function PhotoBox({ src, title }) {
   const [bad, setBad] = useState(false);
   const box = 'flex aspect-[16/10] w-full items-center justify-center overflow-hidden bg-secondary md:aspect-auto md:h-full md:min-h-[220px]';
   if (!src || bad) return e('div', { className: `${box} text-5xl font-bold text-muted-foreground`, 'aria-label': 'No photo' }, String(title || '?').trim().charAt(0).toUpperCase());
@@ -27,7 +27,7 @@ function extLink(href, text) {
   return e('a', { href, target: '_blank', rel: 'noopener', className: 'font-medium text-link underline underline-offset-4' }, text);
 }
 
-function dealCard(card) {
+export function dealCard(card) {
   return e('article', {
     key: card.id,
     className: 'overflow-hidden rounded-2xl border border-border bg-card shadow-tag md:grid md:grid-cols-[240px_1fr]',
