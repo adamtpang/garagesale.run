@@ -145,6 +145,10 @@ These stay exactly as they are in `web/config/rules.js` until Adam says otherwis
 - Gas at $0.18 a mile.
 - Max buy per flip. The code uses the **full** current bankroll, as Adam set on Nov 17. The brief mentions half the bankroll. That change waits for Adam's yes.
 
+Changed since, at Adam's word in chat:
+
+- Pickup radius: 20 miles from New Braunfels, up from 15 (Nov 20, 2026). Schertz, about 16 miles, was the only nearby surplus seller with open lots, and every one was skipped at 15.
+
 ## Hard rules
 
 Never bid, buy, offer, message anyone or post a listing. Never spend money. Never invent prices or comps; say "unknown". Never commit secrets or contact details. PRs only; Adam merges.

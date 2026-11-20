@@ -70,9 +70,11 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.equal(html.includes('<form'), false);
   assert.equal((html.match(/data-lot=/g) || []).length, 13);
   assert.equal(html.includes('data-status="buy candidate (needs Adam yes)"'), false);
-  // Every lot in this scan is past the 15-mile radius, so every lot is a skip with its reason shown.
-  assert.equal((html.match(/data-status="skip"/g) || []).length, 13);
-  assert.match(html, /Skipped by rule\. About 16 mi from New Braunfels, TX is past the 15-mile pickup limit/);
+  // Schertz (about 16 mi) is inside the 20-mile radius. Its five low-value phone lots fail the profit rule and
+  // the other five wait on drive time. Austin and Hallettsville are past the radius. Every skip shows its reason.
+  assert.equal((html.match(/data-status="skip"/g) || []).length, 8);
+  assert.equal((html.match(/data-status="watch"/g) || []).length, 5);
+  assert.match(html, /Skipped by rule\. About 73 mi from New Braunfels, TX is past the 20-mile pickup limit/);
   assert.match(html, /data-field="rule-checks"/);
   assert.match(html, /data-rule="radius" data-result="fail"/);
   assert.match(html, />Fail</);
@@ -85,7 +87,7 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   assert.match(html, /No routed drive time yet/);
   assert.match(html, /Starting bankroll of \$100\.00/);
   assert.match(html, /\$100\.00 after fees, gas and time/);
-  assert.match(html, /15 mi from New Braunfels, TX/);
+  assert.match(html, /20 mi from New Braunfels, TX/);
   assert.match(html, /\$114\.98/);
   assert.match(html, /data-lot="ps-4123518"/);
   // The strip never says no bid works when the max bid is only unknown.
