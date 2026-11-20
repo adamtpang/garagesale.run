@@ -18,7 +18,8 @@ export function parseFilters(search) {
   return {
     verdict: pick(q.get('verdict'), VERDICTS, 'all'),
     source: pick(q.get('source'), SOURCES, 'all'),
-    category: (q.get('category') || 'all').slice(0, 40),
+    // An alias in a link ("game consoles") is folded to the menu's name, so the menu shows what is filtered.
+    category: q.get('category') ? (categoryKey(q.get('category').slice(0, 40)) || 'all') : 'all',
     maxPrice: posNum(q.get('max_price')),
     maxDrive: posNum(q.get('max_drive')),
     sort: pick(q.get('sort'), SORTS, 'profit'),
