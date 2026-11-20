@@ -84,6 +84,20 @@ function rate(v) {
   if (!Number.isFinite(n)) return null;
   return round4(n);
 }
+// A tax or fee rate of 1 or more is 100% or more, so it was almost surely sent as a percent (8.25 for
+// 8.25%). Guessing would be wrong either way, so a write is refused and a stored one reads as unknown.
+const RATE_FIELDS = ['tax_rate', 'fee_rate'];
+function rateLooksLikePercent(v) {
+  const n = rate(v);
+  return n != null && n >= 1;
+}
+function percentRateError(raw, i) {
+  if (!raw || typeof raw !== 'object') return null;
+  const field = RATE_FIELDS.find((f) => rateLooksLikePercent(raw[f]));
+  if (!field) return null;
+  const n = rate(raw[field]);
+  return `lot ${i}${raw.id ? ` (${raw.id})` : ''}: ${field} ${n} reads as ${round2(n * 100)}%. Send rates as fractions, like ${round4(n / 100)} for ${n}%.`;
+}
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
@@ -165,10 +179,11 @@ export function cleanLot(raw, rules = DEFAULT_RULES) {
   if (!id || !/^[a-z0-9-]+$/i.test(id)) return null;
   const miles = money(raw.miles_from_home);
   const taxBasis = raw.tax_basis === 'stated' || raw.tax_basis === 'assumption' ? raw.tax_basis : 'unknown';
-  let taxRate = taxBasis === 'unknown' ? null : rate(raw.tax_rate);
-  if (taxBasis === 'assumption' && taxRate == null) taxRate = rules.tax_assumption_rate;
+  const taxPercent = rateLooksLikePercent(raw.tax_rate);
+  let taxRate = taxBasis === 'unknown' || taxPercent ? null : rate(raw.tax_rate);
+  if (taxBasis === 'assumption' && taxRate == null && !taxPercent) taxRate = rules.tax_assumption_rate;
   const feeBasis = raw.fee_basis === 'stated' || raw.fee_basis === 'assumption' ? raw.fee_basis : 'unknown';
-  const feeRate = feeBasis === 'unknown' ? null : rate(raw.fee_rate);
+  const feeRate = feeBasis === 'unknown' || rateLooksLikePercent(raw.fee_rate) ? null : rate(raw.fee_rate);
   const shippingBasis = raw.shipping_basis === 'stated' || raw.shipping_basis === 'assumption' ? raw.shipping_basis : 'unknown';
   const shipping = shippingBasis === 'unknown' ? null : money(raw.shipping);
   const status = STATUSES.includes(raw.status) ? raw.status : 'watch';
@@ -253,6 +268,8 @@ export function cleanSnapshot(input) {
     const name = lot && typeof lot.comp_set === 'string' ? lot.comp_set : null;
     const own = lot && Array.isArray(lot.comps) ? lot.comps : [];
     if (name && !Array.isArray(sets[name])) throw new Error(`lot ${i} names comp set ${name}, which is not in comp_sets`);
+    const percentError = percentRateError(lot, i);
+    if (percentError) throw new Error(percentError);
     const cleaned = cleanLot(name ? { ...lot, comps: [...sets[name], ...own] } : lot);
     if (!cleaned) throw new Error(`lot ${i} is missing a usable id`);
     return cleaned;
