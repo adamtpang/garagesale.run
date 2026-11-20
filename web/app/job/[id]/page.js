@@ -136,9 +136,11 @@ export default function JobPage({ params }) {
   }, [id]);
 
   const R = (job && job.results) || {};
+  // Prefill the price box from the latest job poll until the seller edits it.
   useEffect(() => {
     if (priceTouched.current) return;
-    const v = (R.listing && R.listing.price) ?? (R.price && R.price.recommended);
+    const res = (job && job.results) || {};
+    const v = (res.listing && res.listing.price) ?? (res.price && res.price.recommended);
     if (v !== undefined && v !== null) setPrice(String(v));
   }, [job]);
 
