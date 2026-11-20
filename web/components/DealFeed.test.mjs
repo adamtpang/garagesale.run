@@ -71,7 +71,7 @@ test('a surplus card uses the max bid, counts the buyer fees, and never shows an
   // Buyer's premium and tax at $79, plus the selling fee and shipping.
   const buyFees = Math.round((zebra.costs.all_in_at_max_bid - 79 - zebra.costs.gas) * 100) / 100;
   assert.equal(cost.fees.value, `$${(buyFees + zebra.costs.fee + zebra.costs.shipping).toFixed(2)}`);
-  assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet']);
+  assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet: not looked up yet']);
   assert.equal(cost.gas.note, 'About 32 mi round trip, from the stated miles');
   assert.deepEqual(card.cases.map((c) => c.value), ['$0.40', '$152.53', '$152.53']);
   assert.match(card.reason, /past the 15-mile pickup limit/);
