@@ -29,3 +29,23 @@ test('no page shows the old made-up example prices', () => {
   for (const word of ['TILES', 'EXAMPLES', 'Example items and prices']) assert.equal(sell.includes(word), false, word);
   assert.match(src('../app/sell/page.js'), /SellHome mode="sell"/);
 });
+
+test('the header shows the public bankroll on every page and links to the ladder', async () => {
+  const React = (await import('react')).default;
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { BankrollPillView, pillText } = await import('./BankrollPill.js');
+  const layout = src('../app/layout.js');
+  const nav = layout.slice(layout.indexOf('<nav'), layout.indexOf('</nav>'));
+  assert.ok(nav.includes('<BankrollPill />'));
+  assert.equal(pillText({ bankroll: 100, source: 'start' }), '$100');
+  assert.equal(pillText({ bankroll: 1234.5 }), '$1,235');
+  assert.equal(pillText(null), 'Bankroll unknown');
+  assert.equal(pillText({ bankroll: null }), 'Bankroll unknown');
+  const html = renderToStaticMarkup(React.createElement(BankrollPillView, { data: { bankroll: 100, note: 'No ledger entries yet, so this is the starting bankroll.' } }));
+  assert.match(html, /href="\/ladder"/);
+  assert.match(html, />\$100</);
+  assert.match(html, /No ledger entries yet/);
+  // Only the one public number. The pill reads nothing but /api/bankroll.
+  const pill = src('./BankrollPill.js');
+  assert.deepEqual([...pill.matchAll(/fetch\('([^']+)'/g)].map((m) => m[1]), ['/api/bankroll']);
+});
