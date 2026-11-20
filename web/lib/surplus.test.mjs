@@ -256,7 +256,7 @@ test('close time is 12-hour Central time with a countdown', () => {
   assert.equal(friday.close_text, 'Fri, Nov 20, 2026, 3:00 PM CT');
 });
 
-test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and every lot breaks a rule', () => {
+test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and says why for each lot', () => {
   assert.equal(seed.sample, false);
   assert.equal(seed.scanned_on, '2026-11-15');
   assert.match(seed.label, /Nov 15, 2026 scan snapshot/);
@@ -285,18 +285,28 @@ test('the Nov 15 2026 snapshot is real scan data, marks nothing a buy, and every
       assert.equal(lot.net_estimate, null);
     }
   }
-  // Under Adam's rules every lot in this scan is past the 15-mile radius: Schertz is about 16 miles,
-  // TFC about 52 and Hallettsville about 73.
+  // Under Adam's rules Schertz (about 16 miles) is inside the 20-mile radius. TFC (about 52) and
+  // Hallettsville (about 73) are past it. No lot is a buy: the drive times were never looked up.
+  const far = ['ps-4124526', 'ps-4128212', 'ps-4128202'];
+  const thin = ['ps-4123522', 'ps-4123523', 'ps-4123524', 'ps-4123526', 'ps-4123528'];
   for (const lot of view.lots) {
-    assert.equal(lot.status, 'skip', lot.id);
-    assert.match(lot.status_reason, /Skipped by rule\..*past the 15-mile pickup limit/, lot.id);
+    if (far.includes(lot.id)) {
+      assert.equal(lot.status, 'skip', lot.id);
+      assert.match(lot.status_reason, /Skipped by rule\..*past the 20-mile pickup limit/, lot.id);
+    } else if (thin.includes(lot.id)) {
+      assert.equal(lot.status, 'skip', lot.id);
+      assert.match(lot.status_reason, /Skipped by rule\. Even the high case, .* is under the \$100\.00 minimum\./, lot.id);
+    } else {
+      assert.equal(lot.status, 'watch', lot.id);
+      assert.equal(ruleOf(lot, 'radius').result, 'pass', lot.id);
+    }
   }
   assert.match(byId['ps-4124526'].status_reason, /About 52 mi/);
   assert.match(byId['ps-4124526'].status_reason, /All-in cost \$165\.02 is over the \$100\.00 max per flip/);
   assert.match(byId['ps-4128212'].status_reason, /About 73 mi/);
   assert.equal(view.rules.max_cost, 100);
   assert.equal(view.rules.min_profit, 100);
-  assert.equal(view.rules.pickup_miles, 15);
+  assert.equal(view.rules.pickup_miles, 20);
   assert.equal(byId['ps-4123518'].quantity, 8);
   assert.equal(byId['ps-4123518'].unit_resale, 40);
   assert.equal(byId['ps-4123524'].quantity, 1);
@@ -407,13 +417,13 @@ test('the rules config holds the Nov 3 numbers and the proposed rules are off', 
   assert.equal(RULES_CONFIG.hourly_rate, 20);
   assert.equal(RULES_CONFIG.max_drive_minutes, 45);
   assert.equal(RULES_CONFIG.min_profit, 100);
-  assert.equal(RULES_CONFIG.max_pickup_miles, 15);
+  assert.equal(RULES_CONFIG.max_pickup_miles, 20);
   assert.equal(RULES_CONFIG.gas_per_mile, 0.18);
   assert.equal(RULES_CONFIG.gas_per_mile_confirmed, false);
   assert.equal(RULES_CONFIG.home, 'New Braunfels, TX');
   assert.equal(RULES_CONFIG.optional.lot_roi.enabled, false);
   assert.equal(RULES_CONFIG.optional.surplus_radius.enabled, false);
-  assert.equal(DEFAULT_RULES.pickup_miles, 15);
+  assert.equal(DEFAULT_RULES.pickup_miles, 20);
   assert.equal(DEFAULT_RULES.max_cost, 100);
 });
 
@@ -426,11 +436,11 @@ test('a lot that passes every rule with confirmed profit keeps its buy mark', ()
 });
 
 test('past the pickup radius is a skip, at the limit is not', () => {
-  const far = assessLot(ruleLot({ miles_from_home: 15.1 }), NOW);
+  const far = assessLot(ruleLot({ miles_from_home: 20.1 }), NOW);
   assert.equal(far.status, 'skip');
   assert.equal(ruleOf(far, 'radius').result, 'fail');
-  assert.match(far.status_reason, /15\.1 mi from New Braunfels, TX is past the 15-mile pickup limit/);
-  const edge = assessLot(ruleLot({ miles_from_home: 15 }), NOW);
+  assert.match(far.status_reason, /20\.1 mi from New Braunfels, TX is past the 20-mile pickup limit/);
+  const edge = assessLot(ruleLot({ miles_from_home: 20 }), NOW);
   assert.equal(ruleOf(edge, 'radius').result, 'pass');
   assert.equal(edge.status, BUY_STATUS);
   // A watch lot is skipped too. The rule does not depend on the status that came in.
@@ -513,7 +523,7 @@ test('the proposed rules do nothing until they are switched on', () => {
   assert.equal(wide.pickup_miles, 60);
   assert.equal(ruleOf(assessLot(at40, NOW, wide), 'radius').result, 'pass');
   // "enabled" has to be exactly true.
-  assert.equal(activeRules({ optional: { surplus_radius: { enabled: 'yes' } } }).pickup_miles, 15);
+  assert.equal(activeRules({ optional: { surplus_radius: { enabled: 'yes' } } }).pickup_miles, 20);
 
   assert.equal(ruleOf(assessLot(ruleLot(), NOW), 'lot_roi'), undefined);
   const roiOn = activeRules({ optional: { lot_roi: { enabled: true } } });

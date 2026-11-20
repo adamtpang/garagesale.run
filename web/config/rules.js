@@ -1,6 +1,6 @@
 // Adam's flip rules. This is the one place they live.
 // Every page and API reads this file. Change a rule here, not in the code that applies it.
-// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md). Bankroll cap, hourly rate and drive cap: Adam, Nov 17, 2026.
+// Approved by Adam on Nov 3, 2026 (see docs/HANDOFF.md). Bankroll cap, hourly rate and drive cap: Adam, Nov 17, 2026. Pickup radius 20 miles: Adam, Nov 20, 2026.
 export const RULES_CONFIG = Object.freeze({
   approved_on: '2026-11-03',
   home: 'New Braunfels, TX',
@@ -16,7 +16,7 @@ export const RULES_CONFIG = Object.freeze({
   // Longest round-trip drive for one deal, in minutes, from home.
   max_drive_minutes: 45,
   // Pickup radius, measured from home.
-  max_pickup_miles: 15,
+  max_pickup_miles: 20,
   categories: Object.freeze(['electronics', 'game consoles', 'tools', 'furniture', 'bikes', 'cameras']),
   gas_per_mile: 0.18,
   gas_per_mile_confirmed: false,

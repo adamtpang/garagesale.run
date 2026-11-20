@@ -97,11 +97,11 @@ Not yet tested against the live service: the code follows the official client's 
 | `min_profit` | 100 | Minimum profit after fee, shipping, gas and drive time |
 | `hourly_rate` | 20 | Dollars an hour of driving costs. Set by Adam on Nov 17, 2026 |
 | `max_drive_minutes` | 45 | Longest round-trip drive for one deal. Set by Adam on Nov 17, 2026 |
-| `max_pickup_miles` | 15 | One-way miles |
+| `max_pickup_miles` | 20 | One-way miles. Raised from 15 by Adam on Nov 20, 2026 |
 | `categories` | electronics, game consoles, tools, furniture, bikes, cameras | What to search |
 | `sites` | `fb`, `craigslist`, `ebay`, `offerup` | Allowed sources |
 | `run_hours` | `daily daytime` | When the routine runs |
-| `areas` | New Braunfels, San Marcos, Austin, each with `lat` and `lng` | Where a run may search. Pickup is still 15 miles from New Braunfels only. Austin and San Marcos are not home origins |
+| `areas` | New Braunfels, San Marcos, Austin, each with `lat` and `lng` | Where a run may search. Pickup is still 20 miles from New Braunfels only. Austin and San Marcos are not home origins |
 | `gas_per_mile` | 0.18 | Round-trip gas uses `2 * distance_mi * gas_per_mile` |
 | `gas_per_mile_note` | `estimate: ~20 MPG, $3.50/gal premium` | Estimate flag. Change the rate when the guess changes |
 | `fees` | fb 0, craigslist 0, offerup local 0, ebay 0.1325 plus shipping | Each fee is `confirmed: false` until checked |

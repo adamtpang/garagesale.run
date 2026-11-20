@@ -1,5 +1,6 @@
 // Text and layout for the deal board. The numbers come from assessDeal.
 import { moneyText } from './decision.js';
+import { DEFAULT_RULES } from './rules.js';
 
 export const BOARD_REGIONS = {
   cards: 'grid gap-3 md:hidden',
@@ -8,7 +9,7 @@ export const BOARD_REGIONS = {
 
 export const SAMPLE_BANNER = 'SAMPLE FIXTURE — not a live listing and not stored in the scout feed. These rows show the layout. Do not buy them.';
 export const PAUSED_SCOUT = 'The scheduled scout is paused. This board reads the stored feed and does not scan listings.';
-export const HOME_LINE = 'Pickup is 15 miles from New Braunfels. Austin and San Marcos are not home origins.';
+export const HOME_LINE = `Pickup is ${DEFAULT_RULES.max_pickup_miles} miles from New Braunfels. Austin and San Marcos are not home origins.`;
 
 export function layoutForWidth(width) {
   const w = Number(width);

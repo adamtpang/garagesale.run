@@ -64,7 +64,7 @@ test('a surplus card uses the max bid, counts the buyer fees, and never shows an
   const feed = feedWith([]);
   const zebra = feed.items.find((it) => it.id === 'ps-4123518');
   const card = cardFor(zebra, NOW);
-  assert.equal(card.label, 'Skip');
+  assert.equal(card.label, 'Watch');
   assert.equal(card.headline, 'You make about');
   assert.equal(card.amount, '$153');
   assert.match(card.basis, /If you win at your \$79\.00 max bid\. Middle case\. An estimate, not confirmed\. Drive time is not counted yet\./);
@@ -76,7 +76,7 @@ test('a surplus card uses the max bid, counts the buyer fees, and never shows an
   assert.deepEqual([cost.drive.value, cost.drive.note], ['unknown', 'Not counted in profit yet: not looked up yet']);
   assert.equal(cost.gas.note, 'About 32 mi round trip, from the stated miles');
   assert.deepEqual(card.cases.map((c) => c.value), ['$0.40', '$152.53', '$152.53']);
-  assert.match(card.reason, /past the 15-mile pickup limit/);
+  assert.match(card.reason, /^Drive time: .*is unknown, so the 45-minute cap cannot be checked\./);
   assert.match(card.risk, /./);
   assert.equal(card.countdown, 'Closes in 1d 8h');
   // A lot with no resale has no profit number, and its fees are unknown, not $0.
@@ -131,8 +131,9 @@ test('the page shows one card per deal with a label, costs, cases, links and no 
   assert.match(html, /Main risk: /);
   assert.match(html, /All 14/);
   assert.match(html, /Buy 1/);
-  assert.match(html, /Skip 13/);
-  assert.match(html, /max buy \$100 \(starting bankroll\), at least \$100 profit, within 15 miles and 45 minutes round trip of New Braunfels, time at \$20 an hour/);
+  assert.match(html, /Watch 5/);
+  assert.match(html, /Skip 8/);
+  assert.match(html, /max buy \$100 \(starting bankroll\), at least \$100 profit, within 20 miles and 45 minutes round trip of New Braunfels, time at \$20 an hour/);
   assert.match(html, /The surplus scan is|No surplus scan has been posted/);
   assert.equal(html.includes('<form'), false);
   assert.equal(/Place bid|Buy now|Send offer|Message seller/i.test(html), false);

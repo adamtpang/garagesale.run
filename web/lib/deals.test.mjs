@@ -37,7 +37,7 @@ test('seed config has the owner values, including the gas estimate', () => {
   assert.equal(seed.max_per_flip, 100);
   assert.equal(seed.bankroll, 100);
   assert.equal(seed.min_profit, 100);
-  assert.equal(seed.max_pickup_miles, 15);
+  assert.equal(seed.max_pickup_miles, 20);
   assert.deepEqual(seed.categories, ['electronics', 'game consoles', 'tools', 'furniture', 'bikes', 'cameras']);
   assert.deepEqual(seed.sites, ['fb', 'craigslist', 'ebay', 'offerup']);
   assert.equal(seed.run_hours, 'daily daytime');
@@ -138,7 +138,7 @@ test('profit is resale minus ask, the resale-venue fee, shipping and the round t
 
 test('config filters drop far, thin, off-site and over-cap deals from the ranking', () => {
   const cfg = ready();
-  assert.match(buildFeed([buyable({ distance_mi: 20 })], cfg).deals[0].unranked_reason, /outside the 15 mi pickup/);
+  assert.match(buildFeed([buyable({ distance_mi: 21 })], cfg).deals[0].unranked_reason, /outside the 20 mi pickup/);
   assert.match(buildFeed([buyable({ ask: 120 })], cfg).deals[0].unranked_reason, /item cap/);
   assert.match(buildFeed([buyable()], ready({ min_profit: 200 })).deals[0].unranked_reason, /minimum/);
   assert.match(buildFeed([buyable()], ready({ sites: ['ebay'] })).deals[0].unranked_reason, /not in the stored source list/);
@@ -202,7 +202,7 @@ test('with nothing stored, the config is the rules file and deals can be ranked'
   assert.equal(cfg.rules_source, RULES_SOURCE);
   assert.equal(cfg.max_per_flip, 100);
   assert.equal(cfg.min_profit, 100);
-  assert.equal(cfg.max_pickup_miles, 15);
+  assert.equal(cfg.max_pickup_miles, 20);
   assert.equal(cfg.gas_per_mile, 0.18);
   assert.equal(filtersReady(cfg), true);
   assert.equal(cfg.fees.ebay.rate, 0.136);
@@ -219,7 +219,7 @@ test('a stored config cannot change a rule, only where to look and what sites ch
   assert.equal(cfg.max_per_flip, 100);
   assert.equal(cfg.bankroll, 100);
   assert.equal(cfg.min_profit, 100);
-  assert.equal(cfg.max_pickup_miles, 15);
+  assert.equal(cfg.max_pickup_miles, 20);
   assert.equal(cfg.gas_per_mile, 0.18);
   assert.deepEqual(cfg.sites, ['ebay']);
   assert.equal(cfg.fees.ebay.rate, 0.15);
@@ -266,7 +266,7 @@ test('the buy search flags an ask over the max cost per flip', async () => {
   const { capFlags, HOME_CITY, HOME_RADIUS } = await import('./marketplace.js');
   assert.deepEqual(capFlags([{ ask: 100 }, { ask: 100.01 }, { ask: null }]).map((d) => d.over_cap), [false, true, false]);
   assert.equal(HOME_CITY, 'New Braunfels');
-  assert.equal(HOME_RADIUS, 15);
+  assert.equal(HOME_RADIUS, 20);
 });
 
 test('a stored fee with only a rate keeps the default flat fee', async () => {
@@ -287,5 +287,5 @@ test('the wider surplus radius never widens a listing search', async () => {
   const { activeRules, rulesAsConfig } = await import('./rules.js');
   const wide = activeRules({ optional: { surplus_radius: { enabled: true } } });
   assert.equal(wide.pickup_miles, 60);
-  assert.equal(rulesAsConfig(wide).max_pickup_miles, 15);
+  assert.equal(rulesAsConfig(wide).max_pickup_miles, 20);
 });

@@ -72,8 +72,8 @@ test('a surplus lot carries the same fields, with each sold comp link and date',
   assert.deepEqual(z.profit.at_max_bid, { low: 0.4, middle: 152.53, high: 152.53 });
   assert.equal(z.max_bid, 79);
   assert.equal(z.roi_basis, 'middle case estimate');
-  assert.equal(z.decision.value, 'skip');
-  assert.match(z.decision.reasons.join(' '), /past the 15-mile pickup limit/);
+  assert.equal(z.decision.value, 'watch');
+  assert.match(z.decision.reasons.join(' '), /45-minute cap cannot be checked/);
   assert.ok(z.risks.some((r) => /Fleet device/.test(r)));
   const soldComps = z.comps.filter((c) => c.type === 'sold');
   assert.equal(soldComps.length, 6);
@@ -100,13 +100,13 @@ test('the feed puts buys first, counts each decision, and says when its data is 
   assert.equal(f.kind, 'daily-deals-feed');
   assert.equal(f.places_bids, false);
   assert.equal(f.contacts_sellers, false);
-  assert.deepEqual(f.counts, { buy: 1, watch: 0, skip: 14 });
+  assert.deepEqual(f.counts, { buy: 1, watch: 5, skip: 9 });
   assert.equal(f.items[0].decision.value, 'buy');
   assert.equal(f.items[0].kind, 'listing');
   // Among the skips, the best estimate comes first and unknown profit comes last.
   assert.equal(f.items[1].id, 'ps-4123518');
   assert.equal(f.items[f.items.length - 1].profit.middle, null);
-  assert.deepEqual([f.rules.max_cost, f.rules.min_profit, f.rules.pickup_miles], [100, 100, 15]);
+  assert.deepEqual([f.rules.max_cost, f.rules.min_profit, f.rules.pickup_miles], [100, 100, 20]);
   assert.match(f.stale.join(' '), /No surplus scan has been posted/);
   const old = buildDailyFeed({ surplus: surplus(), deals: { updated_at: '2026-10-23T12:00:00.000Z', deals: [] }, config: confirmed(), nowMs: NOW });
   assert.match(old.stale.join(' '), /The listings feed is 24 days old/);
