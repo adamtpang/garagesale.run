@@ -35,11 +35,12 @@ export function toggleTarget(tile, storage, nowMs = Date.now()) {
   return write(all, storage) ? !!all[tile.id] : null;
 }
 
-// Keeps a target's snapshot current while the deal is still in the feed.
-export function refreshTargets(liveTiles, storage) {
+// Keeps a target's snapshot current while the deal is still in the feed, and notes when it was last seen.
+export function refreshTargets(liveTiles, storage, nowMs = Date.now()) {
   const all = readTargets(storage);
   let changed = false;
-  for (const t of liveTiles) if (all[t.id]) { all[t.id] = { ...t, saved_at: all[t.id].saved_at }; changed = true; }
+  const seen = new Date(nowMs).toISOString();
+  for (const t of liveTiles) if (all[t.id]) { all[t.id] = { ...t, saved_at: all[t.id].saved_at, seen_at: seen }; changed = true; }
   if (changed) write(all, storage);
   return all;
 }
@@ -49,7 +50,7 @@ export function targetRows(targets, liveTiles) {
   const live = new Map(liveTiles.map((t) => [t.id, t]));
   const rows = Object.values(targets).map((saved) => (live.has(saved.id)
     ? { ...live.get(saved.id), gone: false }
-    : { ...saved, gone: true, label: 'Gone', decision: 'gone', closes: 'No longer in the feed', reason: `Last seen ${String(saved.saved_at || '').slice(0, 10) || 'earlier'}. It closed or was left off. These are its last known numbers.` }));
+    : { ...saved, gone: true, label: 'Gone', decision: 'gone', closes: 'No longer in the feed', reason: `Last seen ${String(saved.seen_at || saved.saved_at || '').slice(0, 10) || 'earlier'}. It closed or was left off. These are its last known numbers.` }));
   const order = new Map(liveTiles.map((t, i) => [t.id, i]));
   return rows.sort((a, b) => (a.gone === b.gone ? (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) : a.gone ? 1 : -1));
 }
