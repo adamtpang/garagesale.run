@@ -60,7 +60,7 @@ Plain words, no em dashes, 12-hour Central times. No contact details in the repo
 
 ## Open now
 
-- **Guadalupe County laptop lot (GovDeals 1988-19).** 12 laptops, 8 Toughbooks, drives removed. Closes Thu Dec 4, 3:00 PM Central. Plan and max bid ($52): `docs/flips/toughbook-lot-1988-19.md`. Adam is asking the county for the models and lock status. Keep it in each post until it closes, and report the bid each day.
+- **Guadalupe County laptop lot (GovDeals 1988-19).** 12 laptops, 8 Toughbooks, drives removed. Closes Thu Dec 4, 3:00 PM Central. Plan: `docs/flips/toughbook-lot-1988-19.md`. With work time counted, the bid depends on the county's answer: locked means no bid, unlocked means up to $76. Adam is asking the county for the models and lock status. Keep it in each post until it closes, and report the bid each day.
 
 ## Never
 

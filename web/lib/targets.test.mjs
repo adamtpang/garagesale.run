@@ -80,3 +80,26 @@ test('a gone target opens its original listing, or is not a link at all', () => 
   assert.deepEqual([a.href, a.external], ['https://www.publicsurplus.com/sms/all,tx/auction/view?auc=1', true]);
   assert.deepEqual([b.href, b.external], [null, false]);
 });
+
+test('a gone target shows Gone, not the tier it had when starred, and a stale one shows why its numbers are old', async () => {
+  const React = (await import('react')).default;
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { tile } = await import('../components/Market.js');
+  const starred = { ...tileB, tier: 'B', tier_label: 'Strong watch', tier_why: '14 sold comps, sells fast.' };
+  const s = memory();
+  toggleTarget(starred, s, Date.parse('2026-11-18T12:00:00Z'));
+
+  const [gone] = targetRows(readTargets(s), [tileA]);
+  assert.deepEqual([gone.gone, gone.label, gone.tier, gone.tier_why], [true, 'Gone', undefined, undefined]);
+  const goneHtml = renderToStaticMarkup(React.createElement('div', null, tile(gone)));
+  assert.match(goneHtml, /data-field="label"[^>]*>Gone</);
+  assert.doesNotMatch(goneHtml, /Strong watch/);
+  assert.match(goneHtml, /Last seen 2026-11-18/);
+
+  const [stale] = targetRows(readTargets(s), null);
+  const staleHtml = renderToStaticMarkup(React.createElement('div', null, tile(stale)));
+  // The last known tier stays on the badge; the reason line is the stale-feed note, not the old tier reason.
+  assert.match(staleHtml, /B · Strong watch/);
+  assert.match(staleHtml, /Could not load today&#x27;s feed/);
+  assert.doesNotMatch(staleHtml, /14 sold comps/);
+});

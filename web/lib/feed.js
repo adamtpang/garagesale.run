@@ -3,7 +3,7 @@
 // and a value that is not known is null and is listed under "unknown".
 import { assessDeal, feeAmount, moneyText, round2 } from './decision.js';
 import { BUY_STATUS } from './surplus.js';
-import { DEFAULT_RULES } from './rules.js';
+import { DEFAULT_RULES, workCost } from './rules.js';
 import { driveCosts } from './drive.js';
 import { tierFor } from './tiers.js';
 
@@ -75,6 +75,9 @@ export function fromLot(lot) {
       gas_miles_basis: lot.haul_basis,
       // Adam's drive time at the hourly rate. It comes off profit and is not part of all_in.
       time: lot.time_cost,
+      // Adam's work on every unit at his hourly rate. Like drive time it comes off profit, not off all_in.
+      work: lot.work_cost,
+      work_minutes: lot.work_minutes,
       fee: lot.fee_amount,
       fee_basis: lot.fee_basis,
       shipping: lot.shipping,
@@ -130,7 +133,9 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
   const allIn = v.ask != null && v.gas != null ? round2(v.ask + v.gas) : null;
   // Drive time, when the routing service gave one. Its cost comes off profit. Unknown is left out and said.
   const drive = driveCosts(deal.drive, rules);
-  const timeOff = drive.time_cost != null ? drive.time_cost : 0;
+  // Adam's work on the one item, at his hourly rate. Like drive time it comes off profit.
+  const work = workCost(1, rules);
+  const timeOff = round2((drive.time_cost != null ? drive.time_cost : 0) + (work != null ? work : 0));
   const net = v.net != null ? round2(v.net - timeOff) : null;
   // Profit in the low and high resale cases, with the fee worked out again at each price.
   const at = (resale) => {
@@ -171,7 +176,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
   }
   if (decision === 'buy' && net != null && net < rules.min_profit) {
     decision = 'skip';
-    reasons.push(`After ${moneyText(timeOff)} of drive time the profit is ${moneyText(net)}, under the ${moneyText(rules.min_profit)} minimum.`);
+    reasons.push(`After ${moneyText(timeOff)} of drive time and your work the profit is ${moneyText(net)}, under the ${moneyText(rules.min_profit)} minimum.`);
   }
   const item = {
     kind: 'listing',
@@ -189,7 +194,7 @@ export function fromDeal(deal, config, rules = DEFAULT_RULES) {
     costs: {
       premium: 0, premium_pct: 0, tax: 0, tax_basis: 'none on a private sale',
       gas: v.gas, gas_miles: v.gas != null && v.pickup && v.pickup.known ? round2(v.pickup.miles * 2) : null, gas_miles_basis: v.gas != null ? 'stated miles' : 'unknown',
-      time: drive.time_cost, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
+      time: drive.time_cost, work, work_minutes: work != null ? rules.work_minutes_per_unit : null, fee: v.fee, fee_basis: spec ? (spec.confirmed === true ? 'confirmed' : 'unconfirmed default') : 'unknown',
       shipping: v.shipping, shipping_basis: v.shipping == null ? 'unknown' : 'from the sold comps',
       all_in: allIn, all_in_basis: allIn == null ? 'unknown' : 'ask plus gas', all_in_at_max_bid: null,
     },
@@ -274,7 +279,7 @@ export function buildDailyFeed({ surplus, deals, config, nowMs = null, rules = D
     note: 'Every buy needs Adam\'s yes on that item. Nothing here bids, buys, makes an offer or messages a seller. Unknown values are null and are listed under "unknown" on each item.',
     rules: {
       home: rules.home, max_cost: rules.max_cost, min_profit: rules.min_profit, pickup_miles: rules.pickup_miles,
-      gas_per_mile: rules.gas_per_mile, hourly_rate: rules.hourly_rate, max_drive_minutes: rules.max_drive_minutes, bankroll: rules.bankroll, bankroll_source: rules.bankroll_source, categories: rules.categories, source: 'web/config/rules.js',
+      gas_per_mile: rules.gas_per_mile, hourly_rate: rules.hourly_rate, work_minutes_per_unit: rules.work_minutes_per_unit, max_drive_minutes: rules.max_drive_minutes, bankroll: rules.bankroll, bankroll_source: rules.bankroll_source, categories: rules.categories, source: 'web/config/rules.js',
     },
     sources: {
       surplus: { from: surplus ? surplus.source || null : null, scanned_on: surplus ? surplus.scanned_on || null : null, updated_at: surplus ? surplus.updated_at || null : null, age_days: surplusAge, lots: lots.length, closed_hidden: hidden.closed_lots },

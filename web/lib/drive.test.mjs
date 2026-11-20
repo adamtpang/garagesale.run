@@ -10,7 +10,8 @@ import { fromDeal } from './feed.js';
 import { cleanDeal } from './decision.js';
 import { withRules } from './scoutConfig.js';
 
-const RULES = activeRules();
+// Drive time on its own: work time is tested in workTime.test.mjs.
+const RULES = activeRules({ work_minutes_per_unit: 0 });
 const ok = (body) => ({ ok: true, status: 200, json: async () => body });
 // A fake routing service. It records each call so the test can read the URL, the header and the body.
 function fakeOrs({ confidence = 0.95, meters = 16093.44, seconds = 900 } = {}) {
@@ -116,7 +117,7 @@ const lot = (extra = {}) => ({
 const ruleOf = (view, name) => view.rule_checks.find((c) => c.rule === name);
 
 test('a lot counts drive time against profit, uses routed miles for gas, and keeps time out of the cash cost', () => {
-  const view = assessLot(lot({ drive: { minutes_round_trip: 30, miles_round_trip: 24, source: 'openrouteservice' } }), null);
+  const view = assessLot(lot({ drive: { minutes_round_trip: 30, miles_round_trip: 24, source: 'openrouteservice' } }), null, RULES);
   // Gas: 24 routed miles at $0.18 is $4.32, not 20 stated miles. All-in: $10 + $4.32.
   assert.deepEqual([view.haul_cost, view.haul_basis, view.all_in], [4.32, 'routed', 14.32]);
   // Time: 30 minutes at $20 is $10. Gross $200, fee $20, so net is 200 - 20 - 14.32 - 10.
@@ -127,7 +128,7 @@ test('a lot counts drive time against profit, uses routed miles for gas, and kee
 });
 
 test('a lot with no drive time is never a buy, and says time was left out', () => {
-  const view = assessLot(lot(), null);
+  const view = assessLot(lot(), null, RULES);
   assert.equal(ruleOf(view, 'drive_time').result, 'unknown');
   assert.equal(view.net, null);
   assert.equal(view.time_cost, null);
@@ -137,18 +138,18 @@ test('a lot with no drive time is never a buy, and says time was left out', () =
 });
 
 test('a drive over the cap is a skip, and exactly at the cap passes', () => {
-  const over = assessLot(lot({ drive: { minutes_round_trip: 46, miles_round_trip: 20 } }), null);
+  const over = assessLot(lot({ drive: { minutes_round_trip: 46, miles_round_trip: 20 } }), null, RULES);
   assert.equal(ruleOf(over, 'drive_time').result, 'fail');
   assert.equal(over.status, 'skip');
   assert.match(over.status_reason, /46-minute round trip is over the 45-minute drive cap/);
-  assert.equal(ruleOf(assessLot(lot({ drive: { minutes_round_trip: 45, miles_round_trip: 20 } }), null), 'drive_time').result, 'pass');
+  assert.equal(ruleOf(assessLot(lot({ drive: { minutes_round_trip: 45, miles_round_trip: 20 } }), null, RULES), 'drive_time').result, 'pass');
 });
 
 test('time cost lowers the max bid', () => {
   // Three units: left over after the sale is $108. Without time the $100 minimum allows an $8 all-in.
   const base = { quantity: 3 };
-  const free = assessLot(lot({ ...base, drive: { minutes_round_trip: 0, miles_round_trip: 20 } }), null);
-  const timed = assessLot(lot({ ...base, drive: { minutes_round_trip: 6, miles_round_trip: 20 } }), null);
+  const free = assessLot(lot({ ...base, drive: { minutes_round_trip: 0, miles_round_trip: 20 } }), null, RULES);
+  const timed = assessLot(lot({ ...base, drive: { minutes_round_trip: 6, miles_round_trip: 20 } }), null, RULES);
   // Six minutes is $2 of time, so the bid drops by $2.
   assert.equal(free.max_bid - timed.max_bid, 2);
 });
