@@ -38,7 +38,7 @@ These are the rules he set. They live in one file, `web/config/rules.js`. The su
 
 - $100 starting bankroll. The max buy per flip is the current bankroll, not a fixed $100 (Adam, Nov 17). The site reads it from the ledger and shows that one number at `/api/bankroll`.
 - $100 minimum profit after fees, gas and drive time.
-- Drive time costs $20 an hour, and a deal may take at most 45 minutes of round-trip driving (Adam, Nov 17). Both are applied to surplus lots and to the daily feed. Drive times need `ORS_API_KEY` set in Vercel (see docs/SCOUT.md). Until then every drive time is unknown and nothing can be a buy.
+- Drive time costs $20 an hour, and a deal may take at most 60 minutes of round-trip driving (Adam: 45 on Nov 17, raised to 60 on Nov 20). Both are applied to surplus lots and to the daily feed. Drive times need `ORS_API_KEY` set in Vercel (see docs/SCOUT.md). Until then every drive time is unknown and nothing can be a buy.
 - 20-mile pickup radius from New Braunfels (raised from 15 by Adam on Nov 20, 2026). Do not measure that radius from Austin or San Marcos.
 - Categories: electronics, consoles, tools, furniture, bikes, cameras.
 - Gas $0.18 per mile. That rate is an unconfirmed estimate (`estimate: ~20 MPG, $3.50/gal premium`).

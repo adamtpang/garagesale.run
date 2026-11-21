@@ -419,7 +419,7 @@ test('the rules config holds the Nov 3 numbers and the proposed rules are off', 
   assert.equal(RULES_CONFIG.max_per_flip, null);
   assert.equal(RULES_CONFIG.bankroll, 100);
   assert.equal(RULES_CONFIG.hourly_rate, 20);
-  assert.equal(RULES_CONFIG.max_drive_minutes, 45);
+  assert.equal(RULES_CONFIG.max_drive_minutes, 60);
   assert.equal(RULES_CONFIG.min_profit, 100);
   assert.equal(RULES_CONFIG.max_pickup_miles, 20);
   assert.equal(RULES_CONFIG.gas_per_mile, 0.18);

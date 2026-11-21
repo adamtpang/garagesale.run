@@ -77,7 +77,7 @@ test('a surplus lot carries the same fields, with each sold comp link and date',
   assert.equal(z.max_bid, 79);
   assert.equal(z.roi_basis, 'middle case estimate');
   assert.equal(z.decision.value, 'watch');
-  assert.match(z.decision.reasons.join(' '), /45-minute cap cannot be checked/);
+  assert.match(z.decision.reasons.join(' '), /60-minute cap cannot be checked/);
   assert.ok(z.risks.some((r) => /Fleet device/.test(r)));
   const soldComps = z.comps.filter((c) => c.type === 'sold');
   assert.equal(soldComps.length, 6);

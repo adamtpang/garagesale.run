@@ -141,13 +141,13 @@ One small PR each. Each waits for Bugbot, answers every finding, and attaches de
 These stay exactly as they are in `web/config/rules.js` until Adam says otherwise in chat:
 
 - $20 an hour for drive time.
-- 45-minute round-trip drive cap.
 - Gas at $0.18 a mile.
 - Max buy per flip. The code uses the **full** current bankroll, as Adam set on Nov 17. The brief mentions half the bankroll. That change waits for Adam's yes.
 
 Changed since, at Adam's word in chat:
 
-- Pickup radius: 20 miles from New Braunfels, up from 15 (Nov 20, 2026). Schertz, about 16 miles, was the only nearby surplus seller with open lots, and every one was skipped at 15.
+- Pickup radius: 20 miles from New Braunfels, up from 15 (Nov 20, 2026).
+- Drive cap: 60 minutes round trip, up from 45 (Nov 20, 2026). The first routed drive times showed Seguin, inside the 20-mile radius, at 54 minutes. Schertz, about 16 miles, was the only nearby surplus seller with open lots, and every one was skipped at 15.
 
 ## Hard rules
 

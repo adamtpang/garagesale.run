@@ -69,7 +69,7 @@ Every surplus lot and every listing in `/api/feed` carries the round-trip drive 
 
 - **Time cost** is the round-trip minutes at `hourly_rate` ($20 an hour). It comes off every profit number. It is not cash, so it is not part of `all_in` or the max buy.
 - **Gas** on a surplus lot uses the routed miles when there are any, and twice the stated miles when there are not.
-- **Drive cap.** A round trip over `max_drive_minutes` (45) is a skip.
+- **Drive cap.** A round trip over `max_drive_minutes` (60) is a skip.
 - **Unknown drive.** With no drive time, the time cost is left out, the item says so, and it cannot be a buy.
 
 The times come from OpenRouteService. They are typical times with no live traffic. The way back is taken to be the same as the way there.
@@ -96,7 +96,7 @@ Not yet tested against the live service: the code follows the official client's 
 | `max_per_flip` | the current bankroll | Skip asks above this. There is no fixed cap |
 | `min_profit` | 100 | Minimum profit after fee, shipping, gas and drive time |
 | `hourly_rate` | 20 | Dollars an hour of driving costs. Set by Adam on Nov 17, 2026 |
-| `max_drive_minutes` | 45 | Longest round-trip drive for one deal. Set by Adam on Nov 17, 2026 |
+| `max_drive_minutes` | 60 | Longest round-trip drive for one deal. Set by Adam on Nov 17, 2026 at 45, raised to 60 on Nov 20 |
 | `max_pickup_miles` | 20 | One-way miles. Raised from 15 by Adam on Nov 20, 2026 |
 | `categories` | electronics, game consoles, tools, furniture, bikes, cameras | What to search |
 | `sites` | `fb`, `craigslist`, `ebay`, `offerup` | Allowed sources |
