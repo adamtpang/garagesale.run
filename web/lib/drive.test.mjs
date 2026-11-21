@@ -26,7 +26,7 @@ function fakeOrs({ confidence = 0.95, meters = 16093.44, seconds = 900 } = {}) {
 
 test('drive cost is gas on the routed miles plus time at the hourly rate', () => {
   assert.equal(RULES.hourly_rate, 20);
-  assert.equal(RULES.max_drive_minutes, 45);
+  assert.equal(RULES.max_drive_minutes, 60);
   const c = driveCosts({ minutes_round_trip: 40, miles_round_trip: 31.6 }, RULES);
   // 31.6 miles at $0.18 is $5.69. 40 minutes at $20 an hour is $13.33.
   assert.deepEqual(c, { minutes: 40, miles: 31.6, gas: 5.69, time_cost: 13.33 });
@@ -138,11 +138,11 @@ test('a lot with no drive time is never a buy, and says time was left out', () =
 });
 
 test('a drive over the cap is a skip, and exactly at the cap passes', () => {
-  const over = assessLot(lot({ drive: { minutes_round_trip: 46, miles_round_trip: 20 } }), null, RULES);
+  const over = assessLot(lot({ drive: { minutes_round_trip: 61, miles_round_trip: 20 } }), null, RULES);
   assert.equal(ruleOf(over, 'drive_time').result, 'fail');
   assert.equal(over.status, 'skip');
-  assert.match(over.status_reason, /46-minute round trip is over the 45-minute drive cap/);
-  assert.equal(ruleOf(assessLot(lot({ drive: { minutes_round_trip: 45, miles_round_trip: 20 } }), null, RULES), 'drive_time').result, 'pass');
+  assert.match(over.status_reason, /61-minute round trip is over the 60-minute drive cap/);
+  assert.equal(ruleOf(assessLot(lot({ drive: { minutes_round_trip: 60, miles_round_trip: 20 } }), null, RULES), 'drive_time').result, 'pass');
 });
 
 test('time cost lowers the max bid', () => {
@@ -186,9 +186,9 @@ test('a listing takes drive time off profit, and is not a buy when the drive is 
   assert.equal(/left out/.test(timed.max_bid_note), false);
   assert.ok(unknown.unknown.includes('costs.time'));
   assert.match(unknown.decision.reasons.join(' '), /drive time is unknown/);
-  const far = fromDeal({ ...deal, drive: { minutes_round_trip: 50, miles_round_trip: 16 } }, config);
+  const far = fromDeal({ ...deal, drive: { minutes_round_trip: 65, miles_round_trip: 16 } }, config);
   assert.equal(far.decision.value, 'skip');
-  assert.match(far.decision.reasons.join(' '), /50-minute round trip is over the 45-minute drive cap/);
+  assert.match(far.decision.reasons.join(' '), /65-minute round trip is over the 60-minute drive cap/);
 });
 
 test('a slow batch stops starting lookups, keeps what it found, and saves it', async () => {

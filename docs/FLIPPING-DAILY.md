@@ -15,7 +15,7 @@ The numbers live in `web/config/rules.js`, and the site scores against them. Don
 - Max buy: the current bankroll (`GET /api/bankroll`, `max_buy`). It was $100 on Nov 20.
 - Profit: at least $100 after fees, gas and drive time.
 - Pickup: within 20 miles of New Braunfels, TX. Austin and San Marcos are search areas, never the home origin.
-- Drive: at most 45 minutes round trip, with time costed at $20 an hour.
+- Drive: at most 60 minutes round trip, with time costed at $20 an hour.
 - Gas: $0.18 a mile (an estimate Adam hasn't confirmed).
 
 A lot that breaks a rule is a Skip. Don't argue for exceptions in the report. If a rule looks wrong, say so once in the report, with the lot that shows why.

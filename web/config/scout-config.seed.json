@@ -3,7 +3,7 @@
   "bankroll": 100,
   "min_profit": 100,
   "hourly_rate": 20,
-  "max_drive_minutes": 45,
+  "max_drive_minutes": 60,
   "max_pickup_miles": 20,
   "categories": ["electronics", "game consoles", "tools", "furniture", "bikes", "cameras"],
   "sites": ["fb", "craigslist", "ebay", "offerup"],

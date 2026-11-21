@@ -85,7 +85,7 @@ test('the board shows buy and sell side by side and keeps unknown resale unknown
   // The rules strip reads from the config.
   assert.match(html, /Max buy per flip/);
   // Drive cap and hourly rate come from the rules file. With no routed drive, the lot says so.
-  assert.match(html, /45 min round trip/);
+  assert.match(html, /60 min round trip/);
   assert.match(html, /\$20\.00 an hour/);
   assert.match(html, /data-rule="drive_time" data-result="unknown"/);
   assert.match(html, /No routed drive time yet/);

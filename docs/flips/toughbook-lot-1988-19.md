@@ -53,7 +53,7 @@ Assumptions, all stated:
 - Resale per Toughbook: low $30, middle $60, high $100. The 4 other laptops count as $0, so they are upside only.
 - eBay fee 13.6% plus $0.40 per sale. Shipping $15 a unit, paid by Adam (free shipping is the norm; buyer-paid shipping ran $10.16 to $16.50).
 - Gas: 30 miles round trip at $0.18 a mile, $5.40.
-- Drive time: $15 (about 45 minutes at $20 an hour). **Not routed yet.** Seguin may sit right at the 45-minute cap.
+- Drive time: routed Nov 20 at 54 minutes and 31.26 miles round trip, so $18 at $20 an hour. Inside the 60-minute cap (Adam raised it from 45 that day). The table below still uses the earlier $15 estimate, so each profit is about $3 lower.
 - Your work: 30 minutes a Toughbook to test, photograph, list and pack it, at $20 an hour. That's $80 for 8 (Adam's rule, Nov 20).
 
 Net per Toughbook after fee and shipping: $10.52 low, $36.44 middle, $71.00 high. For 8 units: $84.16, $291.52, $568.00.
