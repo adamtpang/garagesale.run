@@ -7,10 +7,17 @@ import Assistant from '../components/Assistant';
 // DM Sans carries everything. Permanent Marker is only for prices, like a hand-written sticker.
 const dm = DM_Sans({ subsets: ['latin'], variable: '--font-dm', display: 'swap' });
 const marker = Permanent_Marker({ subsets: ['latin'], weight: '400', variable: '--font-marker', display: 'swap' });
+const SITE_TITLE = 'Garage Sale: flip deals near New Braunfels, ranked by real profit';
+const SITE_DESCRIPTION = 'Surplus lots and local listings near New Braunfels, TX, each with the profit after fees, gas and drive time, best first.';
+// The link preview (LinkedIn, X, iMessage). The image is app/opengraph-image.png and app/twitter-image.png,
+// a real capture of the Market. metadataBase makes their URLs absolute, which LinkedIn needs.
 export const metadata = {
+  metadataBase: new URL('https://garagesale.run'),
   title: 'Garage Sale · Flip deals near New Braunfels',
   applicationName: 'Garage Sale',
-  description: 'Surplus lots and local listings near New Braunfels, TX, each with the profit after fees, gas and drive time, best first.',
+  description: SITE_DESCRIPTION,
+  openGraph: { type: 'website', url: 'https://garagesale.run', siteName: 'Garage Sale', title: SITE_TITLE, description: SITE_DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION },
 };
 export const viewport = { themeColor: '#ffffff', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 export default function RootLayout({ children }) {
