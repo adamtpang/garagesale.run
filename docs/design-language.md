@@ -1,6 +1,8 @@
-# Design language: Price Tag
+# Design language
 
-Decided Nov 15, 2026. Adam picked Price Tag from four options, then asked the same day for white as the main color and red as the accent. The first version used a poster-yellow page, and he found it ugly.
+The site uses the look from before the Nov 15, 2026 Price Tag reskin: a black page, system type, blue accent, green for money that came out ahead, soft cards. Adam judged the white-and-red reskin worse than that earlier build, so the reskin's palette, type, hard borders and offset shadows are gone. Later screens (Market, Targets, Selling, bankroll, ledger) keep their information and use this look.
+
+Price Tag (white paper, marker-red prices, 2px ink borders, hard offset shadows, DM Sans and Permanent Marker) was the look from Nov 15 until this restore. It is not the current design.
 
 ## The project
 
@@ -13,66 +15,48 @@ Shape: an app. About nine kinds of widget (buttons, inputs, tabs, badges, cards,
 ## Decision
 
 - **Component library:** keep shadcn/ui. It was already installed, and every color, corner and font goes through tokens. No library was added.
-- **Design language:** Price Tag, in white and red.
-
-## Where it comes from
-
-- A white price sticker with a red hand-written number.
-- A yard-sale sign: black marker outlines, nothing subtle.
-- A cardboard box flap: hard edges and hard shadows, nothing soft.
+- **Design language:** the pre-reskin dark UI. Blue `#0866FF` for actions and links, green `#31d158` for profit, system type, 1px borders, soft shadows, pill controls.
 
 ## Rules
 
 Each one can be checked on a screenshot.
 
-1. The page is white. Cards are white too, and are told apart by their border and shadow, not by a fill.
-2. Every card, button, input and chip has a 2px ink border. No hairlines, no translucent borders.
-3. Raised things (cards, buttons) cast a hard 4px offset shadow in ink. No blur, no glow.
-4. Corners are tight: 8px on cards, 6px on controls and chips. Nothing is a pill.
-5. Red is the only accent. It marks the main action on a screen, the active filter, and prices. Text on red is white.
-6. Prices that matter are written in marker, in red. Everything else is DM Sans.
-7. Status is a solid pastel fill plus a word (green sold, amber waiting, red problem). Color is never the only cue.
+1. The page is black. Cards are a slightly lifted gray (`#141416`), separated by a hairline, not by a heavy outline.
+2. Borders are 1px and quiet. No 2px ink frames.
+3. Raised cards use a soft shadow. No hard offset shadow.
+4. Corners are generous. Primary controls and filter chips are pills.
+5. Blue is the accent for the main action, the active filter, and links. Text on blue is white.
+6. Type is the system face (SF Pro on Apple devices). Prices are the same face, bold. Profit figures are green. No marker font.
+7. Status is a tinted chip plus a word (green buy or sold, amber watch, red skip). Color is never the only cue.
 
 ## Tokens
 
-Source of truth: `web/app/shadcn.css` (shadcn tokens) and the first line of `web/app/globals.css` (older pages).
+Source of truth: `web/app/shadcn.css` (shadcn tokens, including `.dark`) and the first line of `web/app/globals.css` (older pages).
 
-| Layer | Token | Value | May change? |
-| --- | --- | --- | --- |
-| Neutral | background, card | `#ffffff` | No |
-| Neutral | foreground, border | `#141414` marker ink | No |
-| Neutral | secondary | `#f5f5f4` quiet gray | No |
-| Neutral | muted text | `#545454` | No |
-| Semantic | success | `#0b7a3b`, chip fill `#9be8b8` | No |
-| Semantic | warning chip | `#ffd08a` | No |
-| Semantic | danger chip | `#ffb4a8` | No |
-| Brand | brand, price | `#dc2626` red | Yes, per season or event |
-| Brand | link | `#b91c1c` darker red for small text | Yes, with brand |
-| Brand | accent tint | `#fee2e2` hover and highlight | Yes, with brand |
-
-There is one theme. Dark mode was removed on purpose.
+| Layer | Token | Value |
+| --- | --- | --- |
+| Neutral | background | `#000000` |
+| Neutral | card | `#141416` |
+| Neutral | foreground | `#fafafa` |
+| Neutral | muted text | `#b0b3b8` |
+| Brand | brand, link | `#0866FF` / `#2b7fff` |
+| Semantic | success, price | `#31d158` |
+| Radius | cards | `0.9rem`, pills for controls |
 
 ## Type
 
-- **DM Sans** carries names, labels, text and figures. It is friendly and reads well small.
-- **Permanent Marker** is only for headline prices, like a hand-written sticker. Never for sentences.
-
-Both load through `next/font/google` in `web/app/layout.js`.
-
-## Signature element
-
-The marker price. Use the `font-marker text-price` classes (or `.price-tag` on older pages). Keep it to the one or two prices that matter on a screen.
+System UI: `-apple-system`, SF Pro, Segoe UI, Helvetica, Arial. No webfont.
 
 ## Icons
 
-`web/app/icon.svg`, `favicon.ico` and `apple-icon.png` are a white price tag on a red tile. They are drawn from the same shape, so change all three together.
+`web/app/icon.svg`, `favicon.ico` and `apple-icon.png` are a white price-tag glyph on a blue tile, the mark from before the reskin.
 
-## How it was built
+## How the pages are built
 
-- Tokens and Tailwind scale: `web/app/shadcn.css`, `web/tailwind.config.js` (2px default border, small radii, `shadow-tag`).
-- Nine shared components in `web/components/ui/`.
-- The older stylesheet `web/app/globals.css` was recolored in place, with Price Tag blocks at the end.
-- The garage illustration was recolored from night to day.
+- Tokens and Tailwind scale: `web/app/shadcn.css`, `web/tailwind.config.js`.
+- Nine shared components in `web/components/ui/` use the pre-reskin button, card, and input styles.
+- `web/app/globals.css` is the pre-reskin stylesheet, plus the phone nav and the folding agent log.
+- The garage illustration is the night scene.
 
 ## Sweep, Nov 15, 2026
 
@@ -103,7 +87,7 @@ Adam said the design was still off. The look was fine, the order was wrong: a lo
 
 Two rules were added. Both can be checked on a screenshot.
 
-8. The verdict and the deciding numbers come first. A lot card opens with the verdict word, the reason, and one strip of four numbers: current bid, max bid, profit range, time left. The max bid is the marker price.
+8. The verdict and the deciding numbers come first. A lot card opens with the verdict word, the reason, and one strip of four numbers: current bid, max bid, profit range, time left. The max bid is the bold figure.
 9. No box inside a box. A card may hold an ink-line grid or a quiet gray well, never a second bordered card. Fine print and long lists sit behind a fold with a count or a plain name on it.
 
 Changed:
@@ -121,7 +105,7 @@ Screenshots are in `docs/screens/verdict-first/`. Not changed in this pass: home
 
 The Deals page is one card per deal, best profit first (`web/components/DealFeed.js`, words from `web/lib/dealCard.js`). It follows rule 8 one step further:
 
-10. A deal card says the profit as a sentence: "You make about $153". The dollar figure is the marker price, and it is the only marker price on the card. One line under it says what the number assumes.
+10. A deal card says the profit as a sentence: "You make about $153". The dollar figure is bold green, and it is the figure the card is built around. One line under it says what the number assumes.
 
 Card order, top to bottom: label, title, profit sentence, the four costs (price, fees, gas, drive time), low, middle and high, why, main risk, links. On a phone the photo sits on top. From 768px it sits on the left.
 
@@ -138,7 +122,7 @@ Screenshots are in `docs/screens/deal-cards/`.
 
 | Option | Verdict |
 | --- | --- |
-| Midnight (the old look) | Polished, but looked like any dark app. |
+| Midnight (the old look) | Set aside on Nov 15. Restored after the white-and-red reskin looked worse. |
 | Price Tag on poster yellow | Built first. Adam found it ugly on the real site. |
 | Lot Ticket (auction receipt) | Best for dense numbers. Adam found Price Tag more fun. |
 | Trading Desk (price board) | Good for scanning. Too close to the old look. |

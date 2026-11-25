@@ -29,7 +29,7 @@ We don't borrow names, art or layout details. Words used in the app:
 
 ## The look
 
-Garage Sale keeps its one design language, **Price Tag** (`docs/design-language.md`): white page, 2px ink borders, hard ink shadows, one red accent, prices in marker. The transfer market is a new layout inside those rules, not a second look. Rules 8 to 10 (verdict first, no box in a box, profit as a sentence) apply to every new screen.
+Garage Sale keeps one design language (`docs/design-language.md`): the dark page from before the Price Tag reskin. The transfer market is a new layout inside that look, not a second one. Rules 8 to 10 (verdict first, no box in a box, profit as a sentence) still apply. The Price Tag rules (white page, red marker, hard shadows) do not.
 
 New rule for this spec:
 

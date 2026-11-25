@@ -147,7 +147,7 @@ export default function LedgerPage() {
     </Card>}
     {key && <>
       <div className="mb-4 flex justify-end"><Button variant="ghost" size="sm" onClick={forget}>Forget key</Button></div>
-      {err && <p className="mb-4 text-sm text-red-800">{err}</p>}
+      {err && <p className="mb-4 text-sm text-red-300">{err}</p>}
       {doc && <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Bankroll</div><div className="mt-2 text-2xl font-semibold tabular-nums">{$(totals.bankroll)}</div></Card>
         <Card className="border-border p-5"><div className="text-xs text-muted-foreground">Realized profit</div><div className="mt-2 text-2xl font-semibold tabular-nums text-success">{$(totals.realized_profit)}</div></Card>
@@ -169,7 +169,7 @@ export default function LedgerPage() {
           <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Date</span><Input type="date" value={dec.decided_on} onChange={(e) => setDec((d) => ({ ...d, decided_on: e.target.value }))} aria-label="Decision date" /></label>
           <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Link</span><Input value={dec.source_link} onChange={(e) => setDec((d) => ({ ...d, source_link: e.target.value }))} aria-label="Link to the lot or listing" /></label>
           <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Decision</span>
-            <select className="h-10 rounded-md border border-foreground bg-white px-2 text-sm" value={dec.decision} onChange={(e) => setDec((d) => ({ ...d, decision: e.target.value }))} aria-label="Decision"><option value="approved">Approved</option><option value="declined">Declined</option></select></label>
+            <select className="h-10 rounded-md border border-input bg-background px-2 text-sm" value={dec.decision} onChange={(e) => setDec((d) => ({ ...d, decision: e.target.value }))} aria-label="Decision"><option value="approved">Approved</option><option value="declined">Declined</option></select></label>
           {dec.decision === 'approved' && <label className="grid gap-1 text-sm"><span className="text-muted-foreground">Max bid or price</span><Input inputMode="decimal" value={dec.max_bid} onChange={(e) => setDec((d) => ({ ...d, max_bid: e.target.value }))} required aria-label="Max bid or price" /></label>}
           <label className="grid gap-1 text-sm sm:col-span-2"><span className="text-muted-foreground">Note</span><Input value={dec.note} onChange={(e) => setDec((d) => ({ ...d, note: e.target.value }))} aria-label="Note" /></label>
           <div className="sm:col-span-3"><Button type="submit" variant="brand">Record decision</Button></div>
@@ -189,7 +189,7 @@ export default function LedgerPage() {
               <td className="py-3 pr-3"><Badge variant={d.decision === 'approved' ? 'success' : 'secondary'} className="font-normal">{d.decision === 'approved' ? 'Approved' : 'Declined'}</Badge></td>
               <td className="py-3 pr-3 tabular-nums">{d.decision === 'approved' ? $(d.max_bid) : 'none'}</td>
               <td className="py-3 pr-3">{d.decision === 'approved'
-                ? <select className="h-9 rounded-md border border-foreground bg-white px-2 text-sm" aria-label={`What happened with ${d.title}`} value={d.outcome} onChange={(e) => setOutcome(d.id, e.target.value)}>{Object.entries(OUTCOME_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+                ? <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" aria-label={`What happened with ${d.title}`} value={d.outcome} onChange={(e) => setOutcome(d.id, e.target.value)}>{Object.entries(OUTCOME_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
                 : OUTCOME_LABEL.not_bid}</td>
               <td className="py-3 text-right"><Button size="sm" variant="ghost" onClick={() => removeDecision(d.id)}>Remove</Button></td>
             </tr>)}
@@ -235,7 +235,7 @@ export default function LedgerPage() {
                   {selling === it.id && <form onSubmit={markSold} className="mt-3 grid justify-items-end gap-2">
                     <Input className="w-28" inputMode="decimal" placeholder="Sell price" aria-label={`Sell price for ${it.item}`} value={sale.sell_price} onChange={(e) => setSale((s) => ({ ...s, sell_price: e.target.value }))} required />
                     <Input className="w-36" type="date" aria-label={`Sell date for ${it.item}`} value={sale.sell_date} onChange={(e) => setSale((s) => ({ ...s, sell_date: e.target.value }))} />
-                    <select className="h-10 w-36 rounded-md border border-foreground bg-white px-2 text-sm" aria-label={`Platform for ${it.item}`} value={sale.platform} onChange={(e) => setSale((s) => ({ ...s, platform: e.target.value }))}>{PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+                    <select className="h-10 w-36 rounded-md border border-input bg-background px-2 text-sm" aria-label={`Platform for ${it.item}`} value={sale.platform} onChange={(e) => setSale((s) => ({ ...s, platform: e.target.value }))}>{PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}</select>
                     <Button type="submit" size="sm" variant="brand">Save sale</Button>
                   </form>}
                 </td>

@@ -18,7 +18,7 @@ export default function TargetStar({ tile, big = false }) {
   const click = () => { const next = toggleTarget(tile); if (next !== null) setOn(next); };
   const label = on ? 'In Targets' : 'Add to Targets';
   if (big) {
-    return e('button', { type: 'button', onClick: click, 'aria-pressed': on, 'data-field': 'target-star', className: `inline-flex h-10 items-center gap-2 rounded-md border-2 border-border px-4 text-sm font-semibold shadow-tag-sm ${on ? 'bg-brand text-white' : 'bg-card text-foreground'}` },
+    return e('button', { type: 'button', onClick: click, 'aria-pressed': on, 'data-field': 'target-star', className: `inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold ${on ? 'bg-brand text-white' : 'bg-card text-foreground'}` },
       e('span', { 'aria-hidden': 'true' }, on ? '★' : '☆'), label);
   }
   return e('button', {
@@ -28,6 +28,6 @@ export default function TargetStar({ tile, big = false }) {
     'aria-label': `${label}: ${tile.title}`,
     title: label,
     'data-field': 'target-star',
-    className: `absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-md border-2 border-border text-lg leading-none shadow-tag-sm ${on ? 'bg-brand text-white' : 'bg-card text-foreground'}`,
+    className: `absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border text-lg leading-none ${on ? 'bg-brand text-white' : 'bg-card text-foreground'}`,
   }, on ? '★' : '☆');
 }

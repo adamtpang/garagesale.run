@@ -55,7 +55,7 @@ function Deal({ d, rank, query, saved, onSaved }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0"><div className="text-xs text-muted-foreground">#{rank}</div><a href={d.fb_url} target="_blank" rel="noopener" className="block truncate font-medium hover:underline">{d.title}</a></div>
-          <div className="shrink-0 text-right"><div className="font-marker text-2xl text-price">{$(d.ask)}</div>{d.was ? <div className="text-xs text-muted-foreground line-through">{$(d.was)}</div> : null}</div>
+          <div className="shrink-0 text-right"><div className="text-2xl font-bold tracking-tight text-price">{$(d.ask)}</div>{d.was ? <div className="text-xs text-muted-foreground line-through">{$(d.was)}</div> : null}</div>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span>{d.location || 'Location not shown'}</span><span>{d.listed ? d.listed.replace(/ in .*/, '') : 'Age not checked'}</span>{d.condition && <span>{d.condition}</span>}
@@ -150,7 +150,7 @@ export default function BuySearch() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-[8rem_1fr_8rem_auto]">
           <Input className="h-12" placeholder="Max $" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Max price" disabled={busy} />
           <Input className="h-12" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} aria-label="City" disabled={busy} />
-          <select className="h-12 rounded-md border border-foreground bg-white px-3 text-sm text-foreground" value={radius} onChange={(e) => setRadius(Number(e.target.value))} aria-label="Radius" disabled={busy}>{RADII.map((r) => <option key={r} value={r}>Within {r} mi</option>)}</select>
+          <select className="h-12 rounded-md border border-input bg-background px-3 text-sm text-foreground" value={radius} onChange={(e) => setRadius(Number(e.target.value))} aria-label="Radius" disabled={busy}>{RADII.map((r) => <option key={r} value={r}>Within {r} mi</option>)}</select>
           <Button size="lg" variant="brand" className="h-12" disabled={busy}>{busy ? 'Searching...' : 'Find deals'}</Button>
         </div>
         <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" disabled={busy} className="h-8 border-border px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); run(t, max); }}>{t}</Button>)}</div>
@@ -161,7 +161,7 @@ export default function BuySearch() {
       <div className="mt-3 h-1 overflow-hidden rounded-full bg-secondary"><div className="h-full bg-brand transition-all duration-1000" style={{ width: `${Math.min(95, secs * 1.2)}%` }} /></div>
       <p className="mt-3 text-xs text-muted-foreground">Read-only, in your own browser, at a human pace. Usually one to two minutes. If Helium asks, click Allow.</p></Card>}
 
-    {err && <Card className="border-destructive bg-red-200 p-5 text-sm"><p>{err.message}</p>
+    {err && <Card className="border-destructive bg-red-500/10 text-red-200 p-5 text-sm"><p>{err.message}</p>
       {err.browser && <div className="mt-3 grid gap-2 text-muted-foreground"><p>Live search reads Marketplace through your own Helium browser, so it only works when this app runs on your computer with Helium open.</p>
         <div><Button size="sm" variant="secondary" onClick={queueWorker}>Send it to the Grok Bot worker instead</Button></div></div>}</Card>}
 

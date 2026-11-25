@@ -34,7 +34,7 @@ function tierBox(item) {
   const t = tierOf(item);
   const sp = item.sell_speed;
   const watchers = item.price && typeof item.price.watchers === 'number' ? item.price.watchers : null;
-  return <section className="mb-5 rounded-lg border-2 border-border bg-card p-4 text-sm leading-6" data-field="tier-box" data-tier={t}>
+  return <section className="mb-5 rounded-lg border border-border bg-card p-4 text-sm leading-6" data-field="tier-box" data-tier={t}>
     <p><b>Tier {t === 'skip' ? 'Skip' : `${t}: ${TIER_LABEL[t]}`}.</b> {item.tier ? item.tier.why : 'This feed has no tier yet.'}</p>
     <p className="mt-1" data-field="speed"><b>{speedText(sp)}.</b> {sp && sp.evidence ? sp.evidence : 'No sell-speed evidence was posted with this deal.'}{sp && sp.active_competitors != null ? ` ${sp.active_competitors} competing listings seen.` : ''}</p>
     {watchers != null ? <p className="mt-1" data-field="watchers">{watchers} watching on the auction page.</p> : null}

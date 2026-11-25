@@ -35,9 +35,9 @@ export default function TargetsScreen() {
   return <section>
     <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Targets</h1>
     <p className="mt-2 max-w-2xl text-base">The deals you starred on the Market. They are kept in this browser only. A deal that closes stays here with its last known numbers.</p>
-    {failed && <p role="status" className="mt-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm">Could not load the deals feed, so every target shows its last known numbers.</p>}
+    {failed && <p role="status" className="mt-4 border-l-4 border-amber-400/80 bg-amber-500/10 text-amber-100 px-3 py-2 text-sm">Could not load the deals feed, so every target shows its last known numbers.</p>}
     {live === null && <p role="status" className="mt-6 text-base">Loading…</p>}
-    {live !== null && rows.length === 0 && <p className="mt-6 rounded-lg border-2 border-border bg-card p-6 text-base">No targets yet. Tap the star on a Market tile to add one.</p>}
+    {live !== null && rows.length === 0 && <p className="mt-6 rounded-lg border border-border bg-card p-6 text-base">No targets yet. Tap the star on a Market tile to add one.</p>}
     <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{rows.map((t) => tile(t))}</div>
   </section>;
 }

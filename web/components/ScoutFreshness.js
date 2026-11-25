@@ -7,6 +7,6 @@ export default function ScoutFreshness({ updatedAt, filtersSet }) {
     <p className="text-sm text-muted-foreground">The scheduled scout is paused. This is stored data, not a live scan.</p>
     <p className="text-sm text-muted-foreground">{fresh.label ? `Stored feed updated ${fresh.label}` : 'No stored scout feed yet.'}</p>
     {filtersSet === false && <p className="text-sm font-medium">Filters not set</p>}
-    {fresh.stale && <div role="status" className="rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
+    {fresh.stale && <div role="status" className="rounded-2xl border border-border bg-amber-500/10 text-amber-100 px-4 py-3 text-sm">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
   </div>;
 }

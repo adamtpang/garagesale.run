@@ -4,10 +4,10 @@ import { BUY_STATUS, STATUSES, tripGroups } from '../lib/surplus.js';
 
 const e = React.createElement;
 const TONE = {
-  watch: 'bg-amber-200 text-amber-950',
+  watch: 'bg-amber-500/15 text-amber-300',
   'needs preview': 'bg-accent text-foreground',
-  [BUY_STATUS]: 'bg-[#9be8b8] text-foreground',
-  skip: 'bg-red-200 text-red-800',
+  [BUY_STATUS]: 'bg-success/15 text-success',
+  skip: 'bg-red-500/15 text-red-300',
 };
 
 function chip(on, children, onClick) {
@@ -36,7 +36,7 @@ function keyNumber(label, value, note) {
     note ? e('div', { className: 'mt-0.5 break-words text-xs text-muted-foreground' }, note) : null);
 }
 
-const RULE_TONE = { pass: 'bg-[#9be8b8] text-foreground', fail: 'bg-red-200 text-red-800', unknown: 'bg-amber-200 text-amber-950' };
+const RULE_TONE = { pass: 'bg-success/15 text-success', fail: 'bg-red-500/15 text-red-300', unknown: 'bg-amber-500/15 text-amber-300' };
 const RULE_WORD = { pass: 'Pass', fail: 'Fail', unknown: 'Unknown' };
 
 // Each rule shows a word as well as a color.
@@ -82,7 +82,7 @@ function compList(lot) {
   },
   e('div', { className: 'flex items-start justify-between gap-3' },
     e('span', { className: 'min-w-0' },
-      e('span', { className: `inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.type === 'asking' ? 'bg-amber-200 text-amber-950' : 'bg-[#9be8b8] text-foreground'}` }, c.type_label),
+      e('span', { className: `inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.type === 'asking' ? 'bg-amber-500/15 text-amber-300' : 'bg-success/15 text-success'}` }, c.type_label),
       e('span', { className: 'mt-1 block text-sm font-medium' }, c.title || 'Comp'),
       e('span', { className: 'mt-0.5 block text-xs text-muted-foreground' }, [
         c.marketplace,
@@ -183,7 +183,7 @@ function lotCard(lot) {
   };
 
   return e('article', {
-    className: 'rounded-2xl border border-border bg-card shadow-tag',
+    className: 'rounded-2xl border border-border bg-card shadow-sm',
     'data-lot': lot.id,
     'data-status': lot.status,
   },
@@ -195,22 +195,22 @@ function lotCard(lot) {
   lot.status_reason ? e('p', { className: 'px-4 pb-3 text-sm font-medium', 'data-field': 'status-reason' }, lot.status_reason) : null,
 
   // The four numbers that decide a lot, in one strip. Ink grid lines, no boxes inside boxes.
-  e('div', { className: 'grid grid-cols-2 gap-[2px] border-y border-border bg-foreground md:grid-cols-4', 'data-field': 'key-numbers' },
+  e('div', { className: 'grid grid-cols-2 gap-px border-y border-border bg-border md:grid-cols-4', 'data-field': 'key-numbers' },
     lot.current_bid == null && lot.bid_count === 0
       ? keyNumber('Current bid', 'No bids yet', lot.opening_bid_text ? `Opens at ${lot.opening_bid_text}` : 'Opening bid unknown')
       : keyNumber('Current bid', e('span', { className: 'tabular-nums' }, lot.current_bid_text), lot.bid_count_text === 'unknown' ? 'Bid count unknown' : `${lot.bid_count_text} bid${lot.bid_count_text === '1' ? '' : 's'}`),
     // No max bid has two causes: it cannot be worked out yet, or no bid works. The strip says which, with the reason.
-    keyNumber('Max bid', e('span', { className: atMax ? 'font-marker text-2xl font-normal text-price' : 'text-muted-foreground', 'data-field': 'key-max-bid' }, lot.max_bid_text), atMax ? `All-in ${lot.max_bid_all_in_text}` : (lot.max_bid_note || 'Max bid is unknown.')),
+    keyNumber('Max bid', e('span', { className: atMax ? 'text-2xl font-bold tracking-tight text-price' : 'text-muted-foreground', 'data-field': 'key-max-bid' }, lot.max_bid_text), atMax ? `All-in ${lot.max_bid_all_in_text}` : (lot.max_bid_note || 'Max bid is unknown.')),
     keyNumber(atMax ? 'Profit at max bid' : 'Profit at this bid', e('span', { className: 'tabular-nums' }, range(atMax ? 'profit_at_max_bid_text' : 'profit_at_current_bid_text')), 'Low to high case, estimate'),
     keyNumber('Closes in', lot.countdown || lot.close_text, lot.countdown ? lot.close_text : null)),
 
   e('div', { className: 'p-4' },
-    lot.lock_flag ? e('p', { className: 'mb-3 rounded-xl border border-border bg-amber-200 px-3 py-2 text-sm font-medium text-amber-950', 'data-field': 'lock-flag' }, lot.lock_flag) : null,
+    lot.lock_flag ? e('p', { className: 'mb-3 rounded-xl border border-border bg-amber-500/10 text-amber-100 px-3 py-2 text-sm font-medium text-amber-300', 'data-field': 'lock-flag' }, lot.lock_flag) : null,
     ruleChecks(lot),
     e('details', { className: 'group', open: lot.status !== 'skip', 'data-field': 'lot-detail' },
       e('summary', { className: 'cursor-pointer text-sm font-semibold underline-offset-4 hover:underline' }, 'Costs, resale and comps'),
       e('div', { 'data-sides': 'buy-sell', className: 'mt-3 grid gap-6 md:grid-cols-2' }, buy, sell),
-      lot.risks.length ? e('p', { className: 'mt-3 text-xs text-amber-950' }, `Risk: ${lot.risks.join(' ')}`) : null,
+      lot.risks.length ? e('p', { className: 'mt-3 text-xs text-amber-300' }, `Risk: ${lot.risks.join(' ')}`) : null,
       lot.scan_notes ? e('p', { className: 'mt-2 text-xs leading-5 text-muted-foreground' }, lot.scan_notes) : null)));
 }
 
@@ -233,7 +233,7 @@ export default function SurplusBoard({ view, failed, loading }) {
         e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Surplus arbitrage'),
         e('p', { className: 'mt-2 max-w-2xl text-sm text-muted-foreground' }, 'Buy a government surplus lot, then sell the units somewhere else. The two sides stay apart. This board does not place bids.')),
       e('div', { className: 'flex flex-wrap gap-2' },
-        e('a', { href: '/', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 shadow-tag-sm text-sm font-medium text-secondary-foreground' }, 'Market'))),
+        e('a', { href: '/', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 text-sm font-medium text-secondary-foreground' }, 'Market'))),
 
     loading && e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground' }, 'Loading the surplus scan…'),
     failed && e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-sm' },
@@ -241,14 +241,14 @@ export default function SurplusBoard({ view, failed, loading }) {
       e('button', { type: 'button', className: 'mt-3 underline', onClick: () => window.location.reload() }, 'Retry')),
 
     view && e('div', null,
-      e('div', { role: 'status', className: 'mb-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm' },
+      e('div', { role: 'status', className: 'mb-4 border-l-4 border-amber-400/80 bg-amber-500/10 text-amber-100 px-3 py-2 text-sm' },
         e('p', { className: 'font-medium' }, view.label || view.scanned_on_text),
         e('p', { className: 'mt-0.5 text-xs leading-5 text-muted-foreground' }, [
           view.source === 'seed' ? 'No newer feed is stored, so this is the scan file.' : 'Stored feed.',
           view.notice,
         ].filter(Boolean).join(' '))),
 
-      e('div', { className: 'mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground lg:grid-cols-4', 'data-field': 'rules', 'aria-label': 'Flip rules' },
+      e('div', { className: 'mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4', 'data-field': 'rules', 'aria-label': 'Flip rules' },
         [['Max buy per flip', view.rules.max_cost_text, view.rules.max_cost_note], ['Min profit', `${view.rules.min_profit_text} after fees, gas and time`], ['Pickup radius', `${view.rules.pickup_miles} mi from ${view.rules.home}`], ['Drive cap', view.rules.max_drive_minutes == null ? 'not set' : `${view.rules.max_drive_minutes} min round trip`], ['Gas', `${view.rules.haul_per_mile_text} a mile${view.rules.haul_confirmed ? '' : ' (estimate)'}`], ['Your time', view.rules.hourly_rate == null ? 'not set' : view.rules.hourly_rate_text, view.rules.work_minutes_per_unit ? `Drive time and ${view.rules.work_minutes_per_unit} minutes of work a unit, off profit` : 'Comes off profit'], ['Tax assumed', view.rules.tax_assumption_text], ['Bids', 'Not placed here']].map(([k, v, note]) => e('div', { key: k, className: 'bg-card px-3 py-2' },
           e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, k),
           e('div', { className: 'mt-0.5 text-sm font-medium' }, v),

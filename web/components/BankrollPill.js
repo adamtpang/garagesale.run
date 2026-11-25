@@ -16,10 +16,10 @@ export function BankrollPillView({ data }) {
     href: '/ladder',
     title,
     'data-field': 'bankroll-pill',
-    className: 'ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md border-2 border-border bg-card px-2.5 py-1 text-[13px] font-semibold shadow-tag-sm',
+    className: 'ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[13px] font-semibold',
   },
   e('span', { className: 'text-[10px] font-semibold uppercase tracking-wide text-muted-foreground' }, 'Bankroll'),
-  e('span', { className: 'font-marker text-base font-normal leading-none text-price tabular-nums' }, data === undefined ? '…' : pillText(data)));
+  e('span', { className: 'text-base font-semibold leading-none tracking-tight text-price tabular-nums' }, data === undefined ? '…' : pillText(data)));
 }
 
 export default function BankrollPill() {

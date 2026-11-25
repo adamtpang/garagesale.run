@@ -4,7 +4,7 @@ import { cardFor, sortCards } from '../lib/dealCard.js';
 
 const e = React.createElement;
 // A solid fill and a word, so the label never rests on color alone.
-const TONE = { buy: 'bg-[#9be8b8] text-foreground', watch: 'bg-amber-200 text-amber-950', skip: 'bg-red-200 text-red-900' };
+const TONE = { buy: 'bg-success/15 text-success', watch: 'bg-amber-500/15 text-amber-300', skip: 'bg-red-500/15 text-red-300' };
 const SMALL = 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground';
 
 function chip(on, children, onClick) {
@@ -30,7 +30,7 @@ function extLink(href, text) {
 export function dealCard(card) {
   return e('article', {
     key: card.id,
-    className: 'overflow-hidden rounded-2xl border border-border bg-card shadow-tag md:grid md:grid-cols-[240px_1fr]',
+    className: 'overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:grid md:grid-cols-[240px_1fr]',
     'data-card': card.id,
     'data-decision': card.decision,
   },
@@ -46,12 +46,12 @@ export function dealCard(card) {
       // The one number that matters, in plain words.
       e('p', { className: 'mt-3 text-2xl font-bold leading-tight sm:text-3xl', 'data-field': 'headline' },
         card.headline,
-        card.amount ? e(React.Fragment, null, ' ', e('span', { className: 'whitespace-nowrap font-marker text-3xl font-normal text-price sm:text-4xl', 'data-field': 'amount' }, card.amount)) : null),
+        card.amount ? e(React.Fragment, null, ' ', e('span', { className: 'whitespace-nowrap text-3xl font-bold tracking-tight text-price sm:text-4xl', 'data-field': 'amount' }, card.amount)) : null),
       e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'basis' }, card.basis),
       card.plan_note ? e('p', { className: 'mt-1 text-sm text-foreground', 'data-field': 'plan-note' }, card.plan_note) : null),
 
     // Right under it: what it costs.
-    e('dl', { className: 'grid grid-cols-2 gap-[2px] border-y border-border bg-foreground lg:grid-cols-4', 'data-field': 'costs' },
+    e('dl', { className: 'grid grid-cols-2 gap-px border-y border-border bg-border lg:grid-cols-4', 'data-field': 'costs' },
       card.costs.map((c) => e('div', { key: c.key, className: 'min-w-0 bg-card px-4 py-3', 'data-cost': c.key },
         e('dt', { className: SMALL }, c.label),
         e('dd', { className: 'mt-0.5 text-lg font-semibold tabular-nums' }, c.value),
@@ -89,9 +89,9 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
         e('h1', { className: 'text-3xl font-semibold tracking-tight md:text-4xl' }, 'Market'),
         e('p', { className: 'mt-2 max-w-2xl text-base text-foreground' }, 'Best profit first. Profit is after every fee, gas and your drive time. Nothing here bids, buys or messages a seller.')),
       e('div', { className: 'flex flex-wrap gap-2 text-sm' },
-        e('a', { href: '/surplus', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium shadow-tag-sm' }, 'Surplus detail'),
-        e('a', { href: '/ladder', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium shadow-tag-sm' }, 'Bankroll'),
-        e('a', { href: '/ledger', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium shadow-tag-sm' }, 'Ledger'))),
+        e('a', { href: '/surplus', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium' }, 'Surplus detail'),
+        e('a', { href: '/ladder', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium' }, 'Bankroll'),
+        e('a', { href: '/ledger', className: 'inline-flex h-9 items-center rounded-full border border-border bg-secondary px-4 font-medium' }, 'Ledger'))),
 
     loading ? e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-base' }, 'Loading deals…') : null,
     failed ? e('div', { role: 'status', className: 'rounded-2xl border border-border bg-card p-6 text-base' },
@@ -99,12 +99,12 @@ export default function DealFeed({ feed, now, failed, refreshFailed, loading }) 
       e('button', { type: 'button', className: 'mt-3 underline', onClick: () => window.location.reload() }, 'Try again')) : null,
 
     feed ? e('div', null,
-      refreshFailed ? e('p', { role: 'status', className: 'mb-3 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm', 'data-field': 'refresh-failed' },
+      refreshFailed ? e('p', { role: 'status', className: 'mb-3 border-l-4 border-amber-400/80 bg-amber-500/10 text-amber-100 px-3 py-2 text-sm', 'data-field': 'refresh-failed' },
         `The last refresh failed, so these are the deals as of ${feed.generated_at ? new Date(feed.generated_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'the last load'}. It will try again.`) : null,
       r ? e('p', { className: 'mb-3 text-sm', 'data-field': 'rules-line' },
         e('b', null, 'Your rules: '),
         `max buy $${r.max_cost} (${r.bankroll_source === 'ledger' ? 'bankroll now' : 'starting bankroll'}), at least $${r.min_profit} profit, within ${r.pickup_miles} miles and ${r.max_drive_minutes} minutes round trip of ${String(r.home).split(',')[0]}, time at $${r.hourly_rate} an hour.`) : null,
-      (feed.stale || []).length ? e('div', { role: 'status', className: 'mb-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm', 'data-field': 'stale' },
+      (feed.stale || []).length ? e('div', { role: 'status', className: 'mb-4 border-l-4 border-amber-400/80 bg-amber-500/10 text-amber-100 px-3 py-2 text-sm', 'data-field': 'stale' },
         feed.stale.map((s) => e('p', { key: s }, s))) : null,
 
       e('div', { className: 'mb-4 flex flex-wrap gap-2', 'aria-label': 'Show' },
