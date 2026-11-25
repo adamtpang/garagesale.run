@@ -113,7 +113,7 @@ h2{font-size:clamp(30px,4vw,48px);letter-spacing:-.035em;line-height:1.05;font-w
 .mp .desc{white-space:pre-wrap;font-size:15px;margin-top:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.chips span{background:#e4e6eb;border-radius:999px;padding:4px 10px;font-size:13px}
 .approve{border-color:rgba(8,102,255,.5);background:linear-gradient(160deg,#0b1a33,var(--card) 70%)}
-.approve .row{align-items:center}.approve .field{max-width:170px;font-size:20px;font-weight:700}
+.approve .row{align-items:center}.approve .arow .field{max-width:170px;font-size:20px;font-weight:700}
 .livep{text-align:center;border-color:rgba(49,209,88,.4);background:linear-gradient(160deg,#0b2414,var(--card) 70%)}
 .livep .pill{margin-top:4px}.livep img{display:block;width:220px;height:220px;border-radius:16px;background:#fff;padding:10px;margin:16px auto}
 .deals{display:grid;gap:12px}
@@ -405,14 +405,8 @@ h2{letter-spacing:-.02em}
 .onebox{grid-template-columns:minmax(0,1fr)}.onebox>*{min-width:0}.onerow>.pill{min-width:0;padding-inline:12px;white-space:nowrap}.hgrid>div{min-width:0}@media(max-width:600px){.onerow>.pill{font-size:16px}.sub{font-size:16px}}
 .cv{padding-top:48px;padding-bottom:64px}
 .inq.inqhl{box-shadow:0 0 0 2px var(--blue),0 0 24px rgba(8,102,255,.45);transition:box-shadow .4s}.ist.sending{background:#0d1626;color:var(--blue2)}
-.stepper{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0}
-.stepper li{display:grid;gap:6px;font-size:11px;font-weight:600;color:var(--dim);text-align:center}
-.stepper li i{display:block;height:4px;border-radius:99px;background:#2a2b2f}
-.stepper li.done i{background:var(--blue)}.stepper li.cur i{background:linear-gradient(90deg,var(--blue),#5ea0ff);box-shadow:0 0 10px rgba(8,102,255,.6)}
-.stepper li.done,.stepper li.cur{color:#fff}
 .nextstep{display:grid;gap:2px;background:#0d1626;border:1px solid rgba(8,102,255,.35);border-radius:16px;padding:12px 14px}
 .nextstep b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue2)}.nextstep span{font-size:16px;font-weight:700}.nextstep small{font-size:12px;color:var(--dim)}
-@media(max-width:600px){.stepper li{font-size:9px}}
 
 /* Landing ambient background */
 .home-hero{isolation:isolate;overflow:hidden;min-height:min(92vh,880px)}
