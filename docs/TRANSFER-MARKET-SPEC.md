@@ -152,3 +152,14 @@ Changed since, at Adam's word in chat:
 ## Hard rules
 
 Never bid, buy, offer, message anyone or post a listing. Never spend money. Never invent prices or comps; say "unknown". Never commit secrets or contact details. PRs only; Adam merges.
+
+## Addendum: Lot Packs (the bronze pack method)
+
+Adam asked whether buying pallets or surplus lots is like the FIFA bronze pack method. It is: many cheap items, most sell for a little, a few carry the whole lot. Add this as its own mode, kept behind single-item flips until the bankroll can absorb a bad pull.
+
+- **Lot Pack card:** a distinct card style for lots (pallets, surplus box lots). It shows the lot price, item count, cost per item, the manifest as listed, and how much of the manifest was priced against sold comps versus unknown.
+- **Pull odds:** an expected value range built only from priced items. Unpriced or unverified items count as $0 in the low case. Label clearly which items are "known", "guessed" or "unknown". Never invent values.
+- **Labor and space:** add time to test, photo, list and ship each item (hours times the rules hourly rate) and a storage note. Profit shown is after this labor.
+- **Bankroll gate:** a lot can use at most the rules config share of bankroll (default unset, Adam decides). Show a lock with "Unlocks at $X bankroll" when it is above that.
+- **Packs results:** after a lot is bought, track each item from it in Inventory, so the ledger shows the real return on the whole pack versus the estimate.
+- Acceptance: a lot with an incomplete manifest never shows a Buy verdict from guessed items alone; the low case uses only sold-comp-priced items.

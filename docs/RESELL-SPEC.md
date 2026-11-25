@@ -100,7 +100,7 @@ Sell speed, when the scout posted it, is `fast`, `medium`, `slow`, or `unknown` 
 | Saved deals | `web/components/SavedDeals.js`, `web/app/api/saved/route.js` | Saved scout rows. Not a scan history. |
 | PWA, paywall, Stripe, share card | none | No web manifest, no service worker, no Stripe, no review prompt, no referral. |
 
-`docs/TRANSFER-MARKET-SPEC.md` (read in full on this `main`) has no Lot Packs section and no bronze pack addendum. A search of `main` and of Adapter found neither phrase. Item 4's tie-in is new. This spec does not invent a pack price, pack odds, or pack contents.
+The Lot Packs addendum is [Addendum: Lot Packs (the bronze pack method)](TRANSFER-MARKET-SPEC.md#addendum-lot-packs-the-bronze-pack-method). It was not on `main` before this change. Item 4 follows that section. This spec does not invent a pack price, pack odds, or a bankroll-gate share.
 
 ## Build order
 
@@ -225,18 +225,21 @@ New: a draft state that stops. A choice of eBay or Marketplace on the draft. eBa
 
 Adam uploads one lot photo, or pastes a GovDeals link. He gets a per-item breakdown, a max bid, and the risk. The first test case is the Guadalupe County laptop lot, GovDeals 1988-19.
 
-This is the scan that a bronze Lot Pack would be built from, once that addendum exists. The addendum is not in `docs/TRANSFER-MARKET-SPEC.md` on this `main`. This item does not create a pack, price a pack, or sell a pack.
+The scan follows the [Lot Packs addendum](TRANSFER-MARKET-SPEC.md#addendum-lot-packs-the-bronze-pack-method): a Lot Pack card, pull odds, labor and space, a bankroll gate, and pack results after a buy. This item does not create a pack, price a pack, or sell a pack. The bankroll-gate share in that addendum stays unset until Adam decides.
 
 ### Acceptance criteria
 
 - Two inputs: one lot photo, or a pasted `govdeals.com` URL. Anything else is refused with a plain message.
-- Output: one row per item the source actually names, plus lot-level max bid and risk.
+- Output: one row per item the source actually names, plus lot-level max bid and risk. Each row is labeled `known`, `guessed`, or `unknown`, as the addendum requires. `known` means a sold comp with a source link set the price.
+- The low case uses only sold-comp-priced items. Unpriced or unverified items count as $0 in that case, which is the addendum's rule, not a resale estimate. They do not receive a guessed dollar value.
+- A lot with an incomplete manifest never shows a Buy verdict from guessed items alone.
+- The bankroll-gate share stays unset until Adam decides. `web/config/rules.js` has no such share today (`optional` is only the off lot-return rule and the off 60 mile surplus radius). This spec does not add one. The lock line "Unlocks at $X bankroll" is not shown with a made-up X while the share is unset.
 - Rows the source does not identify say `unknown` for model and for resale. The screen does not fill unnamed units with a typical laptop price.
-- Max bid and risk use `assessLot` in `web/lib/surplus.js` once the lot has a quantity, a bid or ask, fees, and sold comps with URLs. Missing inputs: max bid is `unknown`, or `none` when the existing function has shown that no bid works. Risk is the rule checks and the caveat strings that function already returns. No new risk score.
+- Max bid and risk use `assessLot` in `web/lib/surplus.js` once the lot has a quantity, a bid or ask, fees, and sold comps with URLs. Missing inputs: max bid is `unknown`, or `none` when the existing function has shown that no bid works. Risk is the rule checks and the caveat strings that function already returns. No new risk score. A max bid built from guessed rows is not a Buy.
 - The optional lot-return rule stays off (`optional.lot_roi.enabled` is false) unless Adam turns it on in `web/config/rules.js`.
 - The wider 60 mile surplus radius stays off the same way.
-- Nothing bids. The flip plan already says every bid is Adam's to place (`docs/flips/toughbook-lot-1988-19.md`).
-- A result can be saved for a future bronze Lot Pack. It does not become a pack in this item. Pack price, odds, and contents wait for the addendum.
+- Nothing bids. The flip plan already says every bid is Adam's to place (`docs/flips/toughbook-lot-1988-19.md`). Buying the lot, and the addendum's Inventory tracking after a buy, wait for Adam's yes on that lot. There is no Inventory route today. The ledger (`web/app/ledger/page.js`) is the existing record.
+- A result can be saved as a Lot Pack card. It does not become a purchased pack in this item. Pack price and pack odds are not in the addendum, and this spec does not invent them.
 
 First test case, from `docs/flips/toughbook-lot-1988-19.md` (written Nov 20, 2026). These are facts in that file, not new bids:
 
@@ -253,13 +256,13 @@ Pasting that URL is the test. The breakdown may use sold comps that have URLs. I
 - Surplus math and board: `web/lib/surplus.js`, `web/components/SurplusBoard.js`, `web/app/surplus/screen.js`, `GET` and `POST /api/surplus`.
 - The lot write-up: `docs/flips/toughbook-lot-1988-19.md`. A second lot draft lives at `docs/listings/zebra-tc700k-lot.md` and is not this test case.
 - Worker post shape: `docs/SCOUT.md`, `docs/WORKER-API.md`.
-- Transfer market spec: `docs/TRANSFER-MARKET-SPEC.md`. No pack addendum there.
+- Transfer market spec: [Addendum: Lot Packs (the bronze pack method)](TRANSFER-MARKET-SPEC.md#addendum-lot-packs-the-bronze-pack-method).
 
-New: photo-to-items, and a GovDeals URL paste. The board today shows lots the worker already posted. It does not accept a photo or a link from the browser. The Lot Packs / bronze pack addendum is new, and it is not written by this file.
+New: photo-to-items, a GovDeals URL paste, the Lot Pack card, and the pull-odds labels. The board today shows lots the worker already posted. It does not accept a photo or a link from the browser. The addendum's text is in the transfer market spec. The card, the gate, and Inventory tracking are not built yet.
 
 ### Open questions
 
-- What a bronze Lot Pack contains, what it costs, and who can open one. Blocked on the addendum. Do not guess.
+- The bankroll-gate share. The addendum leaves it unset until Adam decides. Do not guess a fraction or an unlock dollar amount.
 - Whether a GovDeals paste is fetched in the browser, by a new route, or only accepted after the worker has posted the same lot to `POST /api/surplus`. Fetching the auction page is new.
 - How a lot photo is split into items. No vision splitter exists in `web/`. Until an item is named by the page or by Adam, it stays `unknown`.
 - The flip plan's max-bid table is a hand plan with stated assumptions. Confirming which of those rows, if any, the app should match is Adam's call. This spec requires the app to show its own cited comps or `unknown`, not to reprint that table as if it were measured output.
@@ -395,6 +398,6 @@ The about-30% monthly churn assumption from item 6 is the planning number for th
 - Merging or deploying this PR, or any later build PR, unless Adam asks.
 - Branching from PR #53, or treating its dark theme as the design for these screens.
 - Live Stripe, Anchor Marianas, a lifetime plan, a native app store.
-- Writing the Lot Packs / bronze pack addendum, or inventing its numbers.
+- Inventing a pack price, pack odds, or a bankroll-gate share. The addendum is already in the transfer market spec. The share stays unset until Adam decides.
 - Auto-publishing, seller messages, offers, bids, or buys.
 - Changing any value in `web/config/rules.js`.
