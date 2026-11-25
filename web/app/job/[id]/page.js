@@ -136,11 +136,9 @@ export default function JobPage({ params }) {
   }, [id]);
 
   const R = (job && job.results) || {};
-  // Prefill the price box from the latest job poll until the seller edits it.
   useEffect(() => {
     if (priceTouched.current) return;
-    const res = (job && job.results) || {};
-    const v = (res.listing && res.listing.price) ?? (res.price && res.price.recommended);
+    const v = (R.listing && R.listing.price) ?? (R.price && R.price.recommended);
     if (v !== undefined && v !== null) setPrice(String(v));
   }, [job]);
 
@@ -199,14 +197,13 @@ export default function JobPage({ params }) {
             <input className="field" value={times} onChange={(e) => setTimes(e.target.value)} placeholder="Available times, e.g. weekdays after 6" aria-label="Available times" />
           </div>
           <div className="arow">
-            <label className="pricelabel" htmlFor="post-price">Price $</label>
-            <input id="post-price" className="field pricef" inputMode="decimal" value={price} onChange={(e) => { priceTouched.current = true; setPrice(e.target.value.replace(/[^0-9.]/g, '')); }} aria-label="Price" placeholder="$" />
+            <input className="field pricef" inputMode="decimal" value={price} onChange={(e) => { priceTouched.current = true; setPrice(e.target.value.replace(/[^0-9.]/g, '')); }} aria-label="Price" placeholder="$" />
             <button className="pill blue big" onClick={approve} disabled={approving}>{approving ? 'Approving...' : 'Approve & post'}</button>
           </div>
         </div>}
         {listingUrl && <div className="panel livep o0">
           {job.stage === 'live' && <div className="confetti" aria-hidden="true">{Array.from({ length: 60 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 12) * 0.06}s`, background: ['#1877f2', '#30d158', '#ffd60a', '#ff375f', '#ffffff', '#bf5af2'][i % 6], transform: `rotate(${i * 29}deg)` }} />)}</div>}
-          <h3 style={{ justifyContent: 'center', fontSize: 26 }}>🎉 It&apos;s live on Marketplace</h3>
+          <h3 style={{ justifyContent: 'center', fontSize: 26 }}>🎉 It's live on Marketplace</h3>
           <a className="pill blue big" href={listingUrl} target="_blank" rel="noopener">Open the real listing</a>
           <img src={`https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=0&data=${encodeURIComponent(listingUrl)}`} alt="QR code to the listing" />
           <p className="small muted" style={{ wordBreak: 'break-all' }}>{listingUrl}</p>
@@ -237,7 +234,7 @@ export default function JobPage({ params }) {
           {['name', 'brand', 'model', 'condition'].map((k) => idf[k] ? [<dt key={k + 't'}>{k[0].toUpperCase() + k.slice(1)}</dt>, <dd key={k}>{String(idf[k])}</dd>] : null)}
           {idf.details && <><dt>Details</dt><dd>{typeof idf.details === 'string' ? idf.details : Array.isArray(idf.details) ? idf.details.join(', ') : JSON.stringify(idf.details)}</dd></>}
         </dl></div>}
-        <details className="panel o9 logfold" open={!doneAll}><summary><span>Agent activity <span className="small">{logs.length} step{logs.length === 1 ? '' : 's'}</span></span></summary><Log logs={logs} active={!doneAll} /></details>
+        <div className="panel o9"><h3>Agent activity <span className="small">{logs.length}</span></h3><Log logs={logs} active={!doneAll} /></div>
       </div>
     </div>
   </main>;

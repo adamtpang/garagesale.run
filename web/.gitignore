@@ -1,9 +1,2 @@
 node_modules
 .next
-.data
-# Local env files hold keys. They never go in the repo.
-.env
-.env.*
-!.env.example
-.vercel
-.env*

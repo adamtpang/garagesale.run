@@ -5,8 +5,3 @@ __pycache__/
 node_modules/
 .vercel/
 .github/
-
-# Private local agent transcripts (never commit or deploy)
-docs/grokbot/
-docs/sessions/
-SESSION_DIGEST.md

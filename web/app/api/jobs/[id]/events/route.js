@@ -1,10 +1,9 @@
-import { getJob, saveJob, addLog, workerCheck, json } from '../../../../../lib/store.js';
+import { getJob, saveJob, addLog, json } from '../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req, { params }) {
-  // The same key check as every other worker route, so a key that passes /api/worker/check passes here.
-  const auth = workerCheck(req);
-  if (!auth.ok) return json({ error: 'unauthorized', reason: auth.reason, hint: auth.hint }, 401);
+  const key = process.env.GST_WORKER_KEY;
+  if (!key || req.headers.get('x-worker-key') !== key) return json({ error: 'unauthorized' }, 401);
   const body = await req.json().catch(() => null);
   if (!body || !body.type) return json({ error: 'body must have type log|stage|result' }, 400);
   const job = await getJob(params.id);
