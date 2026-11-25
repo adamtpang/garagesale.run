@@ -26,7 +26,7 @@ export default function SavedDeals() {
   }
   if (deals === null) return <Card className="border-border p-8 text-center text-sm text-muted-foreground">Loading saved deals...</Card>;
   return <div className="grid gap-3">
-    {err && <p className="text-sm text-red-800">{err}</p>}
+    {err && <p className="text-sm text-red-300">{err}</p>}
     {deals.length === 0 && <Card className="border-border p-8 text-center text-sm text-muted-foreground">No saved deals yet. <a href="/buy" className="text-foreground underline underline-offset-4">Find one</a> and press Save deal.</Card>}
     {deals.map((d) => <Card key={d.id} className="flex gap-4 overflow-hidden border-border p-3" data-saved={d.id}>
       <a className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-secondary [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>.phx]:h-full [&>.phx]:w-full" href={d.fb_url} target="_blank" rel="noopener"><Photo src={d.photo_url} title={d.title} /></a>
@@ -36,7 +36,7 @@ export default function SavedDeals() {
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <span className="rounded-lg bg-secondary px-2.5 py-1"><span className="text-muted-foreground">Ask </span><b className="font-medium tabular-nums">{$(d.ask)}</b></span>
           <label className="flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-0.5"><span className="text-muted-foreground">Target $</span><Input className="h-7 w-20 border-0 bg-transparent px-1" inputMode="decimal" defaultValue={d.target ?? ''} onBlur={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); if (v !== String(d.target ?? '')) update(d.id, { target: v }); }} aria-label={`Target price for ${d.title}`} /></label>
-          <select className="h-8 rounded-md border border-foreground bg-white px-2 text-sm text-foreground" value={d.status} onChange={(e) => update(d.id, { status: e.target.value })} aria-label={`Status for ${d.title}`}>{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+          <select className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground" value={d.status} onChange={(e) => update(d.id, { status: e.target.value })} aria-label={`Status for ${d.title}`}>{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
           {d.status === 'bought' && <a className="text-xs underline underline-offset-4" href={`/ledger?${new URLSearchParams({ saved_deal_id: d.id, item: d.title || '', buy_price: d.ask == null ? '' : String(d.ask), source_link: d.fb_url || '' })}`}>Add this buy to the ledger</a>}
           <Button size="sm" variant="ghost" className={cn('ml-auto h-8 px-2 text-xs text-muted-foreground')} onClick={() => remove(d.id)}>Remove</Button>
         </div>

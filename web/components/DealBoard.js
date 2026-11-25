@@ -94,7 +94,7 @@ export default function DealBoard() {
       </div>
     </div>
 
-    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-2 grid grid-cols-2 gap-[2px] overflow-hidden rounded-2xl border border-border bg-foreground lg:grid-cols-4" aria-label="Flip rules">
+    {rulesMissing ? <p role="status" className="mb-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm"><b>Flip rules are not stored yet.</b> Bankroll, item cap, minimum net, mile cap and gas rate are all missing, so nothing on this board can be marked a buy.</p> : <div className="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4" aria-label="Flip rules">
       {[
         [config && config.bankroll_source === 'ledger' && !sample ? 'Bankroll now, and max buy' : 'Starting bankroll, and max buy', summary.bankroll],
         ['Minimum net', summary.minProfit],
@@ -107,16 +107,16 @@ export default function DealBoard() {
       <p className="mt-1 text-muted-foreground">{HOME_LINE} {summary.gasNote || ''} Cash already spent stays in the encrypted ledger and is not loaded here.</p>
       {!sample && config && Array.isArray(config.areas) && config.areas.length > 0 && <p className="mt-1 text-muted-foreground">Stored search areas: {config.areas.map((a) => a.name).filter(Boolean).join(', ')}. Those names are not pickup origins.</p>}
     </details>
-    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p role="status" className="mb-4 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
+    {!sample && !loading && !failed && activeConfig.fees && activeConfig.fees.ebay && activeConfig.fees.ebay.rate != null && activeConfig.fees.ebay.confirmed !== true && <p role="status" className="mb-4 border-l-4 border-amber-400/80 bg-amber-500/10 text-amber-100 px-3 py-2 text-sm">The eBay fee on file is an unconfirmed default ({Math.round(Number(activeConfig.fees.ebay.rate) * 10000) / 100}%). Calculated nets stay off the buy list until that rate is confirmed.</p>}
     {!sample && !rulesMissing && rules.filtersReady === false && !loading && !failed && <p className="mb-4 text-sm font-medium">Filters not set. Nothing is a buy until min net, the mile cap, sources, and fee rates are stored.</p>}
 
     <div className="mb-4 text-sm text-muted-foreground">
       {sample ? 'Sample clock is off. These rows are not from the stored feed.' : fresh.label ? `Stored feed updated ${fresh.label}${feed && feed.updated_at ? ` (${new Date(feed.updated_at).toLocaleString()})` : ''}.` : 'No stored scout feed yet.'}
-      {!sample && fresh.stale && <div role="status" className="mt-2 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-foreground">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
+      {!sample && fresh.stale && <div role="status" className="mt-2 rounded-2xl border border-border bg-amber-500/10 px-4 py-3 text-sm text-amber-100">This stored feed is more than 2 hours old. Listings may already be gone.</div>}
     </div>
 
     {status.kind !== 'ready' && status.kind !== 'sample' && <div role="status" className="mb-4 rounded-2xl border border-border bg-card p-6 text-sm"><p className="font-medium text-foreground">{status.title}</p><p className="mt-1 text-muted-foreground">{status.detail}</p>{failed && <button type="button" className="mt-3 underline" onClick={() => window.location.reload()}>Retry</button>}</div>}
-    {sample && <div role="status" className="mb-4 rounded-2xl border border-border bg-amber-200 px-4 py-3 text-sm font-medium">{SAMPLE_BANNER} Sample fee rates are marked confirmed inside this fixture only.</div>}
+    {sample && <div role="status" className="mb-4 rounded-2xl border border-border bg-amber-500/10 text-amber-100 px-4 py-3 text-sm font-medium">{SAMPLE_BANNER} Sample fee rates are marked confirmed inside this fixture only.</div>}
 
     <div className="mb-3 flex flex-wrap gap-2" aria-label="Filters">
       {[['all', 'All'], ['buy', 'Buy'], ['skip', 'Skip'], ['incomplete', 'Incomplete']].map(([id, label]) => <Chip key={id} on={filters.verdict === id} onClick={() => setFilter('verdict', id)}>{label}{id === 'all' ? ` ${counts.all}` : id === 'buy' ? ` ${counts.buy}` : id === 'skip' ? ` ${counts.skip}` : ` ${counts.incomplete}`}</Chip>)}
@@ -137,7 +137,7 @@ export default function DealBoard() {
     {shown.length > 0 && <div className={`${BOARD_REGIONS.cards} grid gap-3 md:hidden`}>
       {shown.map((view, i) => <div key={view.href || view.title + i}>{view.href ? <a href={view.href} className="mb-1 block text-xs text-link underline-offset-4 hover:underline">Open decision</a> : null}<DealCard view={view} sample={sample} /></div>)}
     </div>}
-    {shown.length > 0 && <div className={`${BOARD_REGIONS.table} hidden overflow-x-auto rounded-2xl border border-border bg-card shadow-tag md:block`}>
+    {shown.length > 0 && <div className={`${BOARD_REGIONS.table} hidden overflow-x-auto rounded-2xl border border-border bg-card shadow-sm md:block`}>
       <table className="w-full min-w-[980px] border-collapse text-left text-sm">
         <thead className="text-[11px] uppercase tracking-wide text-muted-foreground"><tr>{TABLE_HEAD.map((h) => <th key={h} className="px-3 py-3 font-semibold">{h}</th>)}</tr></thead>
         <tbody>{shown.map((view, i) => <DealTableRow key={view.href || view.title + i} view={view} sample={sample} />)}</tbody>

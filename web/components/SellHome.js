@@ -78,7 +78,7 @@ export default function Home({ mode: initMode }) {
           {initMode ? <><h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">{initMode === 'sell' ? 'Sell anything.' : 'Find flips.'}</h1>
           <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground md:text-xl">{initMode === 'sell' ? 'One photo. Grok Bot writes and posts the listing.' : 'Say what you want. Grok Bot finds it under market.'}</p></> : <>
           <Badge variant="secondary" className="desk-only mb-6 px-3 py-1 text-[12px] font-normal text-muted-foreground">Garage Sale · Grok Bot Hackathon · Austin</Badge>
-          <h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">Snap it.<br /><span className="text-price">Grok Bot sells it.</span></h1>
+          <h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">Snap it.<br /><span className="text-brand">Grok Bot sells it.</span></h1>
           <p className="mt-5 max-w-md text-lg text-muted-foreground md:text-xl">Photo in, Facebook Marketplace listing out. You approve every step.</p></>}
           <div className="mt-10 grid gap-4 text-left">
             <Card id={mode} className={cn('min-w-0 border-border bg-card p-5 backdrop-blur md:p-6', mode === 'sell' && over && 'border-brand')}
@@ -108,7 +108,7 @@ export default function Home({ mode: initMode }) {
                 <div className="flex flex-wrap gap-2">{PRESETS.map((t) => <Button type="button" key={t} variant="outline" size="sm" className="h-8 border-border px-3 text-xs font-normal text-muted-foreground" onClick={() => { setQ(t); buy(null, t); }}>{t}</Button>)}</div>
               </form>}
             </Card>
-            {err && <p className="text-sm text-red-800">{err}</p>}
+            {err && <p className="text-sm text-red-300">{err}</p>}
             <a href="/" className="group flex items-center justify-between rounded-2xl border border-border px-5 py-4 transition-colors hover:bg-accent/40">
               <span className="flex flex-col"><span className="font-medium">Market</span><span className="text-sm text-muted-foreground">Deals, best profit first</span></span>
               <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></a>

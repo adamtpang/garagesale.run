@@ -3,9 +3,9 @@ import { netLine, shippingLine, verdictLabel } from '../lib/dealPresenter.js';
 
 const e = React.createElement;
 const TONE = {
-  buy: 'bg-[#9be8b8] text-foreground',
-  skip: 'bg-red-200 text-red-800',
-  incomplete: 'bg-amber-200 text-amber-950',
+  buy: 'bg-success/15 text-success',
+  skip: 'bg-red-500/15 text-red-300',
+  incomplete: 'bg-amber-500/15 text-amber-300',
 };
 
 function pill(view, sample) {
@@ -67,8 +67,8 @@ function compList(view) {
 
 function moneyBlock(view) {
   const net = netLine(view);
-  const tone = net.tone === 'buy' ? 'text-success' : net.tone === 'unknown' ? 'text-amber-950' : 'text-foreground';
-  return e('div', { className: 'rounded-xl bg-white p-3' },
+  const tone = net.tone === 'buy' ? 'text-success' : net.tone === 'unknown' ? 'text-amber-300' : 'text-foreground';
+  return e('div', { className: 'rounded-xl bg-secondary p-3' },
     e('div', { className: 'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground' }, net.label),
     e('div', { className: `mt-1 text-2xl font-semibold tabular-nums ${tone}`, 'data-net': net.value }, net.value),
     reason(view.reasonText, 'mt-2 text-xs leading-5 text-muted-foreground'),
@@ -79,8 +79,8 @@ export function DealCard({ view, sample, stacked }) {
   const ship = shippingLine(view);
   return e('article', {
     className: stacked
-      ? 'rounded-2xl border border-border bg-card p-4 shadow-tag'
-      : 'rounded-2xl border border-border bg-card p-4 shadow-tag md:hidden',
+      ? 'rounded-2xl border border-border bg-card p-4 shadow-sm'
+      : 'rounded-2xl border border-border bg-card p-4 shadow-sm md:hidden',
     'data-region': 'card',
     'data-sample': sample ? 'true' : 'false',
   },

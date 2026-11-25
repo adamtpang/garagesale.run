@@ -65,7 +65,7 @@ export default function Conversations() {
       <span className={cn(thumb, 'h-10 w-10')}><Photo src={j.image_url} title={j.title} /></span>
       <span className="flex flex-col gap-1"><b className="max-w-[160px] truncate text-sm font-medium">{j.title || 'Item'}</b><Badge variant={j.stage === 'live' ? 'success' : 'secondary'} className="w-fit font-normal">{LABEL[j.stage] || j.stage}</Badge></span>
     </a>)}</div>}
-    {err && <div className="mt-6 rounded-xl border border-destructive bg-red-200 px-4 py-3 text-sm text-red-800">{err}</div>}
+    {err && <div className="mt-6 rounded-xl border border-destructive bg-red-500/10 text-red-200 px-4 py-3 text-sm text-red-300">{err}</div>}
     {jobs === null ? <div className="mt-12 text-center text-sm text-muted-foreground">Loading...</div> : threads.length === 0 ? <Card className="mt-12 border-border p-10 text-center text-muted-foreground">No buyer messages yet. Grok Bot checks your Marketplace inbox and drafts replies for you to approve.</Card> :
       <div className="mt-12 grid gap-6">{threads.map(({ j, f, inqs }) => <Card key={j.id} className="overflow-hidden border-border">
         <div className="flex items-center gap-4 p-5"><a className={cn(thumb, 'h-14 w-14')} href={`/job/${j.id}`}><Photo src={j.image_url} title={j.title} /></a>

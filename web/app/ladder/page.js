@@ -71,7 +71,7 @@ export default function LadderPage() {
         <Button type="submit" variant="brand">Unlock</Button>
       </form>
     </Card>}
-    {err && <p role="status" className="mb-4 text-base font-medium text-red-800">{err}</p>}
+    {err && <p role="status" className="mb-4 text-base font-medium text-red-300">{err}</p>}
     {key && !doc && !err && <p role="status" className="text-base">Loading the ledger…</p>}
     {doc && <Ladder doc={doc} />}
   </main>;
