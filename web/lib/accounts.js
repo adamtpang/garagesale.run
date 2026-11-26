@@ -75,11 +75,15 @@ export function betaSeats() {
 export const seatOpen = (accountsNow, seats) => accountsNow < seats;
 // Storage has no locks, so two sign-ups can both see a free seat. After writing, each one checks where its
 // account sits in the list, oldest first. Only the first `seats` keep their place: the rest are undone.
-export function holdsSeat(accounts, myId, seats) {
-  if (!Array.isArray(accounts)) return false;
+// 'held': inside the cap. 'over': past it. 'unknown': the list couldn't be read, or doesn't show this account
+// yet, so nothing can be concluded and the caller should try again rather than be told the beta is full.
+export function seatState(accounts, myId, seats) {
+  if (!Array.isArray(accounts)) return 'unknown';
   const i = accounts.findIndex((a) => a.name === myId);
-  return i >= 0 && i < seats;
+  if (i < 0) return 'unknown';
+  return i < seats ? 'held' : 'over';
 }
+export const holdsSeat = (accounts, myId, seats) => seatState(accounts, myId, seats) === 'held';
 const CANT_CHECK = { error: 'Could not check the beta seats just now. Try again in a minute.', status: 503, reason: 'seats-unknown' };
 const FULL = { error: 'The Garage Sale beta is full right now. Ask Adam for an invite code, then register again with it.', status: 403, reason: 'beta-full' };
 
@@ -105,10 +109,10 @@ export async function registerGarry({ invite, name }) {
   await kvPut(`accounts/${account.id}.json`, account);
   if (!inv) {
     // Look again now that the account exists. If a burst of sign-ups went past the cap, the late ones are undone.
-    const after = await kvList('accounts/');
-    if (!holdsSeat(after, account.id, betaSeats())) {
+    const state = seatState(await kvList('accounts/'), account.id, betaSeats());
+    if (state !== 'held') {
       await kvDel(`accounts/${account.id}.json`);
-      return after ? FULL : CANT_CHECK;
+      return state === 'over' ? FULL : CANT_CHECK;
     }
   }
   await kvPut(`account-keys/${sha(key)}.json`, { account_id: account.id, created_at: now() });

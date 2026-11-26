@@ -170,6 +170,9 @@ test('the beta cap holds under a burst of sign-ups, and an unreadable seat count
   assert.deepEqual(burst.map((a) => A.holdsSeat(burst, a.name, 2)), [true, true, false, false]);
   assert.equal(A.holdsSeat(burst, 'zzz999', 2), false, 'an account that is not in the list holds nothing');
   assert.equal(A.holdsSeat(null, 'aaa111', 2), false, 'a list that could not be read holds nothing');
+  // Past the cap is "over". A list that is missing this account, or unreadable, is "unknown": retry, not "full".
+  assert.deepEqual(['aaa111', 'ccc333', 'zzz999'].map((id) => A.seatState(burst, id, 2)), ['held', 'over', 'unknown']);
+  assert.equal(A.seatState(null, 'aaa111', 2), 'unknown');
 
   // Real run against local storage: five sign-ups at once with room for only the accounts already here plus two.
   const { kvList } = await import('./kv.js');
