@@ -4,7 +4,7 @@
 //   3. Garry asks for a sign-in link and gives it to its person. Opening it signs their browser in.
 // Keys, invites and sign-in codes are stored only as hashes.
 import crypto from 'crypto';
-import { kvGet, kvPut, kvDel } from './kv.js';
+import { kvGet, kvPut, kvDel, kvList } from './kv.js';
 
 export const LOGIN_CODE_MINUTES = 10;
 export const SESSION_DAYS = 30;
@@ -65,16 +65,56 @@ export async function createInvite(note) {
 }
 
 // Registers a Garry bot. The invite is used up. The bot key is returned once and never stored in the clear.
+// How many accounts may join without an invite while this is a beta. GS_BETA_SEATS overrides it; 0 closes
+// open sign-up. An invite always works, even when the open seats are full.
+export const DEFAULT_BETA_SEATS = 25;
+export function betaSeats() {
+  const n = Number(process.env.GS_BETA_SEATS);
+  return process.env.GS_BETA_SEATS !== undefined && process.env.GS_BETA_SEATS !== '' && Number.isInteger(n) && n >= 0 ? n : DEFAULT_BETA_SEATS;
+}
+export const seatOpen = (accountsNow, seats) => accountsNow < seats;
+// Storage has no locks, so two sign-ups can both see a free seat. After writing, each one checks where its
+// account sits in the list, oldest first. Only the first `seats` keep their place: the rest are undone.
+// 'held': inside the cap. 'over': past it. 'unknown': the list couldn't be read, or doesn't show this account
+// yet, so nothing can be concluded and the caller should try again rather than be told the beta is full.
+export function seatState(accounts, myId, seats) {
+  if (!Array.isArray(accounts)) return 'unknown';
+  const i = accounts.findIndex((a) => a.name === myId);
+  if (i < 0) return 'unknown';
+  return i < seats ? 'held' : 'over';
+}
+export const holdsSeat = (accounts, myId, seats) => seatState(accounts, myId, seats) === 'held';
+const CANT_CHECK = { error: 'Could not check the beta seats just now. Try again in a minute.', status: 503, reason: 'seats-unknown' };
+const FULL = { error: 'The Garage Sale beta is full right now. Ask Adam for an invite code, then register again with it.', status: 403, reason: 'beta-full' };
+
 export async function registerGarry({ invite, name }) {
-  const inviteKey = `invites/${sha(String(invite || '').trim())}.json`;
-  const inv = await kvGet(inviteKey);
-  if (!inv) return { error: 'That invite code is not valid, or it was already used.', status: 403 };
   const person = cleanName(name);
   if (!person) return { error: 'name is required: the first name of the person this Garry works for.', status: 400 };
-  await kvDel(inviteKey);
-  const account = { id: rand(6), name: person, created_at: now(), invite_note: inv.note || '' };
+  const code = String(invite || '').trim();
+  let inv = null;
+  if (code) {
+    // With an invite: the code must be good, and it is used up.
+    const inviteKey = `invites/${sha(code)}.json`;
+    inv = await kvGet(inviteKey);
+    if (!inv) return { error: 'That invite code is not valid, or it was already used.', status: 403, reason: 'bad-invite' };
+    await kvDel(inviteKey);
+  } else {
+    // Without one: open sign-up, while there are beta seats left. If the seats can't be counted, refuse.
+    const before = await kvList('accounts/');
+    if (!before) return CANT_CHECK;
+    if (!seatOpen(before.length, betaSeats())) return FULL;
+  }
+  const account = { id: rand(6), name: person, created_at: now(), invite_note: inv ? (inv.note || '') : '', joined: inv ? 'invite' : 'open' };
   const key = `garry_${rand(24)}`;
   await kvPut(`accounts/${account.id}.json`, account);
+  if (!inv) {
+    // Look again now that the account exists. If a burst of sign-ups went past the cap, the late ones are undone.
+    const state = seatState(await kvList('accounts/'), account.id, betaSeats());
+    if (state !== 'held') {
+      await kvDel(`accounts/${account.id}.json`);
+      return state === 'over' ? FULL : CANT_CHECK;
+    }
+  }
   await kvPut(`account-keys/${sha(key)}.json`, { account_id: account.id, created_at: now() });
   return { account, key };
 }

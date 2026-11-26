@@ -32,7 +32,7 @@ export default function ConnectScreen() {
     } catch (e) { setErr('Could not make an invite.'); }
     setBusy(false);
   }
-  const text = invite ? `You're in the Garage Sale beta. Install the Garry bot in Grok Bot, then tell it: "Set me up on Garage Sale. My invite code is ${invite}". Garry does the rest and sends you a sign-in link.` : '';
+  const text = invite ? `You're in the Garage Sale beta. Install the Garry bot in Grok Bot and say hello. If it says the beta is full, give it this invite code: ${invite}` : '';
 
   return <main className="wrap py-16 md:py-24">
     <section className="mx-auto max-w-2xl">
@@ -50,14 +50,14 @@ export default function ConnectScreen() {
         <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
         <div className="mt-2"><button type="button" onClick={signOut} className="border-0 bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4" style={{ background: 'none' }}>Sign out on this browser</button></div>
       </div> : <div className="mt-10 grid gap-4" data-state="signed-out">
-        <Step n={1} title="Get an invite">Garage Sale is in a small beta. You need a one-time invite code from Adam.</Step>
-        <Step n={2} title="Install Garry in Grok Bot">Add the Garry bot, then tell it: <span className="text-foreground">"Set me up on Garage Sale. My invite code is ..."</span></Step>
-        <Step n={3} title="Open the link Garry sends">Garry creates your account and sends you a sign-in link. Open it, press Sign in, and you're in. No password.</Step>
+        <Step n={1} title="Install Garry in Grok Bot">Garry is a free Grok Bot. Add it and say hello.</Step>
+        <Step n={2} title="Garry sets you up">It creates your account and sends you a sign-in link. No forms, no codes.</Step>
+        <Step n={3} title="Open the link Garry sends">Press Sign in, and you're in. No password to make or remember.</Step>
         <p className="mt-2 text-sm text-muted-foreground">Already set up? Ask your Garry: "Send me a Garage Sale sign-in link." <a className="underline underline-offset-4" href={GUIDE} target="_blank" rel="noreferrer">Garry's setup guide</a></p>
       </div>}
 
       {me === null && <details className="mt-12 text-sm" data-field="owner-tools">
-        <summary className="cursor-pointer text-muted-foreground">For the owner: invite a beta tester</summary>
+        <summary className="cursor-pointer text-muted-foreground">For the owner: reserve a spot with an invite</summary>
         <div className="mt-4 grid gap-3">
           <label className="grid gap-1 text-xs font-semibold">Who is it for? (a note for you)
             <input className="h-10 rounded-md border border-border bg-card px-3 text-sm font-normal" value={note} onChange={(e) => setNote(e.target.value)} maxLength={60} placeholder="First name" /></label>
