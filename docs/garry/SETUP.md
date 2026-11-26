@@ -44,7 +44,7 @@ If the job never moves after two minutes, tell Garry: `check Garage Sale`. That 
 1. Click Garry's name at the top of the chat to open its details. Choose **Share**, then **Create a copy**. Garry builds a template and posts it in the chat.
 2. **Before publishing, check the template has no secrets and no personal details**: no `GARRY_KEY`, no webhook key, nothing from your own test run in its memories.
 3. Choose **Publish** on the template card, then **Copy link**. A new template link is public: anyone with it can add their own Garry.
-4. Send beta testers the template link. That's all they need. An invite code from `garagesale.run/connect` is only for reserving a spot once the open seats are full.
+4. Send beta testers the template link: `https://x.ai/bot/TWS8hV9MoECMV1-JApMox`. That's all they need. The same link is the **Install Garry** button on `garagesale.run/connect` (it lives in `web/lib/garry.js`; change it there if you republish). An invite code from `garagesale.run/connect` is only for reserving a spot once the open seats are full.
 
 To change Garry later, edit the bot, then use **Share**, **Update template** to push the change to the shared copy.
 

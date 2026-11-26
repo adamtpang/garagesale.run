@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ownerFetch } from '../../lib/ownerKey';
+import { GARRY_INSTALL_URL } from '../../lib/garry';
 
 const GUIDE = 'https://github.com/adamtpang/garagesale.run/blob/main/docs/GARRY.md';
 const Step = ({ n, title, done, children }) => <Card className="border-border/60 p-6" data-step={n} data-done={done ? 'yes' : 'no'}>
@@ -32,7 +33,7 @@ export default function ConnectScreen() {
     } catch (e) { setErr('Could not make an invite.'); }
     setBusy(false);
   }
-  const text = invite ? `You're in the Garage Sale beta. Install the Garry bot in Grok Bot and say hello. If it says the beta is full, give it this invite code: ${invite}` : '';
+  const text = invite ? `You're in the Garage Sale beta. Install the Garry bot here: ${GARRY_INSTALL_URL} and say hello. If it says the beta is full, give it this invite code: ${invite}` : '';
 
   return <main className="wrap py-16 md:py-24">
     <section className="mx-auto max-w-2xl">
@@ -50,7 +51,7 @@ export default function ConnectScreen() {
         <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
         <div className="mt-2"><button type="button" onClick={signOut} className="border-0 bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4" style={{ background: 'none' }}>Sign out on this browser</button></div>
       </div> : <div className="mt-10 grid gap-4" data-state="signed-out">
-        <Step n={1} title="Install Garry in Grok Bot">Garry is a free Grok Bot. Add it and say hello.</Step>
+        <Step n={1} title="Install Garry in Grok Bot">Garry is a free Grok Bot. Add your own copy, then say hello.<div className="mt-4"><Button asChild><a href={GARRY_INSTALL_URL} target="_blank" rel="noreferrer" data-field="install-garry">Install Garry</a></Button></div></Step>
         <Step n={2} title="Garry sets you up">It creates your account and sends you a sign-in link. No forms, no codes.</Step>
         <Step n={3} title="Open the link Garry sends">Press Sign in, and you're in. No password to make or remember.</Step>
         <p className="mt-2 text-sm text-muted-foreground">Already set up? Ask your Garry: "Send me a Garage Sale sign-in link." <a className="underline underline-offset-4" href={GUIDE} target="_blank" rel="noreferrer">Garry's setup guide</a></p>
