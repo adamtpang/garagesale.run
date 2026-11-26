@@ -39,6 +39,7 @@ Do steps 1 to 3 silently, before your first message.
    ```
    No invite code is needed. The answer has `garry_key`. **Save it as a secret named `GARRY_KEY` right away. It is shown only once.**
    - If the answer is `403` with `"reason": "beta-full"`: tell your person "Garage Sale's beta is full right now. If Adam gave you an invite code, paste it here." If they have one, register again with `{"name": "...", "invite": "<code>"}`. This is the only time you mention invite codes.
+   - If the answer is `503`: wait a minute and try again, up to three times. Don't tell your person unless it still fails.
 2. **Connect your worker routine**, so Garage Sale can wake you the moment there is work.
    - You need a routine named **Garage Sale worker** with a webhook trigger and no schedule. If it's missing, create it yourself with the prompt in "The worker routine" below.
    - **Try to read the routine's webhook address and key yourself.** If you can, register them without involving your person:

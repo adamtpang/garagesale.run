@@ -163,3 +163,27 @@ test('a Garry can register with no invite while beta seats are open, and an invi
   assert.equal((await A.registerGarry({ name: '  ' })).status, 400);
   if (keep === undefined) delete process.env.GS_BETA_SEATS; else process.env.GS_BETA_SEATS = keep;
 });
+
+test('the beta cap holds under a burst of sign-ups, and an unreadable seat count refuses', async () => {
+  // Oldest first. With 2 seats, only the first two accounts hold a seat, however many were written.
+  const burst = [{ name: 'aaa111', at: 1 }, { name: 'bbb222', at: 2 }, { name: 'ccc333', at: 3 }, { name: 'ddd444', at: 3 }];
+  assert.deepEqual(burst.map((a) => A.holdsSeat(burst, a.name, 2)), [true, true, false, false]);
+  assert.equal(A.holdsSeat(burst, 'zzz999', 2), false, 'an account that is not in the list holds nothing');
+  assert.equal(A.holdsSeat(null, 'aaa111', 2), false, 'a list that could not be read holds nothing');
+
+  // Real run against local storage: five sign-ups at once with room for only the accounts already here plus two.
+  const { kvList } = await import('./kv.js');
+  const keep = process.env.GS_BETA_SEATS;
+  const here = (await kvList('accounts/')).length;
+  process.env.GS_BETA_SEATS = String(here + 2);
+  const out = await Promise.all([1, 2, 3, 4, 5].map((i) => A.registerGarry({ name: `Burst${i}` })));
+  const ok = out.filter((o) => o.account);
+  for (const o of ok) made.push(`accounts/${o.account.id}.json`, `account-keys/${A.sha(o.key)}.json`);
+  assert.ok(ok.length <= 2, `at most 2 seats, got ${ok.length}`);
+  assert.equal((await kvList('accounts/')).length <= here + 2, true, 'no extra accounts are left behind');
+  for (const o of out.filter((x) => !x.account)) assert.equal(o.reason, 'beta-full');
+  if (keep === undefined) delete process.env.GS_BETA_SEATS; else process.env.GS_BETA_SEATS = keep;
+
+  // A folder name that can't be read gives null, never an empty list.
+  assert.equal(await kvList('../etc/'), null);
+});

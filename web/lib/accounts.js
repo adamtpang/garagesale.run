@@ -4,7 +4,7 @@
 //   3. Garry asks for a sign-in link and gives it to its person. Opening it signs their browser in.
 // Keys, invites and sign-in codes are stored only as hashes.
 import crypto from 'crypto';
-import { kvGet, kvPut, kvDel, kvCount } from './kv.js';
+import { kvGet, kvPut, kvDel, kvList } from './kv.js';
 
 export const LOGIN_CODE_MINUTES = 10;
 export const SESSION_DAYS = 30;
@@ -73,6 +73,15 @@ export function betaSeats() {
   return process.env.GS_BETA_SEATS !== undefined && process.env.GS_BETA_SEATS !== '' && Number.isInteger(n) && n >= 0 ? n : DEFAULT_BETA_SEATS;
 }
 export const seatOpen = (accountsNow, seats) => accountsNow < seats;
+// Storage has no locks, so two sign-ups can both see a free seat. After writing, each one checks where its
+// account sits in the list, oldest first. Only the first `seats` keep their place: the rest are undone.
+export function holdsSeat(accounts, myId, seats) {
+  if (!Array.isArray(accounts)) return false;
+  const i = accounts.findIndex((a) => a.name === myId);
+  return i >= 0 && i < seats;
+}
+const CANT_CHECK = { error: 'Could not check the beta seats just now. Try again in a minute.', status: 503, reason: 'seats-unknown' };
+const FULL = { error: 'The Garage Sale beta is full right now. Ask Adam for an invite code, then register again with it.', status: 403, reason: 'beta-full' };
 
 export async function registerGarry({ invite, name }) {
   const person = cleanName(name);
@@ -85,13 +94,23 @@ export async function registerGarry({ invite, name }) {
     inv = await kvGet(inviteKey);
     if (!inv) return { error: 'That invite code is not valid, or it was already used.', status: 403, reason: 'bad-invite' };
     await kvDel(inviteKey);
-  } else if (!seatOpen(await kvCount('accounts/'), betaSeats())) {
-    // Without one: open sign-up, while there are beta seats left.
-    return { error: 'The Garage Sale beta is full right now. Ask Adam for an invite code, then register again with it.', status: 403, reason: 'beta-full' };
+  } else {
+    // Without one: open sign-up, while there are beta seats left. If the seats can't be counted, refuse.
+    const before = await kvList('accounts/');
+    if (!before) return CANT_CHECK;
+    if (!seatOpen(before.length, betaSeats())) return FULL;
   }
   const account = { id: rand(6), name: person, created_at: now(), invite_note: inv ? (inv.note || '') : '', joined: inv ? 'invite' : 'open' };
   const key = `garry_${rand(24)}`;
   await kvPut(`accounts/${account.id}.json`, account);
+  if (!inv) {
+    // Look again now that the account exists. If a burst of sign-ups went past the cap, the late ones are undone.
+    const after = await kvList('accounts/');
+    if (!holdsSeat(after, account.id, betaSeats())) {
+      await kvDel(`accounts/${account.id}.json`);
+      return after ? FULL : CANT_CHECK;
+    }
+  }
   await kvPut(`account-keys/${sha(key)}.json`, { account_id: account.id, created_at: now() });
   return { account, key };
 }

@@ -40,11 +40,21 @@ export async function kvDel(p) {
   try { fs.unlinkSync(file(p)); } catch (e) {}
 }
 
-// How many records sit under a folder, such as "accounts/". Used for the beta seat count.
-export async function kvCount(folder) {
-  if (!/^[a-z0-9-]+\/$/i.test(folder)) return 0;
+// The records under a folder such as "accounts/", oldest first: [{ name, at }]. name is the file name without
+// ".json". Returns null when the folder can't be read, so a caller can refuse rather than guess.
+export async function kvList(folder) {
+  if (!/^[a-z0-9-]+\/$/i.test(folder)) return null;
+  let rows;
   if (blobOn()) {
-    try { const { blobs } = await list({ prefix: folder, limit: 1000 }); return blobs.filter((b) => SAFE.test(b.pathname)).length; } catch (e) { return 0; }
+    try {
+      const { blobs } = await list({ prefix: folder, limit: 1000 });
+      rows = blobs.filter((b) => SAFE.test(b.pathname)).map((b) => ({ name: b.pathname.slice(folder.length, -5), at: new Date(b.uploadedAt).getTime() }));
+    } catch (e) { return null; }
+  } else {
+    const dir = file(folder.slice(0, -1));
+    try {
+      rows = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => ({ name: f.slice(0, -5), at: fs.statSync(path.join(dir, f)).mtimeMs }));
+    } catch (e) { if (e && e.code === 'ENOENT') return []; return null; }
   }
-  try { return fs.readdirSync(file(folder.slice(0, -1))).filter((f) => f.endsWith('.json')).length; } catch (e) { return 0; }
+  return rows.sort((a, b) => (a.at - b.at) || (a.name < b.name ? -1 : 1));
 }
