@@ -1,8 +1,10 @@
-import { getJob, addLog, queue, json } from '../../../../../../../lib/store';
+import { getJob, addLog, queue, json, ownerGate } from '../../../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 export async function POST(req, { params }) {
   const job = await getJob(params.id);
   if (!job) return json({ error: 'not found' }, 404);
+  // Sending a reply messages a real buyer, so it needs the owner key. A test job is never queued.
+  if (!job.test) { const stop = ownerGate(req); if (stop) return stop; }
   const q = (job.inquiries || []).find((x) => x.id === params.inq);
   if (!q) return json({ error: 'unknown inquiry' }, 404);
   if (q.status !== 'drafted') return json({ error: `reply is ${q.status}` }, 409);

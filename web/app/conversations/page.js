@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { ownerFetch } from '../../lib/ownerKey';
 const LABEL = { drafting: 'Drafting', writing: 'Drafting', awaiting_approval: 'Your approval', approved: 'Approved', posting: 'Posting', live: 'Live' };
 const ago = (ts) => { if (!ts) return ''; const s = Math.round((Date.now() - new Date(ts)) / 1000); if (s < 60) return 'just now'; if (s < 3600) return `${Math.round(s / 60)} min ago`; if (s < 86400) return `${Math.round(s / 3600)} h ago`; return new Date(ts).toLocaleDateString(); };
 const STEPS = { sell: ['New message', 'Negotiating', 'Price agreed', 'Pickup set', 'Sold'], buy: ['Seller contacted', 'Negotiating', 'Price agreed', 'Pickup set', 'Bought'] };
@@ -49,7 +50,7 @@ export default function Conversations() {
   async function sendReply(jobId, q) {
     setSending(q.id); setErr('');
     try {
-      const r = await fetch(`/api/jobs/${jobId}/replies/${encodeURIComponent(q.id)}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: drafts[q.id] ?? q.draft_reply }) });
+      const r = await ownerFetch(`/api/jobs/${jobId}/replies/${encodeURIComponent(q.id)}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: drafts[q.id] ?? q.draft_reply }) });
       const j = await r.json(); if (r.ok && j && j.id) { setFull((f) => ({ ...f, [j.id]: j })); setHl(q.id); setTimeout(() => setHl(''), 4000); } else setErr((j && j.error) || 'Request failed');
     } catch (e) { setErr('Request failed'); }
     setSending('');

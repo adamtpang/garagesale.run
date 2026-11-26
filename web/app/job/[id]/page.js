@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import DealCard from '../../../components/DealCard';
 import Photo, { prox } from '../../../components/Photo';
+import { ownerFetch } from '../../../lib/ownerKey';
 
 const STAGES = {
   sell: ['received', 'identifying', 'researching', 'writing', 'awaiting_approval', 'approved', 'posting', 'live'],
@@ -115,7 +116,7 @@ export default function JobPage({ params }) {
   const [ans, setAns] = useState(''); const [sending, setSending] = useState('');
   const [drafts, setDrafts] = useState({});
   async function post(url, body) {
-    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const r = await ownerFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
     const j = await r.json(); if (r.ok) setJob(j); else setErr(j.error || 'Request failed'); return r.ok;
   }
   async function answer(e) { e.preventDefault(); if (!ans.trim()) return; setSending('answer'); if (await post(`/api/jobs/${id}/answer`, { answer: ans.trim() })) setAns(''); setSending(''); }
@@ -145,7 +146,7 @@ export default function JobPage({ params }) {
   async function approve() {
     setApproving(true);
     try {
-      const r = await fetch(`/api/jobs/${id}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...(price !== '' ? { price: Number(price) } : {}), ...(spot || times ? { pickup: { spot: spot || 'A public spot near you, like a coffee shop', times } } : {}) }) });
+      const r = await ownerFetch(`/api/jobs/${id}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...(price !== '' ? { price: Number(price) } : {}), ...(spot || times ? { pickup: { spot: spot || 'A public spot near you, like a coffee shop', times } } : {}) }) });
       const j = await r.json(); if (r.ok) setJob(j); else setErr(j.error || 'Approve failed');
     } finally { setApproving(false); }
   }

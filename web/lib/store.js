@@ -1,4 +1,5 @@
 import { put, list, del } from '@vercel/blob';
+import crypto from 'crypto';
 
 // Each write is a new immutable version: jobs/<id>/v-<time>-<rand>.json.
 // Reads list the prefix (strongly consistent) and fetch the newest version,
@@ -159,6 +160,17 @@ export async function readLatest(prefixKey) {
   const r = await fetch(blobs[blobs.length - 1].url, { cache: 'no-store' });
   if (blobs.length > 40) { try { await del(blobs.slice(0, -5).map((b) => b.url)); } catch (e) {} }
   return r.ok ? r.json() : null;
+}
+// Approving a listing or sending a buyer reply acts on the owner's Facebook account, so it needs the owner key.
+// GS_OWNER_KEY, or GS_LEDGER_KEY when that is the only one set. With no key on the server, nothing can be approved.
+// Returns null when the caller may go on, or the response to send back.
+export function ownerGate(req) {
+  const want = process.env.GS_OWNER_KEY || process.env.GS_LEDGER_KEY || '';
+  if (!want) return json({ error: 'Approving is off: no owner key is set on the server.', reason: 'server-has-no-owner-key' }, 503);
+  const got = req.headers.get('x-owner-key') || '';
+  const a = Buffer.from(got); const b = Buffer.from(want);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return json({ error: 'Owner key needed to approve.', reason: got ? 'owner-key-does-not-match' : 'no-owner-key-sent' }, 401);
+  return null;
 }
 export const workerOk = (req) => !!process.env.GST_WORKER_KEY && req.headers.get('x-worker-key') === process.env.GST_WORKER_KEY;
 

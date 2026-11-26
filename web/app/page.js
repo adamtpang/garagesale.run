@@ -23,6 +23,14 @@ const r0 = (v) => (v === undefined || v === null || isNaN(Number(v)) ? undefined
 function toTile(d, href) {
   return { href, photo: d.photo_url || d.image_url || d.image || null, name: d.title || 'Deal', ask: r0(d.ask_price ?? d.buy_price ?? d.price), mkt: r0(d.resale_price ?? d.resell_price ?? d.est_market_price), link: d.fb_url || d.source_url || d.link || d.url || null };
 }
+// Whether an image URL loads in this browser, within a few seconds.
+const loads = (src) => new Promise((done) => {
+  const im = new window.Image();
+  const t = setTimeout(() => done(false), 7000);
+  im.onload = () => { clearTimeout(t); done(im.naturalWidth > 1); };
+  im.onerror = () => { clearTimeout(t); done(false); };
+  im.src = src;
+});
 function useRealTiles() {
   const [tiles, setTiles] = useState(null);
   useEffect(() => {
@@ -31,7 +39,11 @@ function useRealTiles() {
       const out = [];
       try { const f = await (await fetch('/api/deals', { cache: 'no-store' })).json(); if (f && !f.test) (f.deals || []).forEach((d, i) => { if (!d.example) out.push(toTile(d, `/deal/feed/${i}`)); }); } catch (e) {}
       try { const r = await (await fetch('/api/jobs?recent=1', { cache: 'no-store' })).json(); (r.jobs || []).filter((j) => j.kind === 'buy' && j.stage === 'done').forEach((j) => (j.deals || []).forEach((d, i) => out.push(toTile(d, `/deal/${j.id}/${i}`)))); } catch (e) {}
-      if (!stop) setTiles(out.filter((x, i, a) => x.name && x.photo && a.findIndex((y) => y.photo === x.photo) === i).slice(0, 6));
+      const uniq = out.filter((x, i, a) => x.name && x.photo && a.findIndex((y) => y.photo === x.photo) === i).slice(0, 12);
+      // Facebook photo links expire within days, and an old listing is likely gone. Keep a tile only when its
+      // photo really loads. With fewer than 3, the page shows the labeled example tiles instead.
+      const live = (await Promise.all(uniq.map((t) => loads(prox(t.photo)).then((ok) => (ok ? t : null))))).filter(Boolean);
+      if (!stop) setTiles(live.slice(0, 6));
     })();
     return () => { stop = true; };
   }, []);
