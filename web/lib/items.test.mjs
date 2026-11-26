@@ -53,6 +53,22 @@ test('a burst of approvals cannot go past the limit', async () => {
   assert.equal((await kvList(`items-${a}/`)).length <= 3, true);
 });
 
+test('a leftover record past the limit does not let that item through on a retry', async () => {
+  const a = acct();
+  const { kvPut } = await import('./kv.js');
+  assert.equal((await I.takeItem(a, job(1), 2)).ok, true);
+  assert.equal((await I.takeItem(a, job(2), 2)).ok, true);
+  // As if an undo never landed: a third record sits past the two free places.
+  await new Promise((r) => setTimeout(r, 20));
+  await kvPut(`items-${a}/${job(3)}.json`, { job: job(3) });
+  const t = await I.takeItem(a, job(3), 2);
+  assert.equal(t.ok, false);
+  assert.equal(t.reason, 'free-items-used');
+  assert.deepEqual(t.usage, { used: 2, free: 2, left: 0 });
+  assert.equal((await kvList(`items-${a}/`)).length, 2, 'the leftover is cleared');
+  assert.equal((await I.takeItem(a, job(1), 2)).ok, true, 'items inside the limit are still allowed');
+});
+
 test('one account never counts against another, and a bad id is refused rather than guessed', async () => {
   const a = acct(); const b = acct();
   await I.takeItem(a, job(1));

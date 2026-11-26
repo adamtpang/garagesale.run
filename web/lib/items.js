@@ -31,9 +31,13 @@ export async function takeItem(owner, jobId, free = FREE_ITEMS) {
   if (!ID.test(String(owner || '')) || !ID.test(String(jobId || ''))) return UNKNOWN;
   const before = await kvList(folder(owner));
   if (!before) return UNKNOWN;
-  if (before.some((r) => r.name === jobId)) return { ok: true, usage: usageOf(before, free) };
-  if (before.length >= free) return USED(usageOf(before, free));
   const rec = `${folder(owner)}${jobId}.json`;
+  // A record already there only counts if it holds one of the free places. One sitting past them is a
+  // leftover from an undo that didn't land: clear it again and refuse, so a retry can't slip through.
+  const mine = seatState(before, jobId, free);
+  if (mine === 'held') return { ok: true, usage: usageOf(before, free) };
+  if (mine === 'over') { await kvDel(rec); return USED(usageOf(before.filter((r) => r.name !== jobId), free)); }
+  if (before.length >= free) return USED(usageOf(before, free));
   await kvPut(rec, { job: jobId, at: new Date().toISOString() });
   const after = await kvList(folder(owner));
   const state = seatState(after, jobId, free);
