@@ -157,7 +157,14 @@ export default function Home({ mode: initMode }) {
   }
   const pick = (e) => { const f = e.target.files; sell(f); e.target.value = ''; };
 
-  const howSteps = [['1', 'Identify', 'What is it?'], ['2', 'Price', 'What is it worth?'], ['3', 'Write', 'Title, price, details.'], ['4', 'Approve', 'You say yes.'], ['5', 'Live', 'On Marketplace.']];
+  const howSteps = [
+    ['1', 'Install Garry', 'Add your own Garry bot to Grok Bot. It sets up your account for you.'],
+    ['2', 'Sign in to Facebook', "You sign in inside Garry's own browser. Garage Sale never sees your password."],
+    ['3', 'Snap pics', 'One photo per item. Add as many items as you like.'],
+    ['4', 'Watch Garry list them', 'Garry identifies each item, finds real prices and writes the listing. You approve, Garry posts.'],
+    ['5', 'Garry handles the conversations', 'When buyers write, Garry drafts every reply. You approve what gets sent.'],
+    ['6', 'Meet up, item sold', 'Garry works out a time and place with the buyer, with your OK. You show up and get paid.'],
+  ];
   const feats = ['Photo to listing', 'Honest item ID', 'Real prices', '24/7 deal scout', 'Profit dashboard', 'Buyer replies drafted', 'You approve everything'];
 
   return (
@@ -215,11 +222,15 @@ export default function Home({ mode: initMode }) {
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="!text-4xl !font-semibold !tracking-tight md:!text-6xl">How it works</h2>
         </div>
-        <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-5">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 md:grid-cols-3" data-field="how-steps">
           {howSteps.map(([n, t, p]) => <Card key={n} className="border-border/60 p-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium">{n}</div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-medium text-white">{n}</div>
             <div className="mt-6 text-lg font-semibold">{t}</div><p className="mt-1 text-sm text-muted-foreground">{p}</p></Card>)}
         </div>
+        <div className="mt-8 flex justify-center"><Button asChild size="lg" variant="brand"><a href={GARRY_INSTALL_URL} target="_blank" rel="noreferrer" data-field="install-garry-how">Install Garry</a></Button></div>
+        <Card className="mt-8 flex items-center gap-4 border-border/60 p-6" data-field="coming-soon">
+          <Badge variant="secondary">Coming soon</Badge><div><div className="text-lg font-semibold">See what's working</div><p className="text-sm text-muted-foreground">Views and conversations for each listing, and price changes Garry suggests from that activity. Not built yet.</p></div>
+        </Card>
         <Card className="mt-4 flex items-center gap-4 border-border/60 p-6">
           <Badge variant="brand">Buy</Badge><div><div className="text-lg font-semibold">Scouts find deals</div><p className="text-sm text-muted-foreground">Cheap finds near you.</p></div>
         </Card>
