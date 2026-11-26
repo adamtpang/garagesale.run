@@ -1,5 +1,6 @@
 import { put, list, del } from '@vercel/blob';
 import crypto from 'crypto';
+import { wakeGarry } from './wake.js';
 
 // Each write is a new immutable version: jobs/<id>/v-<time>-<rand>.json.
 // Reads list the prefix (strongly consistent) and fetch the newest version,
@@ -126,6 +127,7 @@ export async function indexPending(job, event, payload) {
   await put(`pending/${job.id}__${job.kind}__${event}__${nonce}.json`, JSON.stringify({ job_id: job.id, owner: job.owner || null, kind: job.kind, event, payload: payload ?? null, at: now() }), {
     access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 60,
   });
+  return nonce;
 }
 export async function listPending() {
   const { blobs } = await list({ prefix: 'pending/', limit: 1000 });
@@ -147,11 +149,65 @@ export async function clearPending(id, event, key) {
   if (urls.length) await del(urls);
   return urls.length;
 }
+// Which queued items one claim covers. With a key: exactly that item. Without one (the site owner's older
+// relay): every item of that event for the job, as before.
+export const PENDING_NAME = /^(pending|claimed)\/([a-z0-9]+)__([a-z]+)__([a-z_]+)(?:__([a-z0-9]+))?\.json$/i;
+export function claimMatches(pathname, event, key) {
+  const m = PENDING_NAME.exec(pathname);
+  if (!m) return false;
+  if (key) return m[5] === key;
+  return !event || m[4] === event;
+}
+// How long a claimed item may go without a "done" before it shows up as stalled.
+export const STALL_MINUTES = 10;
+export const isStalled = (claimedAtIso, nowMs = Date.now()) => nowMs - new Date(claimedAtIso).getTime() > STALL_MINUTES * 60000;
+
+// An account's Garry claims an item: it leaves the queue and is kept as "claimed" until the bot reports it
+// done. If the bot dies in between, the item shows up under /api/stalled instead of vanishing.
+export async function claimPending(id, event, key) {
+  const { blobs } = await list({ prefix: `pending/${id}__`, limit: 100 });
+  const mine = blobs.filter((b) => claimMatches(b.pathname, event, key));
+  const taken = [];
+  const gone = [];
+  for (const b of mine) {
+    // The item is claimed only once its contents are in hand. If it can't be read (a network blip, or another
+    // run took it a moment ago), it is left alone: not copied, not deleted, and not reported as taken.
+    let body = null;
+    try { const r = await fetch(b.url, { cache: 'no-store' }); if (r.ok) body = await r.json(); } catch (e) {}
+    if (!body || !body.job_id) continue;
+    await put(b.pathname.replace(/^pending\//, 'claimed/'), JSON.stringify({ ...body, claimed_at: now() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 60 });
+    const m = PENDING_NAME.exec(b.pathname);
+    taken.push({ event: m[4], key: m[5] || '' });
+    gone.push(b.url);
+  }
+  if (gone.length) await del(gone);
+  return taken;
+}
+export async function finishClaim(id, event, key) {
+  const { blobs } = await list({ prefix: `claimed/${id}__`, limit: 100 });
+  const urls = blobs.filter((b) => claimMatches(b.pathname, event, key)).map((b) => b.url);
+  if (urls.length) await del(urls);
+  return urls.length;
+}
+export async function listStalled(owner, nowMs = Date.now()) {
+  const { blobs } = await list({ prefix: 'claimed/', limit: 1000 });
+  const items = await Promise.all(blobs.map(async (b) => {
+    const m = PENDING_NAME.exec(b.pathname);
+    if (!m) return null;
+    let body = null;
+    try { const r = await fetch(b.url, { cache: 'no-store' }); if (r.ok) body = await r.json(); } catch (e) {}
+    if (!body || (body.owner || null) !== (owner || null) || !isStalled(body.claimed_at, nowMs)) return null;
+    return { job_id: m[2], kind: m[3], event: m[4], key: m[5] || '', payload: body.payload ?? null, claimed_at: body.claimed_at };
+  }));
+  return items.filter(Boolean).sort((a, b) => (a.claimed_at < b.claimed_at ? -1 : 1));
+}
 export async function queue(job, event, payload) {
   if (job.test) { addLog(job, `Test job: "${event}" not queued for the worker`); await saveJob(job); return job; }
   markPending(job, event, payload);
   await saveJob(job);
-  await indexPending(job, event, payload);
+  const key = await indexPending(job, event, payload);
+  // An account's Garry is woken right away. If that fails, the work is still waiting in /api/pending.
+  await wakeGarry(job, event, payload, key);
   return job;
 }
 export const isTest = (req, form) => req.headers.get('x-gst-test') === '1' || (form && String(form.get('test') || '') === '1');

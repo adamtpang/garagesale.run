@@ -1,4 +1,5 @@
 import { sessionAccount } from '../../../lib/accounts';
+import { wakeGarry } from '../../../lib/wake';
 import { recentJobs, saveJob, uploadImage, addLog, fireWebhook, markPending, isTest, indexPending, newId, now, json } from '../../../lib/store';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -51,9 +52,9 @@ export async function POST(req) {
     }
     markPending(job, 'created');
     await saveJob(job);
-    await indexPending(job, 'created');
-    // The direct webhook wakes the site owner's bot only. An account's Garry picks its work up from /api/pending.
-    if (!job.owner) await fireWebhook(job, 'created');
+    const pendingKey = await indexPending(job, 'created');
+    // The site owner's bot is woken by the owner webhook. An account's Garry is woken by the one it registered.
+    if (!job.owner) await fireWebhook(job, 'created'); else await wakeGarry(job, 'created', null, pendingKey);
     return json({ id });
   } catch (e) {
     return json({ error: 'failed to create job', detail: String(e.message || e) }, 500);
