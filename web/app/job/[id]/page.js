@@ -112,8 +112,25 @@ export default function JobPage({ params }) {
   const [price, setPrice] = useState('');
   const [approving, setApproving] = useState(false);
   const [needItems, setNeedItems] = useState(false);
-  const [paid, setPaid] = useState(false);
-  useEffect(() => { setPaid(new URLSearchParams(window.location.search).get('paid') === '1'); }, []);
+  // Back from Stripe: the card is charged, but the items arrive a moment later. '' is not back from paying,
+  // 'waiting' is watching for them, 'ready' is they are here, 'slow' is still not here after a minute.
+  // The Buy button stays hidden until they arrive, so nobody is invited to pay twice.
+  const [paid, setPaid] = useState('');
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('paid') !== '1') return undefined;
+    setPaid('waiting');
+    let stop = false; let tries = 0;
+    const look = async () => {
+      if (stop) return;
+      tries += 1;
+      try { const j = await fetch('/api/me', { cache: 'no-store' }).then((r) => r.json()); if (!stop && j.items && j.items.paid_left > 0) { setPaid('ready'); setNeedItems(false); setErr(''); return; } } catch (e) {}
+      if (stop) return;
+      if (tries >= 30) { setPaid('slow'); return; }
+      setTimeout(look, 2000);
+    };
+    look();
+    return () => { stop = true; };
+  }, []);
   const [tick, setTick] = useState(Date.now());
   const priceTouched = useRef(false);
   const [spot, setSpot] = useState(''); const [times, setTimes] = useState('');
@@ -151,7 +168,7 @@ export default function JobPage({ params }) {
     setApproving(true);
     try {
       const r = await ownerFetch(`/api/jobs/${id}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...(price !== '' ? { price: Number(price) } : {}), ...(spot || times ? { pickup: { spot: spot || 'A public spot near you, like a coffee shop', times } } : {}) }) });
-      const j = await r.json(); if (r.ok) { setJob(j); setNeedItems(false); setErr(''); } else { setNeedItems(j.reason === 'no-items-left'); setErr(j.error || 'Approve failed'); }
+      const j = await r.json(); if (r.ok) { setJob(j); setNeedItems(false); setErr(''); } else if (j.reason === 'no-items-left' && (paid === 'waiting' || paid === 'slow')) { setNeedItems(false); setErr(''); } else { setNeedItems(j.reason === 'no-items-left'); setErr(j.error || 'Approve failed'); }
     } finally { setApproving(false); }
   }
 
@@ -184,9 +201,9 @@ export default function JobPage({ params }) {
     <Eta job={job} />
     {!workerSeen && <div className="wait"><span className="spin" /><div>Grok Bot is picking this up...
       {age > 60 && <small>Still starting. This page updates on its own.</small>}</div></div>}
-    {paid && !needItems && job.stage === 'awaiting_approval' && <p className="err" style={{ color: '#34d399' }} data-field="paid">Payment received. Press Approve &amp; post again.</p>}
+    {paid && job.stage === 'awaiting_approval' && <p className="err" style={{ color: paid === 'slow' ? '#fbbf24' : '#34d399' }} data-field="paid" data-paid={paid}>{paid === 'ready' ? 'Payment received and your items are here. Press Approve & post.' : paid === 'waiting' ? 'Payment received. Adding your items, this takes a few seconds...' : "Payment received, but your items haven't arrived yet. Don't pay again. Refresh this page in a minute."}</p>}
     {err && <p className="err">{err}</p>}
-    {needItems && <p style={{ margin: '0 0 16px' }}><BuyItems job={id} /></p>}
+    {needItems && (paid === '' || paid === 'ready') && <p style={{ margin: '0 0 16px' }}><BuyItems job={id} /></p>}
 
     <div className="jgrid">
       <div className="col">

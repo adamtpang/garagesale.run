@@ -83,5 +83,8 @@ test('a paid checkout adds one pack, once, however many times Stripe says so', a
   assert.equal((await I.itemUsage(id)).bought, 100);
   assert.equal(await B.creditPack(id, 'cs_test_two'), 'credited');
   assert.equal((await I.itemUsage(id)).bought, 200);
-  assert.equal(await B.creditPack('nosuchaccount1', 'cs_test_three'), 'no-account');
+  // An account that can't be found is never quietly dropped: Stripe is asked to send the payment again.
+  assert.equal(await B.creditPack('nosuchaccount1', 'cs_test_three'), 'unknown');
+  assert.equal(await B.creditPack('../etc', 'cs_test_three'), 'unknown');
+  assert.equal(await B.creditPack(id, ''), 'unknown');
 });

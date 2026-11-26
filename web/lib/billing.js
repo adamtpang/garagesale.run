@@ -3,7 +3,7 @@
 // STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET live in the host's settings and are never sent to a browser.
 import crypto from 'crypto';
 import { kvPut, kvList } from './kv.js';
-import { getAccount, sha } from './accounts.js';
+import { sha } from './accounts.js';
 import { PACK_ITEMS, PACK_PRICE, packFolder, packName } from './items.js';
 
 const ID = /^[a-z0-9]{6,40}$/i;
@@ -72,9 +72,14 @@ export function packFromEvent(event) {
 }
 
 // Adds one pack to an account, once per Stripe checkout: Stripe may deliver the same event more than once.
-// Returns 'credited', 'already', 'no-account', or 'unknown' when storage couldn't be read (Stripe retries).
+// Returns 'credited', 'already', or 'unknown'. 'unknown' means the payment could not be recorded yet, so
+// the webhook answers 5xx and Stripe sends it again: a paid pack is never dropped on a read error.
+// An account that isn't in the list is 'unknown' too, not ignored: a missing record and a failed read look
+// the same, and a payment that keeps failing shows up in Stripe's webhook log for a person to look at.
 export async function creditPack(accountId, sessionId) {
-  if (!(await getAccount(accountId))) return 'no-account';
+  if (!ID.test(String(accountId || '')) || typeof sessionId !== 'string' || !sessionId) return 'unknown';
+  const accounts = await kvList('accounts/');
+  if (!accounts || !accounts.some((a) => a.name === accountId)) return 'unknown';
   const have = await kvList(packFolder(accountId));
   if (!have) return 'unknown';
   const hash = sha(sessionId).slice(0, 32);
