@@ -1,3 +1,4 @@
+import { sessionAccount } from '../../../lib/accounts';
 import { recentJobs, saveJob, uploadImage, addLog, fireWebhook, markPending, isTest, indexPending, newId, now, json } from '../../../lib/store';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -9,13 +10,16 @@ export async function OPTIONS() {
 export async function GET(req) {
   const u = new URL(req.url);
   if (u.searchParams.get('recent') !== '1') return json({ error: 'use ?recent=1' }, 400);
-  return json({ jobs: await recentJobs(15), at: now() });
+  const me = await sessionAccount(req);
+  return json({ jobs: await recentJobs(15, me ? me.id : null), at: now() });
 }
 
 export async function POST(req) {
   const ct = req.headers.get('content-type') || '';
   const id = newId();
   const job = { id, created_at: now(), stage: 'received', logs: [], results: {} };
+  const me = await sessionAccount(req);
+  if (me) job.owner = me.id;
   let test = isTest(req);
   try {
     if (ct.includes('multipart/form-data')) {
@@ -48,7 +52,8 @@ export async function POST(req) {
     markPending(job, 'created');
     await saveJob(job);
     await indexPending(job, 'created');
-    await fireWebhook(job, 'created');
+    // The direct webhook wakes the site owner's bot only. An account's Garry picks its work up from /api/pending.
+    if (!job.owner) await fireWebhook(job, 'created');
     return json({ id });
   } catch (e) {
     return json({ error: 'failed to create job', detail: String(e.message || e) }, 500);

@@ -1,8 +1,12 @@
-import { getJob, saveJob, clearPending, workerOk, validId, json } from '../../../../../lib/store';
+import { botPrincipal, canWork } from '../../../../../lib/accounts';
+import { getJob, saveJob, clearPending, validId, json } from '../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 export async function POST(req, { params }) {
-  if (!workerOk(req)) return json({ error: 'unauthorized' }, 401);
+  const who = await botPrincipal(req);
+  if (!who) return json({ error: 'unauthorized' }, 401);
   if (!validId(params.id)) return json({ error: 'bad id' }, 400);
+  const mine = await getJob(params.id);
+  if (mine && !canWork(mine, who)) return json({ error: 'This job belongs to another account.' }, 403);
   const body = await req.json().catch(() => ({}));
   const event = body && body.event ? String(body.event) : '';
   const key = body && body.key ? String(body.key).replace(/[^a-z0-9]/gi, '') : '';

@@ -2,6 +2,7 @@ import NavMsgs from '../components/NavMsgs';
 import './globals.css';
 import './shadcn.css';
 import Assistant from '../components/Assistant';
+import AccountNav from '../components/AccountNav';
 export const metadata = {
   title: 'Garage Sale · AI agents that buy and sell on Marketplace',
   applicationName: 'Garage Sale',
@@ -13,7 +14,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className="dark"><body className="bg-background font-sans text-foreground antialiased">
       <nav className="nav"><div className="wrap navin gap-2">
         <a href="/" className="brand shrink-0 whitespace-nowrap !gap-2 text-[14px] font-semibold tracking-tight sm:text-[15px]"><span className="logo !h-7 !w-7 !rounded-lg text-sm" aria-hidden="true">G</span>Garage Sale</a>
-        <div className="navlinks min-w-0 items-center !gap-0 whitespace-nowrap text-[12px] sm:text-[13px] sm:!gap-1 [&>a]:rounded-full [&>a]:px-[5px] sm:[&>a]:px-3 [&>a]:py-1.5 max-[379px]:[&>a:last-of-type]:!hidden [&>a]:transition-colors hover:[&>a]:bg-accent/60"><a href="/sell">Sell</a><a href="/buy">Buy</a><a href="/dashboard">Dashboard</a><NavMsgs /><a href="/about">About</a></div>
+        <div className="navlinks min-w-0 items-center !gap-0 whitespace-nowrap text-[12px] sm:text-[13px] sm:!gap-1 [&>a]:rounded-full [&>a]:px-[5px] sm:[&>a]:px-3 [&>a]:py-1.5 max-[379px]:[&>a[href='/about']]:!hidden [&>a]:transition-colors hover:[&>a]:bg-accent/60"><a href="/sell">Sell</a><a href="/buy">Buy</a><a href="/dashboard">Dashboard</a><NavMsgs /><a href="/about">About</a><AccountNav /></div>
       </div></nav>
       {children}
       <Assistant />

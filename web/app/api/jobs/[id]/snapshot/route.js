@@ -1,10 +1,13 @@
 import { put } from '@vercel/blob';
-import { getJob, saveJob, workerOk, now, json } from '../../../../../lib/store';
+import { botPrincipal, canWork } from '../../../../../lib/accounts';
+import { getJob, saveJob, now, json } from '../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 export async function POST(req, { params }) {
-  if (!workerOk(req)) return json({ error: 'unauthorized' }, 401);
+  const who = await botPrincipal(req);
+  if (!who) return json({ error: 'unauthorized' }, 401);
   const job = await getJob(params.id);
   if (!job) return json({ error: 'not found' }, 404);
+  if (!canWork(job, who)) return json({ error: 'This job belongs to another account.' }, 403);
   const fd = await req.formData().catch(() => null);
   const file = fd && fd.get('image');
   if (!file || typeof file === 'string') return json({ error: "multipart field 'image' required" }, 400);

@@ -10,6 +10,8 @@ export async function ownerFetch(url, init = {}) {
   const send = (key) => fetch(url, { ...init, headers: { ...(init.headers || {}), ...(key ? { 'x-owner-key': key } : {}) } });
   let r = await send(read());
   if (r.status !== 401) return r;
+  const why = await r.clone().json().catch(() => ({}));
+  if (!/owner-key/.test(String(why.reason || ''))) return r;
   write('');
   const typed = (window.prompt('Owner key needed to approve. Paste it here:') || '').trim();
   if (!typed) return r;
