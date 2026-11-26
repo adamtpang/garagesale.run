@@ -13,10 +13,10 @@ export async function POST(req, { params }) {
   }
   if (job.kind !== 'sell') return json({ error: 'only sell jobs can be approved' }, 400);
   if (job.stage !== 'awaiting_approval') return json({ error: `job is ${job.stage}, not awaiting_approval` }, 409);
-  // An account's item counts against its free items here, once. The site owner's own jobs are not counted.
+  // An account's item takes a free place here, or a paid one, once. The site owner's own jobs are not counted.
   if (!job.test && ownerOf(job)) {
     const took = await takeItem(ownerOf(job), job.id);
-    if (!took.ok) return json({ error: took.error, reason: took.reason, items: took.usage }, took.status);
+    if (!took.ok) return json({ error: took.error, reason: took.reason, items: took.usage, buy: took.buy || null }, took.status);
   }
   const body = await req.json().catch(() => ({}));
   const price = Number(body && body.price);
