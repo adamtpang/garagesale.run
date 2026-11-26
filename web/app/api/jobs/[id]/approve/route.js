@@ -1,9 +1,11 @@
-import { getJob, addLog, queue, json } from '../../../../../lib/store';
+import { getJob, addLog, queue, json, ownerGate } from '../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req, { params }) {
   const job = await getJob(params.id);
   if (!job) return json({ error: 'not found' }, 404);
+  // A test job is never queued for the worker, so it needs no key. A real one posts to Facebook.
+  if (!job.test) { const stop = ownerGate(req); if (stop) return stop; }
   if (job.kind !== 'sell') return json({ error: 'only sell jobs can be approved' }, 400);
   if (job.stage !== 'awaiting_approval') return json({ error: `job is ${job.stage}, not awaiting_approval` }, 409);
   const body = await req.json().catch(() => ({}));
