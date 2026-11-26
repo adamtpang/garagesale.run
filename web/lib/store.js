@@ -9,12 +9,17 @@ export const validId = (id) => typeof id === 'string' && /^[a-z0-9]{6,40}$/i.tes
 export const now = () => new Date().toISOString();
 export const newId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+// Where a job's dashboard summary lives. The site owner's jobs keep the old index. Each account has its own,
+// so one account's activity never pushes another's jobs out of its feed.
+const ACCT = /^[a-z0-9]{6,40}$/i;
+export const indexPrefix = (owner) => (owner && ACCT.test(owner) ? `account-index/${owner}/` : 'jobs-index/');
+export const indexPath = (job) => `${indexPrefix(job.owner)}${job.id}.json`;
 export function summarize(j) {
   const R = j.results || {};
   const L = R.listing || {}; const P = R.price || {}; const I = R.identification || {};
   const inq = Array.isArray(j.inquiries) ? j.inquiries : [];
   return {
-    id: j.id, kind: j.kind, stage: j.stage, test: !!j.test, created_at: j.created_at, updated_at: j.updated_at,
+    id: j.id, owner: j.owner || null, kind: j.kind, stage: j.stage, test: !!j.test, created_at: j.created_at, updated_at: j.updated_at,
     title: j.kind === 'buy' ? j.query : (L.title || I.name || ''), image_url: j.image_url || null,
     price: L.price ?? P.recommended ?? null, low: P.low ?? null, high: P.high ?? null, median: P.median ?? null,
     listing_url: j.listing_url || null, question: j.question ? j.question.message : null,
@@ -30,7 +35,7 @@ export async function saveJob(job) {
   await Promise.all([
     put(key, JSON.stringify(job), opts),
     // Lightweight index for the dashboard; never let it break a job write.
-    put(`jobs-index/${job.id}.json`, JSON.stringify(summarize(job)), opts).catch(() => null),
+    put(indexPath(job), JSON.stringify(summarize(job)), opts).catch(() => null),
   ]);
   return job;
 }
@@ -45,18 +50,20 @@ function isStale(j) {
 }
 // Cheap feed: one list() of the lightweight index, then fetch only the newest summaries.
 // No per-job version listing (that was the main source of Blob list calls).
-export async function recentJobs(limit = 15) {
+// owner: an account id, or null for the site owner's own jobs (everything from before accounts).
+export async function recentJobs(limit = 15, owner = null) {
   limit = Math.min(limit, 15);
   let blobs = [];
-  try { ({ blobs } = await list({ prefix: 'jobs-index/', limit: 1000 })); } catch (e) { return []; }
+  const pre = indexPrefix(owner);
+  try { ({ blobs } = await list({ prefix: pre, limit: 1000 })); } catch (e) { return []; }
   const top = blobs
-    .filter((b) => /^jobs-index\/[a-z0-9]+\.json$/i.test(b.pathname) && !HIDE.has(b.pathname.slice(11, -5)))
+    .filter((b) => b.pathname.startsWith(pre) && /^[a-z0-9]+\.json$/i.test(b.pathname.slice(pre.length)) && !HIDE.has(b.pathname.slice(pre.length, -5)))
     .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
     .slice(0, limit + 10);
   const sums = (await Promise.all(top.map(async (b) => {
     try { const r = await fetch(b.url, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch (e) { return null; }
   }))).filter(Boolean);
-  return sums.filter((j) => !j.test && !isStale(j)).filter((s) => !/^test\b/i.test(String(s.title || ''))).sort((a, b) => String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at))).slice(0, limit);
+  return sums.filter((j) => (j.owner || null) === (owner || null)).filter((j) => !j.test && !isStale(j)).filter((s) => !/^test\b/i.test(String(s.title || ''))).sort((a, b) => String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at))).slice(0, limit);
 }
 
 export async function getJob(id) {
@@ -116,7 +123,7 @@ const EV = /^[a-z_]{1,30}$/;
 export async function indexPending(job, event, payload) {
   if (!EV.test(event)) throw new Error('bad event');
   const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  await put(`pending/${job.id}__${job.kind}__${event}__${nonce}.json`, JSON.stringify({ job_id: job.id, kind: job.kind, event, payload: payload ?? null, at: now() }), {
+  await put(`pending/${job.id}__${job.kind}__${event}__${nonce}.json`, JSON.stringify({ job_id: job.id, owner: job.owner || null, kind: job.kind, event, payload: payload ?? null, at: now() }), {
     access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 60,
   });
 }
@@ -125,9 +132,9 @@ export async function listPending() {
   const items = await Promise.all(blobs.map(async (b) => {
     const m = b.pathname.match(/^pending\/([a-z0-9]+)__([a-z]+)__([a-z_]+)(?:__([a-z0-9]+))?\.json$/i);
     if (!m) return null;
-    let payload = null;
-    try { const r = await fetch(b.url, { cache: 'no-store' }); if (r.ok) payload = (await r.json()).payload ?? null; } catch (e) {}
-    return { job_id: m[1], kind: m[2], event: m[3], key: m[4] || '', payload, at: b.uploadedAt };
+    let payload = null; let owner = null;
+    try { const r = await fetch(b.url, { cache: 'no-store' }); if (r.ok) { const body = await r.json(); payload = body.payload ?? null; owner = body.owner || null; } } catch (e) {}
+    return { job_id: m[1], owner, kind: m[2], event: m[3], key: m[4] || '', payload, at: b.uploadedAt };
   }));
   return items.filter(Boolean);
 }
