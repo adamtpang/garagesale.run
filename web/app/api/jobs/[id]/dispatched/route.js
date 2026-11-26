@@ -1,5 +1,5 @@
 import { botPrincipal, canWork } from '../../../../../lib/accounts';
-import { getJob, saveJob, clearPending, validId, json } from '../../../../../lib/store';
+import { getJob, saveJob, clearPending, claimPending, validId, json } from '../../../../../lib/store';
 export const dynamic = 'force-dynamic';
 export async function POST(req, { params }) {
   const who = await botPrincipal(req);
@@ -10,12 +10,14 @@ export async function POST(req, { params }) {
   const body = await req.json().catch(() => ({}));
   const event = body && body.event ? String(body.event) : '';
   const key = body && body.key ? String(body.key).replace(/[^a-z0-9]/gi, '') : '';
-  const removed = await clearPending(params.id, event, key);
+  // An account's Garry claims: the item is kept as "claimed" until the bot reports it done. The site owner's
+  // relay just clears, as before.
+  const removed = who.account ? (await claimPending(params.id, event, key)).length : await clearPending(params.id, event, key);
   const job = await getJob(params.id);
   if (job && (!event || job.pending_event === event)) {
     delete job.pending_event; delete job.pending_at; delete job.pending_payload; job.dispatched_at = new Date().toISOString();
     await saveJob(job);
   }
   // claimed: this call took the work. false means another run already took it, and the caller must not do it.
-  return json({ ok: true, removed, claimed: removed > 0, job });
+  return json({ ok: true, removed, claimed: removed > 0, next: who.account ? 'When the work is finished, POST /api/jobs/<id>/done with the same event and key.' : undefined, job });
 }

@@ -50,23 +50,35 @@ Any time they ask for a sign-in link, repeat step 5.
 Trigger: **webhook** only. No schedule. Garage Sale POSTs to it when your person does something:
 
 ```json
-{"job_id": "...", "kind": "sell", "event": "created", "payload": null}
+{"job_id": "...", "kind": "sell", "event": "created", "key": "...", "payload": null}
 ```
 
-`event` is `created`, `answered`, `approved` or `reply_approved`. For each call, in this order:
+`event` is `created`, `answered`, `approved` or `reply_approved`. `key` names this one piece of work. For each call, in this order:
 
 1. **Claim it first.**
    ```
    POST /api/jobs/<job_id>/dispatched
-   {"event": "<event>"}
+   {"event": "<event>", "key": "<key>"}
    ```
    If the answer has `"claimed": false`, another run already took this work. **Stop. Do nothing else for it.**
 2. Read the job: `GET /api/jobs/<job_id>`.
 3. Do the work for that event (next section).
+4. **Report it done.**
+   ```
+   POST /api/jobs/<job_id>/done
+   {"event": "<event>", "key": "<key>"}
+   ```
 
-Claiming before working is what stops a listing being posted twice or a buyer being messaged twice.
+Claiming before working is what stops a listing being posted twice or a buyer being messaged twice. Always send the `key`: it claims exactly one piece of work, so two approved replies on one item are each handled.
 
-**Catching up.** Only when your person says "check Garage Sale": call `GET /api/pending`. It lists your own account's waiting work, oldest first, each with `waiting_seconds`. Skip anything waiting under 120 seconds, since a run that was just woken is probably on it. For the rest, do the same three steps, claim first. Don't do this at the start of every chat, and don't put it on a schedule: every routine run spends your person's usage.
+**Catching up.** Only when your person says "check Garage Sale". Don't do this at the start of every chat, and don't put it on a schedule: every routine run spends your person's usage.
+
+1. `GET /api/pending` lists your account's waiting work, oldest first, each with `key` and `waiting_seconds`. Skip anything waiting under 120 seconds, since a run that was just woken is probably on it. Do the rest with the same four steps, claim first.
+2. `GET /api/stalled` lists work you claimed more than 10 minutes ago and never reported done. A run probably died partway. **Do not simply redo it.** For each item, read the job, then:
+   - `created` or `answered`: safe to do again. Do the work, then report it done.
+   - `approved`: look at your person's Facebook Marketplace listings first. If the listing is already there, post its `listing_url`, set stage `live` and report it done. If it isn't, post it now.
+   - `reply_approved`: open that buyer conversation first. If the approved text is already sent, post `inquiry_sent` and report it done. If it isn't, send it now.
+   - If you can't tell, ask your person before doing anything.
 
 If any call answers `401`, your key is wrong: tell your person and stop.
 

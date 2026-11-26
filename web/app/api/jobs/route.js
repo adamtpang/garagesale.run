@@ -52,9 +52,9 @@ export async function POST(req) {
     }
     markPending(job, 'created');
     await saveJob(job);
-    await indexPending(job, 'created');
+    const pendingKey = await indexPending(job, 'created');
     // The site owner's bot is woken by the owner webhook. An account's Garry is woken by the one it registered.
-    if (!job.owner) await fireWebhook(job, 'created'); else await wakeGarry(job, 'created');
+    if (!job.owner) await fireWebhook(job, 'created'); else await wakeGarry(job, 'created', null, pendingKey);
     return json({ id });
   } catch (e) {
     return json({ error: 'failed to create job', detail: String(e.message || e) }, 500);

@@ -58,7 +58,8 @@ export async function webhookState(accountId) {
 }
 
 // POSTs one event to the account's Garry. Never throws: a failed wake leaves the work in /api/pending.
-export async function wakeGarry(job, event, payload) {
+// key: the queued item's own key. The bot sends it back to claim exactly this item.
+export async function wakeGarry(job, event, payload, key = '') {
   const owner = job && job.owner;
   if (!owner || !ACCT.test(owner) || job.test) return { skipped: true };
   const box = await kvGet(`account-hooks/${owner}.json`);
@@ -70,7 +71,7 @@ export async function wakeGarry(job, event, payload) {
     const r = await fetch(hook.url, {
       method: 'POST', signal: ac.signal, redirect: 'error',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${hook.key}` },
-      body: JSON.stringify({ job_id: job.id, kind: job.kind, event, payload: payload ?? null }),
+      body: JSON.stringify({ job_id: job.id, kind: job.kind, event, key: key || '', payload: payload ?? null }),
     });
     return { ok: r.ok, status: r.status };
   } catch (e) { return { ok: false }; } finally { clearTimeout(t); }
