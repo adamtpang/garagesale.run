@@ -50,9 +50,11 @@ export const codeExpired = (record, nowMs = Date.now()) => !record || !(Date.par
 
 // ---- server state ----
 
-// The session secret comes from a server secret that already exists, so there is no new variable to set.
+// The session secret is GS_SESSION_SECRET, or else derived from the worker key, which only the server and the
+// owner's bot hold. It is never derived from the owner key or the ledger key: those are typed into a browser,
+// and whoever holds the session secret can sign in as any account.
 export function sessionSecret() {
-  const base = process.env.GS_SESSION_SECRET || process.env.GS_OWNER_KEY || process.env.GS_LEDGER_KEY || process.env.GST_WORKER_KEY || '';
+  const base = process.env.GS_SESSION_SECRET || process.env.GST_WORKER_KEY || '';
   return base ? sha(`gs-session:${base}`) : '';
 }
 
@@ -127,9 +129,10 @@ export async function sessionAccount(req) {
   return id ? getAccount(id) : null;
 }
 
+// Setting and clearing use the same attributes, so the browser treats them as the same cookie.
+const cookieAttrs = () => `Path=/; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
 export function sessionCookie(accountId) {
   const exp = Date.now() + SESSION_DAYS * 86400000;
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${COOKIE}=${encodeURIComponent(signSession(accountId, exp, sessionSecret()))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${secure}`;
+  return `${COOKIE}=${encodeURIComponent(signSession(accountId, exp, sessionSecret()))}; ${cookieAttrs()}; Max-Age=${SESSION_DAYS * 86400}`;
 }
-export const clearCookie = () => `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+export const clearCookie = () => `${COOKIE}=; ${cookieAttrs()}; Max-Age=0`;

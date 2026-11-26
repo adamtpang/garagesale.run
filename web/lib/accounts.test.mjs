@@ -96,3 +96,40 @@ test('an expired sign-in code is refused', () => {
   assert.equal(A.codeExpired(null, now), true);
   assert.equal(A.LOGIN_CODE_MINUTES, 10);
 });
+
+test('signing out clears the same cookie that signing in set, with Secure in production', () => {
+  const attrs = (c) => c.split(';').slice(1).map((x) => x.trim()).filter((x) => !/^Max-Age=/.test(x)).sort().join('; ');
+  const was = process.env.NODE_ENV;
+  for (const env of ['production', 'development']) {
+    process.env.NODE_ENV = env;
+    assert.equal(attrs(A.clearCookie()), attrs(A.sessionCookie('acct01')), env);
+    assert.equal(/; Secure/.test(A.clearCookie()), env === 'production', env);
+    assert.match(A.clearCookie(), /Max-Age=0/);
+  }
+  process.env.NODE_ENV = was;
+});
+
+test('the session secret never comes from a key that is typed into a browser', () => {
+  const keep = { ...process.env };
+  delete process.env.GS_SESSION_SECRET; delete process.env.GST_WORKER_KEY;
+  process.env.GS_OWNER_KEY = 'owner-key'; process.env.GS_LEDGER_KEY = 'ledger-key';
+  assert.equal(A.sessionSecret(), '', 'owner and ledger keys alone give no sessions');
+  process.env.GST_WORKER_KEY = 'worker-key';
+  const fromWorker = A.sessionSecret();
+  assert.notEqual(fromWorker, '');
+  process.env.GS_OWNER_KEY = 'a-different-owner-key';
+  assert.equal(A.sessionSecret(), fromWorker, 'the owner key has no effect on it');
+  process.env.GS_SESSION_SECRET = 'dedicated';
+  assert.notEqual(A.sessionSecret(), fromWorker, 'a dedicated secret wins');
+  for (const k of ['GS_SESSION_SECRET', 'GST_WORKER_KEY', 'GS_OWNER_KEY', 'GS_LEDGER_KEY']) { if (keep[k] === undefined) delete process.env[k]; else process.env[k] = keep[k]; }
+});
+
+test('each account has its own job index, apart from the site owner\'s', async () => {
+  const { indexPrefix, indexPath } = await import('./store.js');
+  assert.equal(indexPrefix(null), 'jobs-index/');
+  assert.equal(indexPath({ id: 'job111' }), 'jobs-index/job111.json');
+  assert.equal(indexPath({ id: 'job222', owner: 'acct01' }), 'account-index/acct01/job222.json');
+  assert.notEqual(indexPrefix('acct01'), indexPrefix('acct02'));
+  // An odd owner value can't reach outside its own folder.
+  assert.equal(indexPrefix('../jobs-index'), 'jobs-index/');
+});

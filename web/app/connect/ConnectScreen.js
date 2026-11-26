@@ -52,7 +52,7 @@ export default function ConnectScreen() {
       </div> : <div className="mt-10 grid gap-4" data-state="signed-out">
         <Step n={1} title="Get an invite">Garage Sale is in a small beta. You need a one-time invite code from Adam.</Step>
         <Step n={2} title="Install Garry in Grok Bot">Add the Garry bot, then tell it: <span className="text-foreground">"Set me up on Garage Sale. My invite code is ..."</span></Step>
-        <Step n={3} title="Open the link Garry sends">Garry creates your account and sends you a sign-in link. One click, no password.</Step>
+        <Step n={3} title="Open the link Garry sends">Garry creates your account and sends you a sign-in link. Open it, press Sign in, and you're in. No password.</Step>
         <p className="mt-2 text-sm text-muted-foreground">Already set up? Ask your Garry: "Send me a Garage Sale sign-in link." <a className="underline underline-offset-4" href={GUIDE} target="_blank" rel="noreferrer">Garry's setup guide</a></p>
       </div>}
 

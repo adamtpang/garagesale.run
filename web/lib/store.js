@@ -9,6 +9,11 @@ export const validId = (id) => typeof id === 'string' && /^[a-z0-9]{6,40}$/i.tes
 export const now = () => new Date().toISOString();
 export const newId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+// Where a job's dashboard summary lives. The site owner's jobs keep the old index. Each account has its own,
+// so one account's activity never pushes another's jobs out of its feed.
+const ACCT = /^[a-z0-9]{6,40}$/i;
+export const indexPrefix = (owner) => (owner && ACCT.test(owner) ? `account-index/${owner}/` : 'jobs-index/');
+export const indexPath = (job) => `${indexPrefix(job.owner)}${job.id}.json`;
 export function summarize(j) {
   const R = j.results || {};
   const L = R.listing || {}; const P = R.price || {}; const I = R.identification || {};
@@ -30,7 +35,7 @@ export async function saveJob(job) {
   await Promise.all([
     put(key, JSON.stringify(job), opts),
     // Lightweight index for the dashboard; never let it break a job write.
-    put(`jobs-index/${job.id}.json`, JSON.stringify(summarize(job)), opts).catch(() => null),
+    put(indexPath(job), JSON.stringify(summarize(job)), opts).catch(() => null),
   ]);
   return job;
 }
@@ -49,9 +54,10 @@ function isStale(j) {
 export async function recentJobs(limit = 15, owner = null) {
   limit = Math.min(limit, 15);
   let blobs = [];
-  try { ({ blobs } = await list({ prefix: 'jobs-index/', limit: 1000 })); } catch (e) { return []; }
+  const pre = indexPrefix(owner);
+  try { ({ blobs } = await list({ prefix: pre, limit: 1000 })); } catch (e) { return []; }
   const top = blobs
-    .filter((b) => /^jobs-index\/[a-z0-9]+\.json$/i.test(b.pathname) && !HIDE.has(b.pathname.slice(11, -5)))
+    .filter((b) => b.pathname.startsWith(pre) && /^[a-z0-9]+\.json$/i.test(b.pathname.slice(pre.length)) && !HIDE.has(b.pathname.slice(pre.length, -5)))
     .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
     .slice(0, limit + 10);
   const sums = (await Promise.all(top.map(async (b) => {

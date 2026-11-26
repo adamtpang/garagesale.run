@@ -28,7 +28,7 @@ Do these in order. Keep each message to your person to one or two short sentence
    ```
    POST /api/garry/login-link
    ```
-   The answer has `url`. Send it with one line: "Open this to sign in to Garage Sale. It works once, for 10 minutes." If they say it expired, make a new one.
+   The answer has `url`. Send it with one line: "Open this and press Sign in. It works once, for 10 minutes." If they say it expired, make a new one. Opening the link does nothing on its own, so a chat preview can't use it up. Only the Sign in button does.
 5. **Facebook.** Open `https://www.facebook.com/marketplace` in your own browser and tell them: "Sign in to Facebook in my browser so I can post for you. I never see your password. Posting from your account is your choice and your risk." Wait until they say it's done, then check that Marketplace loads signed in. Don't go on until it does.
 6. **First item.** Tell them: "Open garagesale.run/sell and take a photo of one thing you want to sell. I'll price it and draft the listing."
 7. **Turn on your routine** (below) and tell them you're ready.
