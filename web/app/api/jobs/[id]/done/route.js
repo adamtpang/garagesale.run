@@ -11,6 +11,7 @@ export async function POST(req, { params }) {
   const body = await req.json().catch(() => ({}));
   const event = body && body.event ? String(body.event) : '';
   const key = body && body.key ? String(body.key).replace(/[^a-z0-9]/gi, '') : '';
-  if (!event && !key) return json({ error: 'event or key is required' }, 400);
+  // A Garry finishes one item by its key. The site owner's bot may finish by event, as its relay has no keys.
+  if (who.account ? !key : (!event && !key)) return json({ error: 'key is required: the key you claimed with.' }, 400);
   return json({ ok: true, finished: await finishClaim(params.id, event, key) });
 }

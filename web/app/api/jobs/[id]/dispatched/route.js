@@ -10,6 +10,8 @@ export async function POST(req, { params }) {
   const body = await req.json().catch(() => ({}));
   const event = body && body.event ? String(body.event) : '';
   const key = body && body.key ? String(body.key).replace(/[^a-z0-9]/gi, '') : '';
+  // A Garry must name the one item it is claiming. Without a key a claim would take every item of that event.
+  if (who.account && !key) return json({ error: 'key is required: send the key from the wake call or from /api/pending.' }, 400);
   // An account's Garry claims: the item is kept as "claimed" until the bot reports it done. The site owner's
   // relay just clears, as before.
   const removed = who.account ? (await claimPending(params.id, event, key)).length : await clearPending(params.id, event, key);

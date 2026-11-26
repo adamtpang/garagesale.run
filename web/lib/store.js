@@ -168,14 +168,19 @@ export async function claimPending(id, event, key) {
   const { blobs } = await list({ prefix: `pending/${id}__`, limit: 100 });
   const mine = blobs.filter((b) => claimMatches(b.pathname, event, key));
   const taken = [];
+  const gone = [];
   for (const b of mine) {
-    let body = {};
+    // The item is claimed only once its contents are in hand. If it can't be read (a network blip, or another
+    // run took it a moment ago), it is left alone: not copied, not deleted, and not reported as taken.
+    let body = null;
     try { const r = await fetch(b.url, { cache: 'no-store' }); if (r.ok) body = await r.json(); } catch (e) {}
+    if (!body || !body.job_id) continue;
     await put(b.pathname.replace(/^pending\//, 'claimed/'), JSON.stringify({ ...body, claimed_at: now() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 60 });
     const m = PENDING_NAME.exec(b.pathname);
     taken.push({ event: m[4], key: m[5] || '' });
+    gone.push(b.url);
   }
-  if (mine.length) await del(mine.map((b) => b.url));
+  if (gone.length) await del(gone);
   return taken;
 }
 export async function finishClaim(id, event, key) {
