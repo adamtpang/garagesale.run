@@ -1,5 +1,6 @@
 import { put, list, del } from '@vercel/blob';
 import crypto from 'crypto';
+import { wakeGarry } from './wake.js';
 
 // Each write is a new immutable version: jobs/<id>/v-<time>-<rand>.json.
 // Reads list the prefix (strongly consistent) and fetch the newest version,
@@ -152,6 +153,8 @@ export async function queue(job, event, payload) {
   markPending(job, event, payload);
   await saveJob(job);
   await indexPending(job, event, payload);
+  // An account's Garry is woken right away. If that fails, the work is still waiting in /api/pending.
+  await wakeGarry(job, event, payload);
   return job;
 }
 export const isTest = (req, form) => req.headers.get('x-gst-test') === '1' || (form && String(form.get('test') || '') === '1');
