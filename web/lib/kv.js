@@ -39,3 +39,12 @@ export async function kvDel(p) {
   }
   try { fs.unlinkSync(file(p)); } catch (e) {}
 }
+
+// How many records sit under a folder, such as "accounts/". Used for the beta seat count.
+export async function kvCount(folder) {
+  if (!/^[a-z0-9-]+\/$/i.test(folder)) return 0;
+  if (blobOn()) {
+    try { const { blobs } = await list({ prefix: folder, limit: 1000 }); return blobs.filter((b) => SAFE.test(b.pathname)).length; } catch (e) { return 0; }
+  }
+  try { return fs.readdirSync(file(folder.slice(0, -1))).filter((f) => f.endsWith('.json')).length; } catch (e) { return 0; }
+}

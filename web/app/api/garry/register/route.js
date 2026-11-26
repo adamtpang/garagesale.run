@@ -1,12 +1,13 @@
 import { json } from '../../../../lib/store';
 import { registerGarry, sessionSecret } from '../../../../lib/accounts';
 export const dynamic = 'force-dynamic';
-// A Garry bot registers itself with a one-time invite. The bot key comes back once: the bot must save it.
+// A Garry bot registers itself: no invite needed while beta seats are open, and an invite always works.
+// The bot key comes back once: the bot must save it.
 export async function POST(req) {
   if (!sessionSecret()) return json({ error: 'Accounts are off: the server has no secret set.' }, 503);
   const body = await req.json().catch(() => ({}));
   const out = await registerGarry({ invite: body && body.invite, name: body && body.name });
-  if (out.error) return json({ error: out.error }, out.status);
+  if (out.error) return json({ error: out.error, reason: out.reason }, out.status);
   return json({
     account: { id: out.account.id, name: out.account.name },
     garry_key: out.key,

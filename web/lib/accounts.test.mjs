@@ -133,3 +133,33 @@ test('each account has its own job index, apart from the site owner\'s', async (
   // An odd owner value can't reach outside its own folder.
   assert.equal(indexPrefix('../jobs-index'), 'jobs-index/');
 });
+
+test('a Garry can register with no invite while beta seats are open, and an invite still works when they are full', async () => {
+  const keep = process.env.GS_BETA_SEATS;
+  assert.equal(A.DEFAULT_BETA_SEATS, 25);
+  assert.equal(A.seatOpen(24, 25), true);
+  assert.equal(A.seatOpen(25, 25), false);
+  delete process.env.GS_BETA_SEATS; assert.equal(A.betaSeats(), 25);
+  process.env.GS_BETA_SEATS = 'lots'; assert.equal(A.betaSeats(), 25, 'an odd value falls back to the default');
+  process.env.GS_BETA_SEATS = '0'; assert.equal(A.betaSeats(), 0);
+
+  // Seats closed: no invite is refused with a reason the bot can act on, and nothing is created.
+  const full = await A.registerGarry({ name: 'Pat' });
+  assert.deepEqual([full.status, full.reason], [403, 'beta-full']);
+  // An invite still works when the open seats are full.
+  const invite = await A.createInvite('Pat');
+  const viaInvite = await A.registerGarry({ invite, name: 'Pat' });
+  made.push(`invites/${A.sha(invite)}.json`, `accounts/${viaInvite.account.id}.json`, `account-keys/${A.sha(viaInvite.key)}.json`);
+  assert.equal(viaInvite.account.joined, 'invite');
+  // A wrong invite is refused even when seats are open: it is never silently treated as "no invite".
+  process.env.GS_BETA_SEATS = '1000';
+  const wrong = await A.registerGarry({ invite: 'inv-0000000000000000', name: 'Pat' });
+  assert.deepEqual([wrong.status, wrong.reason], [403, 'bad-invite']);
+  // Seats open: no invite needed.
+  const open = await A.registerGarry({ name: 'Pat' });
+  made.push(`accounts/${open.account.id}.json`, `account-keys/${A.sha(open.key)}.json`);
+  assert.match(open.key, /^garry_[a-f0-9]{48}$/);
+  assert.equal(open.account.joined, 'open');
+  assert.equal((await A.registerGarry({ name: '  ' })).status, 400);
+  if (keep === undefined) delete process.env.GS_BETA_SEATS; else process.env.GS_BETA_SEATS = keep;
+});

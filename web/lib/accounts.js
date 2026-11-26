@@ -4,7 +4,7 @@
 //   3. Garry asks for a sign-in link and gives it to its person. Opening it signs their browser in.
 // Keys, invites and sign-in codes are stored only as hashes.
 import crypto from 'crypto';
-import { kvGet, kvPut, kvDel } from './kv.js';
+import { kvGet, kvPut, kvDel, kvCount } from './kv.js';
 
 export const LOGIN_CODE_MINUTES = 10;
 export const SESSION_DAYS = 30;
@@ -65,14 +65,31 @@ export async function createInvite(note) {
 }
 
 // Registers a Garry bot. The invite is used up. The bot key is returned once and never stored in the clear.
+// How many accounts may join without an invite while this is a beta. GS_BETA_SEATS overrides it; 0 closes
+// open sign-up. An invite always works, even when the open seats are full.
+export const DEFAULT_BETA_SEATS = 25;
+export function betaSeats() {
+  const n = Number(process.env.GS_BETA_SEATS);
+  return process.env.GS_BETA_SEATS !== undefined && process.env.GS_BETA_SEATS !== '' && Number.isInteger(n) && n >= 0 ? n : DEFAULT_BETA_SEATS;
+}
+export const seatOpen = (accountsNow, seats) => accountsNow < seats;
+
 export async function registerGarry({ invite, name }) {
-  const inviteKey = `invites/${sha(String(invite || '').trim())}.json`;
-  const inv = await kvGet(inviteKey);
-  if (!inv) return { error: 'That invite code is not valid, or it was already used.', status: 403 };
   const person = cleanName(name);
   if (!person) return { error: 'name is required: the first name of the person this Garry works for.', status: 400 };
-  await kvDel(inviteKey);
-  const account = { id: rand(6), name: person, created_at: now(), invite_note: inv.note || '' };
+  const code = String(invite || '').trim();
+  let inv = null;
+  if (code) {
+    // With an invite: the code must be good, and it is used up.
+    const inviteKey = `invites/${sha(code)}.json`;
+    inv = await kvGet(inviteKey);
+    if (!inv) return { error: 'That invite code is not valid, or it was already used.', status: 403, reason: 'bad-invite' };
+    await kvDel(inviteKey);
+  } else if (!seatOpen(await kvCount('accounts/'), betaSeats())) {
+    // Without one: open sign-up, while there are beta seats left.
+    return { error: 'The Garage Sale beta is full right now. Ask Adam for an invite code, then register again with it.', status: 403, reason: 'beta-full' };
+  }
+  const account = { id: rand(6), name: person, created_at: now(), invite_note: inv ? (inv.note || '') : '', joined: inv ? 'invite' : 'open' };
   const key = `garry_${rand(24)}`;
   await kvPut(`accounts/${account.id}.json`, account);
   await kvPut(`account-keys/${sha(key)}.json`, { account_id: account.id, created_at: now() });
