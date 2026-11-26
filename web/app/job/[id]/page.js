@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import DealCard from '../../../components/DealCard';
 import Photo, { prox } from '../../../components/Photo';
 import { ownerFetch } from '../../../lib/ownerKey';
+import BuyItems from '../../../components/BuyItems';
 
 const STAGES = {
   sell: ['received', 'identifying', 'researching', 'writing', 'awaiting_approval', 'approved', 'posting', 'live'],
@@ -110,6 +111,9 @@ export default function JobPage({ params }) {
   const [err, setErr] = useState('');
   const [price, setPrice] = useState('');
   const [approving, setApproving] = useState(false);
+  const [needItems, setNeedItems] = useState(false);
+  const [paid, setPaid] = useState(false);
+  useEffect(() => { setPaid(new URLSearchParams(window.location.search).get('paid') === '1'); }, []);
   const [tick, setTick] = useState(Date.now());
   const priceTouched = useRef(false);
   const [spot, setSpot] = useState(''); const [times, setTimes] = useState('');
@@ -147,7 +151,7 @@ export default function JobPage({ params }) {
     setApproving(true);
     try {
       const r = await ownerFetch(`/api/jobs/${id}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...(price !== '' ? { price: Number(price) } : {}), ...(spot || times ? { pickup: { spot: spot || 'A public spot near you, like a coffee shop', times } } : {}) }) });
-      const j = await r.json(); if (r.ok) setJob(j); else setErr(j.error || 'Approve failed');
+      const j = await r.json(); if (r.ok) { setJob(j); setNeedItems(false); setErr(''); } else { setNeedItems(j.reason === 'no-items-left'); setErr(j.error || 'Approve failed'); }
     } finally { setApproving(false); }
   }
 
@@ -180,7 +184,9 @@ export default function JobPage({ params }) {
     <Eta job={job} />
     {!workerSeen && <div className="wait"><span className="spin" /><div>Grok Bot is picking this up...
       {age > 60 && <small>Still starting. This page updates on its own.</small>}</div></div>}
+    {paid && !needItems && job.stage === 'awaiting_approval' && <p className="err" style={{ color: '#34d399' }} data-field="paid">Payment received. Press Approve &amp; post again.</p>}
     {err && <p className="err">{err}</p>}
+    {needItems && <p style={{ margin: '0 0 16px' }}><BuyItems job={id} /></p>}
 
     <div className="jgrid">
       <div className="col">

@@ -63,7 +63,7 @@ Do steps 1 to 3 silently, before your first message.
 
 Any time they ask for a sign-in link, send a fresh one from `POST /api/garry/login-link`.
 
-**Free items.** Each account's first 10 approved items are free. `GET /api/garry/me` shows `"items": {"used", "free", "left"}`. If your person asks how many they have left, read it from there. Past the free items, the app refuses Approve itself: you never post an item the app didn't send you an `approved` event for, and you never take payment.
+**Items and paying.** Each account's first 10 approved items are free. After that, your person buys 100 more items for $10 in the app (a **Buy 100 items for $10** button appears when they press Approve with none left, and on `garagesale.run/connect`). `GET /api/garry/me` shows `"items": {"used", "free", "left", "bought", "paid_used", "paid_left"}`: `left` is free items left, `paid_left` is paid items left. If your person asks how many they have, read it from there. You never take payment, never ask for card details, and never post an item the app didn't send you an `approved` event for.
 
 ## The worker routine
 

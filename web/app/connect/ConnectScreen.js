@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ownerFetch } from '../../lib/ownerKey';
 import { GARRY_INSTALL_URL } from '../../lib/garry';
+import { PACK_ITEMS } from '../../lib/pack';
+import BuyItems from '../../components/BuyItems';
 
 const GUIDE = 'https://github.com/adamtpang/garagesale.run/blob/main/docs/GARRY.md';
 const Step = ({ n, title, done, children }) => <Card className="border-border/60 p-6" data-step={n} data-done={done ? 'yes' : 'no'}>
@@ -22,7 +24,7 @@ export default function ConnectScreen() {
   const [invite, setInvite] = useState(''); const [note, setNote] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    setFlag(q.get('link') === 'expired' ? 'expired' : q.get('welcome') ? 'welcome' : '');
+    setFlag(q.get('link') === 'expired' ? 'expired' : q.get('paid') ? 'paid' : q.get('welcome') ? 'welcome' : '');
     fetch('/api/me', { cache: 'no-store' }).then((r) => r.json()).then((j) => { setItems(j.items || null); setMe(j.account || null); }).catch(() => setMe(null));
   }, []);
   async function signOut() { await fetch('/api/signout', { method: 'POST' }); window.location.href = '/connect'; }
@@ -44,12 +46,13 @@ export default function ConnectScreen() {
         : 'Garry is your own Grok Bot. It signs you in here, prices your items, and posts them from your own Facebook. You approve every step.'}</p>
 
       {flag === 'expired' && <p role="status" className="mt-6 rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm" data-field="expired">That sign-in link was already used or has expired. Ask your Garry for a new one: "Send me a Garage Sale sign-in link."</p>}
+      {flag === 'paid' && me && <p role="status" className="mt-6 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-3 text-sm" data-field="paid">Payment received. Your {PACK_ITEMS} items show here within a minute. Refresh if they haven't yet.</p>}
       {flag === 'welcome' && me && <p role="status" className="mt-6 rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-3 text-sm" data-field="welcome">You're signed in on this browser for 30 days.</p>}
 
       {me === undefined ? <p className="mt-10 text-sm text-muted-foreground">Loading...</p> : me ? <div className="mt-10 grid gap-4" data-state="signed-in">
         <Step n={1} title="Garry is connected" done>Signed in as {me.name}.</Step>
         <Step n={2} title="Sign Garry's browser in to Facebook">Ask Garry to open Facebook in its own browser, then sign in there yourself. Garry never sees or stores your password. Posting from your account is your choice and your risk.</Step>
-        <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.{items && <p className="mt-2 text-sm" data-field="items">{items.left > 0 ? `${items.used} of ${items.free} free items used. An item counts when you approve it.` : `You've used your ${items.free} free items. Paying for more isn't open yet.`}</p>}<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
+        <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.{items && <p className="mt-2 text-sm" data-field="items">{items.left > 0 ? `${items.used} of ${items.free} free items used. An item counts when you approve it.` : items.paid_left > 0 ? `${items.paid_left} paid items left.` : items.bought > 0 ? "You've used all your items." : `You've used your ${items.free} free items.`}{items.left > 0 && items.paid_left > 0 ? ` Then ${items.paid_left} paid items.` : ''}</p>}{items && items.left === 0 && <div className="mt-3"><BuyItems className="inline-flex h-10 items-center rounded-full bg-brand px-5 text-sm font-medium text-white disabled:opacity-60" /></div>}<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
         <div className="mt-2"><button type="button" onClick={signOut} className="border-0 bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4" style={{ background: 'none' }}>Sign out on this browser</button></div>
       </div> : <div className="mt-10 grid gap-4" data-state="signed-out">
         <Step n={1} title="Install Garry in Grok Bot">Garry is a free Grok Bot. Add your own copy, then say hello.<div className="mt-4"><Button asChild><a href={GARRY_INSTALL_URL} target="_blank" rel="noreferrer" data-field="install-garry">Install Garry</a></Button></div></Step>

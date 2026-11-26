@@ -66,3 +66,23 @@ Garry reads `docs/GARRY.md` from `main` at the start of every chat and every rou
 2. Every installed Garry picks the change up on its next chat or run. Nobody reinstalls anything.
 
 Two cautions. Anyone who can merge to `main` can change what every tester's Garry does, so keep that to you. And a bot built before this section existed needs one nudge: tell it "Re-read your instructions from the link in your Stay current section", or paste the new `docs/GARRY.md` into it once.
+
+## Taking payment (Stripe)
+
+After 10 free items, an account buys 100 more for $10. The numbers live in `web/lib/pack.js`. Until both keys below are set in Vercel, the **Buy 100 items for $10** button answers "Paying isn't switched on yet." and nothing can be charged.
+
+You do these yourself. Keys go into Vercel only: never into a chat, a file in this repo, or Garry.
+
+1. **Try it in test mode first.** In the Stripe dashboard, switch to a sandbox (test mode).
+2. **Add the webhook.** Developers, Webhooks, Add destination:
+   - Endpoint URL: `https://garagesale.run/api/billing/webhook`
+   - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
+   - Copy the signing secret (starts with `whsec_`).
+3. **Add two variables in Vercel**, project `garagesale.run`, Production:
+   - `STRIPE_SECRET_KEY`: the secret key (starts with `sk_test_` in test mode)
+   - `STRIPE_WEBHOOK_SECRET`: the signing secret from step 2
+4. **Redeploy** so the site picks them up.
+5. **Test.** Signed in as a test account with its free items used, press **Buy 100 items for $10** and pay with Stripe's test card `4242 4242 4242 4242`, any future date, any code. Within a minute `garagesale.run/connect` should show 100 paid items.
+6. **Go live.** Repeat steps 2 to 4 in live mode with the live key (`sk_live_`) and the live webhook's signing secret.
+
+What it does not do yet: refunds do not take items back, and there is no receipt page beyond Stripe's own email.
