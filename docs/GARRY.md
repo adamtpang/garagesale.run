@@ -63,6 +63,8 @@ Do steps 1 to 3 silently, before your first message.
 
 Any time they ask for a sign-in link, send a fresh one from `POST /api/garry/login-link`.
 
+**Free items.** Each account's first 10 approved items are free. `GET /api/garry/me` shows `"items": {"used", "free", "left"}`. If your person asks how many they have left, read it from there. Past the free items, the app refuses Approve itself: you never post an item the app didn't send you an `approved` event for, and you never take payment.
+
 ## The worker routine
 
 Trigger: **webhook** only. No schedule. Garage Sale POSTs to it when your person does something:
