@@ -146,10 +146,6 @@ export async function queue(job, event, payload) {
   await indexPending(job, event, payload);
   return job;
 }
-// ?dry_run=1 on a write route checks and scores the body and says what would be saved, but saves nothing
-// and makes no drive lookups. For testing a post without changing the live site.
-export const isDryRun = (req) => { try { return ['1', 'true'].includes(new URL(req.url).searchParams.get('dry_run')); } catch { return false; } };
-export const DRY_RUN_NOTE = 'Dry run: nothing was saved and no drive times were looked up. Send the same body without ?dry_run=1 to save it.';
 export const isTest = (req, form) => req.headers.get('x-gst-test') === '1' || (form && String(form.get('test') || '') === '1');
 
 export async function saveVersioned(prefixKey, obj) {
@@ -164,8 +160,7 @@ export async function readLatest(prefixKey) {
   if (blobs.length > 40) { try { await del(blobs.slice(0, -5).map((b) => b.url)); } catch (e) {} }
   return r.ok ? r.json() : null;
 }
-// The check lives in workerKey.js: it trims stray whitespace, allows a second key during rotation, and compares in constant time.
-export { workerOk, workerCheck } from './workerKey.js';
+export const workerOk = (req) => !!process.env.GST_WORKER_KEY && req.headers.get('x-worker-key') === process.env.GST_WORKER_KEY;
 
 export const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });

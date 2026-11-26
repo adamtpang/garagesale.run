@@ -61,17 +61,17 @@ export default function Conversations() {
   const ist = { new: 'brand', drafted: 'warn', sending: 'secondary' };
   return <main className="wrap mx-auto max-w-3xl py-16 md:py-24">
     <p className="text-sm font-medium text-muted-foreground">Inbox</p><h1 className="mt-2 !text-5xl !font-semibold !tracking-tight md:!text-6xl">Messages</h1>
-    {tx.length > 0 && <div className="mt-10 flex gap-3 overflow-x-auto pb-2">{tx.map((j) => <a key={j.id} className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card p-2 pr-4 transition-colors hover:bg-accent/40" href={j.listing_url || `/job/${j.id}`} target={j.listing_url ? '_blank' : undefined} rel="noopener">
+    {tx.length > 0 && <div className="mt-10 flex gap-3 overflow-x-auto pb-2">{tx.map((j) => <a key={j.id} className="flex shrink-0 items-center gap-3 rounded-2xl border border-border/60 bg-card p-2 pr-4 transition-colors hover:bg-accent/40" href={j.listing_url || `/job/${j.id}`} target={j.listing_url ? '_blank' : undefined} rel="noopener">
       <span className={cn(thumb, 'h-10 w-10')}><Photo src={j.image_url} title={j.title} /></span>
       <span className="flex flex-col gap-1"><b className="max-w-[160px] truncate text-sm font-medium">{j.title || 'Item'}</b><Badge variant={j.stage === 'live' ? 'success' : 'secondary'} className="w-fit font-normal">{LABEL[j.stage] || j.stage}</Badge></span>
     </a>)}</div>}
-    {err && <div className="mt-6 rounded-xl border border-destructive bg-red-200 px-4 py-3 text-sm text-red-800">{err}</div>}
-    {jobs === null ? <div className="mt-12 text-center text-sm text-muted-foreground">Loading...</div> : threads.length === 0 ? <Card className="mt-12 border-border p-10 text-center text-muted-foreground">No buyer messages yet. Grok Bot checks your Marketplace inbox and drafts replies for you to approve.</Card> :
-      <div className="mt-12 grid gap-6">{threads.map(({ j, f, inqs }) => <Card key={j.id} className="overflow-hidden border-border">
+    {err && <div className="mt-6 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-red-300">{err}</div>}
+    {jobs === null ? <div className="mt-12 text-center text-sm text-muted-foreground">Loading...</div> : threads.length === 0 ? <Card className="mt-12 border-border/60 p-10 text-center text-muted-foreground">No buyer messages yet. Grok Bot checks your Marketplace inbox and drafts replies for you to approve.</Card> :
+      <div className="mt-12 grid gap-6">{threads.map(({ j, f, inqs }) => <Card key={j.id} className="overflow-hidden border-border/60">
         <div className="flex items-center gap-4 p-5"><a className={cn(thumb, 'h-14 w-14')} href={`/job/${j.id}`}><Photo src={j.image_url} title={j.title} /></a>
           <div className="min-w-0 flex-1"><a href={`/job/${j.id}`} className="block truncate text-lg font-semibold">{j.title || 'Item'}</a>{j.listing_url && <a className="text-sm text-muted-foreground hover:text-foreground" href={j.listing_url} target="_blank" rel="noopener">View listing</a>}</div></div>
         <Separator />
-        <div>{inqs.map((q, qi) => <div key={q.id} id={'inq-' + q.id} className={cn('grid gap-4 p-5 transition-colors duration-700', qi > 0 && 'border-t border-border', hl === q.id && 'bg-accent')}>
+        <div>{inqs.map((q, qi) => <div key={q.id} id={'inq-' + q.id} className={cn('grid gap-4 p-5 transition-colors duration-700', qi > 0 && 'border-t border-border/60', hl === q.id && 'bg-brand/10')}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3"><Avatar className="h-9 w-9"><AvatarFallback className="text-sm">{String(q.buyer_name || 'B').charAt(0).toUpperCase()}</AvatarFallback></Avatar>
               <div><div className="font-medium">{q.buyer_name || 'Buyer'} <span className="text-xs font-normal text-muted-foreground">{q.sent_at ? 'replied ' + ago(q.sent_at) : ''}</span></div>
