@@ -16,5 +16,6 @@ export async function POST(req, { params }) {
     delete job.pending_event; delete job.pending_at; delete job.pending_payload; job.dispatched_at = new Date().toISOString();
     await saveJob(job);
   }
-  return json({ ok: true, removed, job });
+  // claimed: this call took the work. false means another run already took it, and the caller must not do it.
+  return json({ ok: true, removed, claimed: removed > 0, job });
 }

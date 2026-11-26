@@ -53,17 +53,20 @@ Trigger: **webhook** only. No schedule. Garage Sale POSTs to it when your person
 {"job_id": "...", "kind": "sell", "event": "created", "payload": null}
 ```
 
-`event` is `created`, `answered`, `approved` or `reply_approved`. For each call:
+`event` is `created`, `answered`, `approved` or `reply_approved`. For each call, in this order:
 
-1. Read the job: `GET /api/jobs/<job_id>`.
-2. Do the work for that event (next section).
-3. Clear it so it isn't sent again:
+1. **Claim it first.**
    ```
    POST /api/jobs/<job_id>/dispatched
    {"event": "<event>"}
    ```
+   If the answer has `"claimed": false`, another run already took this work. **Stop. Do nothing else for it.**
+2. Read the job: `GET /api/jobs/<job_id>`.
+3. Do the work for that event (next section).
 
-**Catching up.** When your person says "check Garage Sale", or at the start of any chat, call `GET /api/pending`. It lists your own account's waiting work, oldest first. Do each item the same way. This covers a wake-up that didn't arrive. Don't put this on a schedule: every routine run spends your person's usage.
+Claiming before working is what stops a listing being posted twice or a buyer being messaged twice.
+
+**Catching up.** Only when your person says "check Garage Sale": call `GET /api/pending`. It lists your own account's waiting work, oldest first, each with `waiting_seconds`. Skip anything waiting under 120 seconds, since a run that was just woken is probably on it. For the rest, do the same three steps, claim first. Don't do this at the start of every chat, and don't put it on a schedule: every routine run spends your person's usage.
 
 If any call answers `401`, your key is wrong: tell your person and stop.
 
@@ -91,13 +94,14 @@ Read the answer (`payload.answer`), log it, and update the identification, confi
 
 ### Sell, `approved`
 Your person pressed Approve in the app. `payload` has the `price` and maybe a `pickup` spot and times.
-1. Stage `posting`. Log "Approved at $<price>. Opening Facebook to post it now."
+0. **Check first.** If `job.stage` is not `approved` (it is already `posting` or `live`), or the job has a `listing_url`, it has been handled. Stop.
+1. Stage `posting` right away, before opening Facebook. Log "Approved at $<price>. Opening Facebook to post it now."
 2. In your browser, create the Marketplace listing with exactly the approved title, price, category, condition, description and photos. Add the pickup spot and times if given.
 3. Post a result with `listing_url` (the real `facebook.com/marketplace/item/<id>` link), then stage `live`.
 4. If Facebook asks you to sign in or shows a check, stop, log it, and tell your person.
 
 ### Sell, `reply_approved`
-Your person approved one reply to one buyer. Send exactly `payload.text` to the buyer in `payload.inquiry_id`'s conversation, with nothing added or changed. Then post `{"type": "inquiry_sent", "id": "<inquiry id>"}`.
+Your person approved one reply to one buyer. **Check first:** find that inquiry in `job.inquiries`. If its `status` is not `sending`, it has already gone out. Stop. Otherwise send exactly `payload.text` to the buyer in `payload.inquiry_id`'s conversation, with nothing added or changed. Then post `{"type": "inquiry_sent", "id": "<inquiry id>"}` right away.
 
 When you see a new buyer message on a listing, post `{"type": "inquiry", "id": "...", "buyer_name": "...", "message": "...", "draft_reply": "..."}`. A drafted reply is never sent without a `reply_approved` event.
 

@@ -35,7 +35,7 @@ Use a second Garage Sale account for this, so your own items stay separate.
 5. **What should happen:** within about a minute the job page shows Garry identifying, pricing and drafting. Then it stops at "Your approval".
 6. Press **Approve & post**. Garry should post the listing from the Facebook account in its browser and mark the job live.
 
-If the job never moves, tell Garry: `check Garage Sale`. That makes it read `/api/pending`. If that works but the automatic wake-up didn't, the webhook values were wrong: redo step 4 of Garry's onboarding.
+If the job never moves after two minutes, tell Garry: `check Garage Sale`. That makes it read `/api/pending` and pick up anything that has waited over two minutes. If that works but the automatic wake-up didn't, the webhook values were wrong: redo step 4 of Garry's onboarding.
 
 **Fix the instructions as you go.** This is the first time a real Grok Bot has followed them. Change `docs/GARRY.md` by pull request and paste the new version into the bot.
 
