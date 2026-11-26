@@ -3,7 +3,7 @@ import { json } from '../../../lib/store';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const KW = { sell: ['sell', 'photo', 'list', 'listing', 'price', 'comps'], approve: ['approve', 'post', 'facebook account', 'api', 'browser', 'publish'], bulk: ['bulk', 'many', 'multiple', 'moving', 'batch'], buy: ['buy', 'find', 'search', 'scout', 'looking'], arbitrage: ['arbitrage', 'profit', 'resell', 'flip', 'ebay', 'amazon'], deals: ['deals', 'feed'], local: ['austin', 'city', 'where', 'location', 'local'], cant: ['cant', "can't", 'cannot', 'not do', 'message', 'payment', 'pay', 'limit'], privacy: ['privacy', 'data', 'photo stored', 'private'], what: ['what is', 'garage sale', 'how does', 'help'], grok: ['grok', 'agent', 'bot', 'ai'] };
+const KW = { garry: ['garry', 'install', 'start', 'set up', 'setup', 'sign up', 'sign in', 'connect', 'begin'], account: ['account', 'my facebook', 'own facebook', 'password', 'sign-in link', 'log in', 'login', 'risk'], cost: ['cost', 'free', 'pay', 'charge', 'how much', 'pricing', 'credits'], replies: ['reply', 'replies', 'buyer', 'message'], sell: ['sell', 'photo', 'list', 'listing', 'price', 'comps'], approve: ['approve', 'post', 'facebook account', 'api', 'browser', 'publish'], bulk: ['bulk', 'many', 'multiple', 'moving', 'batch'], buy: ['buy', 'find', 'search', 'scout', 'looking'], arbitrage: ['arbitrage', 'profit', 'resell', 'flip', 'ebay', 'amazon'], deals: ['deals', 'feed'], cant: ['cant', "can't", 'cannot', 'not do', 'limit'], privacy: ['privacy', 'data', 'photo stored', 'private'], what: ['what is', 'garage sale', 'how does', 'help'], grok: ['grok', 'agent', 'bot', 'ai'] };
 
 function lookup(q) {
   const s = q.toLowerCase();
@@ -24,7 +24,7 @@ export async function POST(req) {
       const r = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
         body: JSON.stringify({ model: process.env.XAI_MODEL || 'grok-4-fast-non-reasoning', temperature: 0.3, max_tokens: 400, messages: [
-          { role: 'system', content: `You are the Garage Sale assistant. Answer briefly and only from these docs. If the docs do not cover it, say so. Never use em dashes.\n\n${DOCS_TEXT}` }, ...msgs] }),
+          { role: 'system', content: `You are Garry, the helper on the Garage Sale site. You answer questions about how Garage Sale works. You are not the person's own Garry bot: you cannot see their account, items or Facebook, and you cannot post, price or message anything from here. Answer briefly and only from these docs. If the docs do not cover it, say so. Never state a price or a number that is not in the docs. Never use em dashes.\n\n${DOCS_TEXT}` }, ...msgs] }),
       });
       clearTimeout(t);
       const j = await r.json();

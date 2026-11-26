@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { GARRY_INSTALL_URL } from '../lib/garry';
 
 const TILES = [
   ['chair', 'Ergonomic office chair', 140, 260], ['airpods', 'AirPods Pro', 95, 160], ['lamp', 'Desk lamp', 15, 30], ['guitar', 'Acoustic guitar', 120, 210],
@@ -168,6 +169,10 @@ export default function Home({ mode: initMode }) {
           <Badge variant="secondary" className="desk-only mb-6 px-3 py-1 text-[12px] font-normal text-muted-foreground">Garage Sale · Grok Bot Hackathon · Austin</Badge>
           <h1 className="!text-5xl !font-semibold !tracking-tight md:!text-7xl">Snap it.<br /><span className="text-muted-foreground">Grok Bot sells it.</span></h1>
           <p className="mt-5 max-w-md text-lg text-muted-foreground md:text-xl">Photo in, Facebook Marketplace listing out. You approve every step.</p></>}
+          <div className={cn('mt-8 flex flex-wrap items-center gap-x-4 gap-y-3', initMode && 'justify-center')} data-field="install-row">
+            <Button asChild size="lg" variant="brand"><a href={GARRY_INSTALL_URL} target="_blank" rel="noreferrer" data-field="install-garry">Install Garry</a></Button>
+            <span className="text-sm text-muted-foreground">Your own Grok Bot does the selling. First 10 items free. <a className="underline underline-offset-4" href="/connect">How it works</a></span>
+          </div>
           <div className="mt-10 grid gap-4 text-left">
             <Card id={mode} className={cn('min-w-0 border-border/70 bg-card/80 p-5 backdrop-blur md:p-6', mode === 'sell' && over && 'border-brand')}
               onDragOver={(e) => { if (mode !== 'sell') return; e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
