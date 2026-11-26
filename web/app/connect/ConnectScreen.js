@@ -17,12 +17,13 @@ const Step = ({ n, title, done, children }) => <Card className="border-border/60
 
 export default function ConnectScreen() {
   const [me, setMe] = useState(undefined);
+  const [items, setItems] = useState(null);
   const [flag, setFlag] = useState('');
   const [invite, setInvite] = useState(''); const [note, setNote] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     setFlag(q.get('link') === 'expired' ? 'expired' : q.get('welcome') ? 'welcome' : '');
-    fetch('/api/me', { cache: 'no-store' }).then((r) => r.json()).then((j) => setMe(j.account || null)).catch(() => setMe(null));
+    fetch('/api/me', { cache: 'no-store' }).then((r) => r.json()).then((j) => { setItems(j.items || null); setMe(j.account || null); }).catch(() => setMe(null));
   }, []);
   async function signOut() { await fetch('/api/signout', { method: 'POST' }); window.location.href = '/connect'; }
   async function makeInvite() {
@@ -48,11 +49,11 @@ export default function ConnectScreen() {
       {me === undefined ? <p className="mt-10 text-sm text-muted-foreground">Loading...</p> : me ? <div className="mt-10 grid gap-4" data-state="signed-in">
         <Step n={1} title="Garry is connected" done>Signed in as {me.name}.</Step>
         <Step n={2} title="Sign Garry's browser in to Facebook">Ask Garry to open Facebook in its own browser, then sign in there yourself. Garry never sees or stores your password. Posting from your account is your choice and your risk.</Step>
-        <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
+        <Step n={3} title="Snap your first item">Take one photo. Garry identifies it, finds real prices and drafts the listing for you to approve.{items && <p className="mt-2 text-sm" data-field="items">{items.left > 0 ? `${items.used} of ${items.free} free items used. An item counts when you approve it.` : `You've used your ${items.free} free items. Paying for more isn't open yet.`}</p>}<div className="mt-4 flex flex-wrap gap-3"><Button asChild><a href="/sell">Sell something</a></Button><Button asChild variant="secondary"><a href="/dashboard">Your dashboard</a></Button></div></Step>
         <div className="mt-2"><button type="button" onClick={signOut} className="border-0 bg-transparent p-0 text-sm text-muted-foreground underline underline-offset-4" style={{ background: 'none' }}>Sign out on this browser</button></div>
       </div> : <div className="mt-10 grid gap-4" data-state="signed-out">
         <Step n={1} title="Install Garry in Grok Bot">Garry is a free Grok Bot. Add your own copy, then say hello.<div className="mt-4"><Button asChild><a href={GARRY_INSTALL_URL} target="_blank" rel="noreferrer" data-field="install-garry">Install Garry</a></Button></div></Step>
-        <Step n={2} title="Garry sets you up">It creates your account and sends you a sign-in link. No forms, no codes.</Step>
+        <Step n={2} title="Garry sets you up">It creates your account and sends you a sign-in link. No forms, no codes. Your first 10 items are free.</Step>
         <Step n={3} title="Open the link Garry sends">Press Sign in, and you're in. No password to make or remember.</Step>
         <p className="mt-2 text-sm text-muted-foreground">Already set up? Ask your Garry: "Send me a Garage Sale sign-in link." <a className="underline underline-offset-4" href={GUIDE} target="_blank" rel="noreferrer">Garry's setup guide</a></p>
       </div>}
